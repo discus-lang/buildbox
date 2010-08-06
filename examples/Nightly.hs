@@ -7,7 +7,14 @@ main
 	
 build
  = do	platform	<- getHostPlatform
-	outLn $ pprPlatform platform
+	versionGHC	<- getVersionGHC
+	versionGCC	<- getVersionGCC
+
+	outLn $ pprPlatform platform	
+	outLn $ "GHC version: " ++ versionGHC
+	outLn $ "GCC version: " ++ versionGCC
+	
+	out "\n"
 	
 	outCheckOk "Check Google is reachable"
 	 $ HostReachable "www.google.com"

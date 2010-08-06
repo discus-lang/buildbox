@@ -1,13 +1,18 @@
 
 module BuildBox.Command.Environment
-	( Platform(..)
+	( -- * Build platform
+	  Platform(..)
 	, pprPlatform
 	, getHostPlatform
 	, getHostName
 	, getHostArch
 	, getHostProcessor
 	, getHostOS
-	, getHostRelease)
+	, getHostRelease
+	
+	  -- * Software versions
+	, getVersionGHC
+	, getVersionGCC)
 where
 import BuildBox.Build
 import BuildBox.Command.System
@@ -53,7 +58,7 @@ getHostPlatform
 		, platformHostRelease	= release }
 		
 
--- Individual Tests -------------------------------------------------------------------------------
+-- Platform Tests ---------------------------------------------------------------------------------
 -- | Get the name of this host.
 getHostName :: Build String
 getHostName 	
@@ -93,4 +98,19 @@ getHostRelease
 	str	<- systemWithStdout "uname -r"
 	return	$ init str
 	
+-- Software version tests -------------------------------------------------------------------------
+-- | Get the GHC version
+getVersionGHC :: Build String
+getVersionGHC 
+ = do	check $ HasExecutable "ghc"
+	str	<- systemWithStdout "ghc --version"
+	return	$ init str
 	
+-- | Get the GCC version
+getVersionGCC :: Build String
+getVersionGCC
+ = do	check $ HasExecutable "gcc"
+ 	str	<- systemWithStdout "gcc --version"
+	return	$ head $ lines str
+
+

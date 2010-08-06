@@ -68,15 +68,13 @@ runBuildAndPrintResult build
  = do	result	<- runErrorT build
 	case result of
 	 Left err
-	  -> do	putStrLn "\n"
-		putStrLn "Build failed"
+	  -> do	putStrLn "\nBuild failed"
 		putStr   "  due to "
 		putStrLn $ show err
 		return $ Nothing
 		
 	 Right x
-	  -> do	putStrLn "\n"
-		putStrLn "Build succeeded."
+	  -> do	putStrLn "\nBuild succeeded."
 		return $ Just x
 		
 
