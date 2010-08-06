@@ -2,6 +2,7 @@
 -- | Preconditions that we can check for explicitly.
 module BuildBox.Command.File
 	( PropFile(..)
+	, makeDirIfNeeded
 	, inDir
 	, inNewScratchDirNamed)
 where
@@ -43,6 +44,16 @@ instance Testable PropFile where
 	FileEmpty  path 
 	 -> do	contents	<- io $ readFile path
 		return (null contents)
+
+
+-- Creating Directories ---------------------------------------------------------------------------
+-- | Create a new directory if is isn't already there.
+makeDirIfNeeded :: FilePath -> Build ()
+makeDirIfNeeded path
+ = do	already	<- io $ doesDirectoryExist path
+	if already
+	 then return ()
+	 else system $ "mkdir -p " ++ path
 
 
 -- Working Directories ----------------------------------------------------------------------------

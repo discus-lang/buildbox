@@ -24,7 +24,7 @@ build
 	
 	outLine
 	outBlank
-	buildRepaIn scratchDir
+--	buildRepaIn scratchDir
 	testRepaIn scratchDir
 
 
@@ -60,9 +60,8 @@ benchmarks
 	  in	Benchmark
 			"mmult"
 			(test $ HasExecutable mmult)
-			(systemNull $ mmult ++ " -random 1024 1024 -random 1024 1024 +RTS -N4 -qg")
+			(systemWithTimings $ mmult ++ " -random 1024 1024 -random 1024 1024 +RTS -N4 -qg")
 			(return True)
-			Nothing
 	
 	-- laplace
 	, let	laplace = "repa-examples/dist/build/repa-laplace/repa-laplace"
@@ -71,14 +70,14 @@ benchmarks
 
 	  in  	Benchmark
 		 	"laplace"
-			(do	test $ HasExecutable laplace
+			(do	makeDirIfNeeded "output"
+				test $ HasExecutable laplace
 				whenM (test $ HasFile inputgz)
 				 $ system $ "gzip -d " ++ inputgz
 				test $ HasFile input)								
 
-			(systemNull $ laplace ++ " 1000 " ++ input ++ " out-laplace.bmp +RTS -N4 -qg")
+			(systemWithTimings $ laplace ++ " 1000 " ++ input ++ " output/laplace.bmp +RTS -N4 -qg")
 			(return True)
-			Nothing
 
 	-- fft2d-highpass
 	, let	fft2d	= "repa-examples/dist/build/repa-fft2d-highpass/repa-fft2d-highpass"
@@ -87,26 +86,39 @@ benchmarks
 		
 	  in	Benchmark 
 			"fft2d-highpass"
-			(do	test $ HasExecutable fft2d
+			(do	makeDirIfNeeded "output"
+				test $ HasExecutable fft2d
 				whenM (test $ HasFile inputgz)
 				 $ system $ "gzip -d " ++ inputgz
 				test $ HasFile input)
 
-			(systemNull $ fft2d ++ " 1 " ++ input ++ " out-fft2d.bmp +RTS -N4 -qg")
+			(do	systemWithTimings $ fft2d ++ " 1 " ++ input ++ " output/fft2d.bmp +RTS -N4 -qg"
+				return Nothing)
 			(return True)
-			Nothing
 
 	-- fft3d-highpass
 	, let	fft3d	= "repa-examples/dist/build/repa-fft3d-highpass/repa-fft3d-highpass"
 	  in	Benchmark
 			"fft3d-highpass"
-			(test $ HasExecutable fft3d)
-			(systemNull $ fft3d ++ " 128 " ++ " out-fft3d-slice +RTS -N4 -qg")
-			(return True)
-			Nothing
-			
+			(do	makeDirIfNeeded "output/fft3d"
+				test $ HasExecutable fft3d)
+			(do	systemNull $ fft3d ++ " 128 " ++ " output/fft3d/slice +RTS -N4 -qg"
+				return Nothing)
+			(return True)			
 	]
 
+systemWithTimings :: String -> Build (Maybe Timings)
+systemWithTimings cmd
+ = do	result	<- systemWithStdout cmd
+	return	$ Just $ parseTimings result
+
+parseTimings :: String -> Timings
+parseTimings str
+ = let	(lElapsed : _)	= lines str
+	elapsedTime	= tail $ dropWhile (/= '=') lElapsed
+   in	( Just $ (read elapsedTime) / 1000
+	, Nothing
+	, Nothing)
 
 testRepaIn scratchDir
  = inDir (scratchDir ++ "/repa-head")

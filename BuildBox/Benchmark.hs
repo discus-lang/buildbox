@@ -2,6 +2,7 @@
 -- | Defines benchmarks that we can run.
 module BuildBox.Benchmark
 	( Benchmark(..)
+	, Timings
 	, runTimedCommand
 	, runBenchmarkSingle)
 where
@@ -10,7 +11,7 @@ import Data.Time
 
 -- Benchmark --------------------------------------------------------------------------------------
 -- | Describes a benchmark that we can run.
-data Benchmark a
+data Benchmark
 	= Benchmark
 	{ -- ^ Our internal name for the benchmark.
 	  benchmarkName		:: String
@@ -20,38 +21,34 @@ data Benchmark a
 	, benchmarkSetup	:: Build Bool
 
 	  -- ^ The real benchmark to run.
-	, benchmarkCommand	:: Build a
+	, benchmarkCommand	:: Build (Maybe Timings)
 
 	  -- ^ Check command to see if the benchmark produced the correct answer.
 	, benchmarkCheck	:: Build Bool
-	
-	  -- ^ Optional function to parse the stdout of the benchmark to get the
-	  --   elapsed,cpu,sys times for the computation kernel.
-	, benchmarkParseTimes 	:: Maybe (String ->	( Maybe NominalDiffTime
-				   			, Maybe NominalDiffTime
-							, Maybe NominalDiffTime))
 	}
 
+type Timings
+ = 	( Maybe Float
+	, Maybe Float
+	, Maybe Float)
 
 -- BenchRunResult ---------------------------------------------------------------------------------
 -- | The result of running a benchmark a single time.
-data BenchRunResult a
+data BenchRunResult
 	= BenchRunResult
 
-	{ -- | The value returned by the benchmarking computation.
-	  benchRunResultOutput		:: a
-
-	  -- | The wall-clock time it took to run the benchmark.
-	, benchRunResultElapsed		:: NominalDiffTime
+	{ -- | The wall-clock time it took to run the benchmark.
+	  benchRunResultElapsed		:: Float
 
 	  -- | Elapsed time reported by the benchmark to run its kernel.
-	, benchRunResultKernelElapsed	:: Maybe NominalDiffTime
+	, benchRunResultKernelElapsed	:: Maybe Float
 
 	  -- | CPU time reported by the benchmark to run its kernel.
-	, benchRunResultKernelCpuTime	:: Maybe NominalDiffTime
+	, benchRunResultKernelCpuTime	:: Maybe Float
 
 	  -- | System time reported by the benchmark to run its kernel.
-	, benchRunResultKernelSysTime	:: Maybe NominalDiffTime }
+	, benchRunResultKernelSysTime	:: Maybe Float }
+
 
 -- | Aspects of a benchmark runtime we can talk about.
 data TimeAspect
@@ -60,8 +57,9 @@ data TimeAspect
 	| TimeAspectKernelCpu
 	| TimeAspectKernelSys
 
+
 -- | Get a particular aspect of a benchmark's runtime.
-takeTimeAspectOfBenchRunResult :: TimeAspect -> BenchRunResult a -> Maybe NominalDiffTime
+takeTimeAspectOfBenchRunResult :: TimeAspect -> BenchRunResult -> Maybe Float
 takeTimeAspectOfBenchRunResult aspect result
  = case aspect of
 	TimeAspectElapsed	-> Just $ benchRunResultElapsed result
@@ -72,9 +70,9 @@ takeTimeAspectOfBenchRunResult aspect result
 	
 -- BenchResult ------------------------------------------------------------------------------------
 -- | The result of running a benchmark several times.
-data BenchResult a
+data BenchResult
 	= BenchResult
-	{ benchResultRuns	:: [BenchRunResult a] }
+	{ benchResultRuns	:: [BenchRunResult] }
 
 -- | Get the average runtime from a benchmark result.
 -- avgTimeOfBenchResult :: TimeAspect -> BenchResult -> DiffTime
@@ -101,8 +99,8 @@ runTimedCommand cmd
 
 -- | Run a benchmark a single time.
 runBenchmarkSingle
-	:: Benchmark a
-	-> Build (BenchRunResult a)
+	:: Benchmark
+	-> Build BenchRunResult
 	
 runBenchmarkSingle bench
  = do	out $ "Running " ++ benchmarkName bench ++ "..."
@@ -110,17 +108,24 @@ runBenchmarkSingle bench
 	-- Run the setup command
 	_setupOk <- benchmarkSetup bench
 
-	(diffTime, result)	
+	(diffTime, mKernelTimings)	
 		<- runTimedCommand 
 		$  benchmarkCommand bench
 	
 	outLn "ok"
-	outLn $ "    elapsed = " ++ show diffTime
+	outLn $ "    elapsed        = " ++ show diffTime
+		
+	(case mKernelTimings of
+	 Nothing	-> return ()
+	 Just (mElapsed, mCpu, mSystem)
+	  -> do	maybe (return ()) (\t -> outLn $ "    kernel elapsed = " ++ show t) mElapsed
+		maybe (return ()) (\t -> outLn $ "    kernel cpu     = " ++ show t) mCpu
+		maybe (return ()) (\t -> outLn $ "    kernel system  = " ++ show t) mSystem)
+	
 	outBlank
 	
 	return	$ BenchRunResult
-		{ benchRunResultOutput		= result
-		, benchRunResultElapsed		= diffTime
+		{ benchRunResultElapsed		= fromRational $ toRational diffTime
 		, benchRunResultKernelElapsed	= Nothing
 		, benchRunResultKernelCpuTime	= Nothing
 		, benchRunResultKernelSysTime	= Nothing }
