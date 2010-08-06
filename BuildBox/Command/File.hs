@@ -1,26 +1,41 @@
 
 -- | Preconditions that we can check for explicitly.
 module BuildBox.Command.File
-	(Property(..))
+	(PropFile(..))
 where
 import BuildBox.Build.Base
 import BuildBox.Build.Testable
+import BuildBox.Command.System
 import System.Directory
 
--- | Preconditions that we know about.
+-- | Properties of the file system we can check.
 data PropFile
-	= FileExists FilePath
-	| DirExists  FilePath
-	| FileEmpty  FilePath
+
+	-- | Use which to check if we have an executable.
+	= HasExecutable	String
+
+	-- | Check if a file exists.
+	| HasFile	FilePath
+
+	-- | Check if a directory exists.
+	| HasDir  	FilePath
+
+	-- | Check if a file empty.
+	| FileEmpty 	FilePath
 	deriving Show
+
 
 instance Testable PropFile where
  test prop 
   = case prop of
-	FileExists path	
+	HasExecutable name
+	 -> do	code	<- systemNullCode $ "which " ++ name
+		return	$ code == ExitSuccess
+
+	HasFile path	
 	 -> io $ doesFileExist path
 
-	DirExists  path
+	HasDir  path
 	 -> io $ doesDirectoryExist path
 
 	FileEmpty  path 

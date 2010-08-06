@@ -6,11 +6,15 @@ main
 	return ()
 	
 build
- = do	sleep 1
-	system "ls"
-
-	outCheckOk "Checking we can talk to google"
+ = do	platform	<- getHostPlatform
+	outLn $ pprPlatform platform
+	
+	outCheckOk "Check Google is reachable"
 	 $ HostReachable "www.google.com"
 
-	outCheckOk "Checking we can talk to mars"
-	 $ HostReachable "mars.wibble"
+	outCheckOk "Check code.haskell.org is reachable"
+	 $ HostReachable "code.haskell.org"
+	
+	outCheckOk "Check code.haskell.org web server is up"
+	 $ UrlGettable "http://code.haskell.org"
+	
