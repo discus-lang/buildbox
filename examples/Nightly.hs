@@ -122,6 +122,6 @@ parseTimings str
 
 testRepaIn scratchDir
  = inDir (scratchDir ++ "/repa-head")
- $ do	mapM_ runBenchmarkSingle benchmarks
+ $ do	mapM_ outRunBenchmarkSingle benchmarks
 
 

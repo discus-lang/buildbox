@@ -4,6 +4,7 @@ module BuildBox.Benchmark
 	( Benchmark(..)
 	, Timings
 	, runTimedCommand
+	, outRunBenchmarkSingle
 	, runBenchmarkSingle)
 where
 import BuildBox.Build	
@@ -97,36 +98,60 @@ runTimedCommand cmd
 	return (diffUTCTime finish start, result)
 	
 
--- | Run a benchmark a single time.
-runBenchmarkSingle
+-- | Run a benchmark a single time, printing results.
+outRunBenchmarkSingle
 	:: Benchmark
 	-> Build BenchRunResult
 	
-runBenchmarkSingle bench
+outRunBenchmarkSingle bench
  = do	out $ "Running " ++ benchmarkName bench ++ "..."
+	result	<- runBenchmarkSingle bench
+	outLn "ok"
+	outLn $ "    elapsed        = " ++ (show $ benchRunResultElapsed result)
+		
+	maybe (return ()) (\t -> outLn $ "    kernel elapsed = " ++ show t) 
+		$ benchRunResultKernelElapsed result
 
-	-- Run the setup command
+	maybe (return ()) (\t -> outLn $ "    kernel cpu     = " ++ show t) 
+		$ benchRunResultKernelCpuTime result
+
+	maybe (return ()) (\t -> outLn $ "    kernel system  = " ++ show t)
+		$ benchRunResultKernelSysTime result
+	
+	outBlank
+	
+	return result
+	
+	
+-- | Run a benchmark a single time.
+runBenchmarkSingle
+	:: Benchmark 
+	-> Build BenchRunResult
+	
+runBenchmarkSingle bench
+ = do	-- Run the setup command
 	_setupOk <- benchmarkSetup bench
 
 	(diffTime, mKernelTimings)	
 		<- runTimedCommand 
 		$  benchmarkCommand bench
 	
-	outLn "ok"
-	outLn $ "    elapsed        = " ++ show diffTime
-		
-	(case mKernelTimings of
-	 Nothing	-> return ()
-	 Just (mElapsed, mCpu, mSystem)
-	  -> do	maybe (return ()) (\t -> outLn $ "    kernel elapsed = " ++ show t) mElapsed
-		maybe (return ()) (\t -> outLn $ "    kernel cpu     = " ++ show t) mCpu
-		maybe (return ()) (\t -> outLn $ "    kernel system  = " ++ show t) mSystem)
-	
-	outBlank
-	
-	return	$ BenchRunResult
+	case mKernelTimings of
+	 Nothing 
+	  -> return	
+		$ BenchRunResult
 		{ benchRunResultElapsed		= fromRational $ toRational diffTime
 		, benchRunResultKernelElapsed	= Nothing
 		, benchRunResultKernelCpuTime	= Nothing
 		, benchRunResultKernelSysTime	= Nothing }
+
+	 Just (mElapsed, mCpu, mSystem) 
+	  -> return	
+		$ BenchRunResult
+		{ benchRunResultElapsed		= fromRational $ toRational diffTime
+		, benchRunResultKernelElapsed	= mElapsed
+		, benchRunResultKernelCpuTime	= mCpu
+		, benchRunResultKernelSysTime	= mSystem }
+
+
 
