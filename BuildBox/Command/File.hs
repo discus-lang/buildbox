@@ -1,6 +1,6 @@
 
 -- | Preconditions that we can check for explicitly.
-module BuildBox.Build.Property
+module BuildBox.Command.File
 	(Property(..))
 where
 import BuildBox.Build.Base
@@ -8,13 +8,13 @@ import BuildBox.Build.Testable
 import System.Directory
 
 -- | Preconditions that we know about.
-data Property
+data PropFile
 	= FileExists FilePath
 	| DirExists  FilePath
 	| FileEmpty  FilePath
 	deriving Show
 
-instance Testable Property where
+instance Testable PropFile where
  test prop 
   = case prop of
 	FileExists path	
