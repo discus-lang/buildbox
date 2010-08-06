@@ -24,7 +24,7 @@ build
 	
 	outLine
 	outBlank
---	buildRepaIn scratchDir
+	buildRepaIn scratchDir
 	testRepaIn scratchDir
 
 
