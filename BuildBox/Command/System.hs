@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 
 module BuildBox.Command.System 
 	( module System.Exit

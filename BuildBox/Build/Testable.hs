@@ -6,6 +6,7 @@
 module BuildBox.Build.Testable
 	( Testable(..)
 	, check
+	, checkNot
 	, outCheckOk)
 where
 import System.IO
@@ -19,13 +20,23 @@ class Testable prop where
 
 
 -- | Testable properties are checkable.
---   If the check fails we throw an error.
+--   If the check returns false we throw an error.
 check :: (Show prop, Testable prop) => prop -> Build ()
 check prop
  = do	result	<- test prop
 	if result
 	 then return ()
 	 else throwError $ ErrorTestFailed prop
+
+
+-- | Testable properties are checkable.
+--   If the check returns true we throw an error.
+checkNot :: (Show prop, Testable prop) => prop -> Build ()
+checkNot prop
+ = do	result	<- test prop
+	if result
+	 then throwError $ ErrorTestFailed prop
+	 else return ()
 	
 
 -- | Check some property while printing what we're doing.

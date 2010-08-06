@@ -1,7 +1,9 @@
 
 -- | Preconditions that we can check for explicitly.
 module BuildBox.Command.File
-	(PropFile(..))
+	( PropFile(..)
+	, inDir
+	, inNewScratchDirNamed)
 where
 import BuildBox.Build.Base
 import BuildBox.Build.Testable
@@ -41,5 +43,30 @@ instance Testable PropFile where
 	FileEmpty  path 
 	 -> do	contents	<- io $ readFile path
 		return (null contents)
-		
+
+-- Working Directories ----------------------------------------------------------------------------
+inDir :: FilePath -> Build a -> Build a
+inDir name build
+ = do	check $ HasDir name
+	oldDir	<- io $ getCurrentDirectory
+
+	io $ setCurrentDirectory name
+	x	<- build
+	io $ setCurrentDirectory oldDir
+
+	return x
 	
+
+-- Scratch ----------------------------------------------------------------------------------------
+-- | Create a new dir with this path, change into it, run a build, change out, then delete the dir.
+inNewScratchDirNamed :: FilePath -> Build a -> Build a
+inNewScratchDirNamed name build
+ = do	
+	-- Make sure a dir with this name doesn't already exist.
+	checkNot $ HasDir name
+
+	system $ "mkdir -p " ++ name
+	x	<- inDir name build
+	
+	system $ "rm -Rf " ++ name 
+	return x

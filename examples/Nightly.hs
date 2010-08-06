@@ -22,6 +22,9 @@ build
 	outCheckOk "Check code.haskell.org is reachable"
 	 $ HostReachable "code.haskell.org"
 	
-	outCheckOk "Check code.haskell.org web server is up"
-	 $ UrlGettable "http://code.haskell.org"
+--	outCheckOk "Check code.haskell.org web server is up"
+--	 $ UrlGettable "http://code.haskell.org"
+	
+	inNewScratchDirNamed "wibble"
+	 $ outLn "I am here"
 	
