@@ -1,11 +1,10 @@
 
-
 -- | Preconditions that we can check for explicitly.
-module BuildBox.Property
+module BuildBox.Build.Property
 	(Property(..))
 where
-import BuildBox.Build
-import BuildBox.Testable
+import BuildBox.Build.Base
+import BuildBox.Build.Testable
 import System.Directory
 
 -- | Preconditions that we know about.
@@ -14,7 +13,6 @@ data Property
 	| DirExists  FilePath
 	| FileEmpty  FilePath
 	deriving Show
-
 
 instance Testable Property where
  test prop 
