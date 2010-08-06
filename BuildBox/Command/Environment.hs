@@ -35,10 +35,10 @@ data Platform
 pprPlatform :: Platform -> String
 pprPlatform plat
  = unlines
-	[ platformHostName plat
-	, "    arch      : " ++ platformHostArch plat
-	, "    processor : " ++ platformHostProcessor plat
-	, "    system    : " ++ platformHostOS plat ++ " " ++ platformHostRelease plat ]
+	[ "  host       : " ++ platformHostName plat
+	, "  arch       : " ++ platformHostArch plat
+	, "  processor  : " ++ platformHostProcessor plat
+	, "  system     : " ++ platformHostOS plat ++ " " ++ platformHostRelease plat ]
 	
 	
 -- | Get information about the host platform.

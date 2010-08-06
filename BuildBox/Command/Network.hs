@@ -41,5 +41,7 @@ instance Testable PropNetwork where
 		code 	<- systemNullCode $ "wget -q --delete-after " ++ url
 		return	$ code == ExitSuccess
 		
+
+
 	
 

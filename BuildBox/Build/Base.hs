@@ -7,15 +7,20 @@
 module BuildBox.Build.Base
 	( Build
 	, BuildError(..)
+	, throw
 	, runBuild
+	, runBuildAndPrintResult
 	, io
 	, out
 	, outLn
-	, throw
-	, runBuildAndPrintResult)
+	, outBlank
+	, outLine
+	, outLINE
+	, whenM)
 	
 where
 import Control.Monad.Error
+import System.IO
 
 -- | A build command is an IO action that can fail with an error.
 type Build a 	= ErrorT BuildError IO a
@@ -48,19 +53,16 @@ instance Show BuildError where
 	 -> "framework test failure: " ++ show prop
 
 
+-- | Throw an error in the build monad.
 throw :: BuildError -> Build a
 throw	= throwError
-
--- | Helpers
-io x		= liftIO x
-out   str	= io $ putStr   str
-outLn str	= io $ putStrLn str
 
 
 -- | Run a build command.
 runBuild :: Build a -> IO (Either BuildError a)
 runBuild build
 	= runErrorT build
+
 
 -- | Execute a build command, reporting whether it succeeded or not.
 runBuildAndPrintResult :: Build a -> IO (Maybe a)
@@ -74,8 +76,41 @@ runBuildAndPrintResult build
 		return $ Nothing
 		
 	 Right x
-	  -> do	putStrLn "\nBuild succeeded."
+	  -> do	putStrLn "Build succeeded."
 		return $ Just x
 		
 
+-- | Lift an IO command into the build monad.
+io x		= liftIO x
 
+
+-- | Print some text to stdout.
+out str	
+ = io 
+ $ do	putStr   str
+	hFlush stdout
+
+-- | Print some text to stdout followed by a newline.
+outLn :: String -> Build ()
+outLn str	= io $ putStrLn str
+
+
+-- | Print a blank line to stdout
+outBlank :: Build ()
+outBlank	= out "\n"
+
+
+-- | Print a ----- line to stdout 
+outLine :: Build ()
+outLine 	= io $ putStr (replicate 80 '-' ++ "\n")
+
+
+-- | Print a ===== line to stdout
+outLINE :: Build ()
+outLINE		= io $ putStr (replicate 80 '=' ++ "\n")
+
+
+whenM :: Monad m => m Bool -> m () -> m ()
+whenM cb cx
+ = do	b	<- cb
+	if b then cx else return ()

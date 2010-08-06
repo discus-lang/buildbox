@@ -44,6 +44,7 @@ instance Testable PropFile where
 	 -> do	contents	<- io $ readFile path
 		return (null contents)
 
+
 -- Working Directories ----------------------------------------------------------------------------
 inDir :: FilePath -> Build a -> Build a
 inDir name build
@@ -55,7 +56,6 @@ inDir name build
 	io $ setCurrentDirectory oldDir
 
 	return x
-	
 
 -- Scratch ----------------------------------------------------------------------------------------
 -- | Create a new dir with this path, change into it, run a build, change out, then delete the dir.
@@ -70,3 +70,4 @@ inNewScratchDirNamed name build
 	
 	system $ "rm -Rf " ++ name 
 	return x
+

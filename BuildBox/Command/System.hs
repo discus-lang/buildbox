@@ -4,6 +4,7 @@ module BuildBox.Command.System
 	( module System.Exit
 	, system
 	, systemCode
+	, systemNull
 	, systemNullCode
 	, systemWithStdout)
 where
@@ -30,6 +31,15 @@ systemCode cmd
  = do	code	<- io $ System.Cmd.system cmd
 	return code
 
+
+-- | Run a system command, expecting success, discarding its output.
+systemNull :: String -> Build ()
+systemNull cmd
+ = do	code	<- io $ System.Cmd.system $ cmd ++ " > /dev/null 2> /dev/null"
+	case code of
+	 ExitSuccess	-> return ()
+	 ExitFailure _	-> throw $ ErrorSystemCmdFailed cmd
+	
 	
 -- | Run a system command, discarding its output and returning its exitcode.
 systemNullCode :: String -> Build ExitCode
