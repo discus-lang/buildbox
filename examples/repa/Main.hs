@@ -11,7 +11,6 @@ data Config
 	, configDoTest	:: Bool }
 	deriving Show
 
-
 main 
  = do	args		<- parseArgsIO ArgsComplete buildArgs
 

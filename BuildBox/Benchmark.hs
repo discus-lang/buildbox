@@ -8,6 +8,7 @@ module BuildBox.Benchmark
 	, runBenchmarkSingle)
 where
 import BuildBox.Build	
+import BuildBox.Pretty
 import Data.Time
 
 -- Benchmark --------------------------------------------------------------------------------------
@@ -107,15 +108,15 @@ outRunBenchmarkSingle bench
  = do	out $ "Running " ++ benchmarkName bench ++ "..."
 	result	<- runBenchmarkSingle bench
 	outLn "ok"
-	outLn $ "    elapsed        = " ++ (show $ benchRunResultElapsed result)
+	outLn $ "    elapsed        = " ++ (pprFloatTime $ benchRunResultElapsed result)
 		
-	maybe (return ()) (\t -> outLn $ "    kernel elapsed = " ++ show t) 
+	maybe (return ()) (\t -> outLn $ "    kernel elapsed = " ++ pprFloatTime t) 
 		$ benchRunResultKernelElapsed result
 
-	maybe (return ()) (\t -> outLn $ "    kernel cpu     = " ++ show t) 
+	maybe (return ()) (\t -> outLn $ "    kernel cpu     = " ++ pprFloatTime t) 
 		$ benchRunResultKernelCpuTime result
 
-	maybe (return ()) (\t -> outLn $ "    kernel system  = " ++ show t)
+	maybe (return ()) (\t -> outLn $ "    kernel system  = " ++ pprFloatTime t)
 		$ benchRunResultKernelSysTime result
 	
 	outBlank
