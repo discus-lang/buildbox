@@ -19,7 +19,7 @@ data TimeAspect
 	| TimeAspectKernelElapsed
 	| TimeAspectKernelCpu
 	| TimeAspectKernelSys
-	deriving (Show, Enum)
+	deriving (Show, Read, Enum)
 
 
 -- | Get the pretty name of a TimeAspect.

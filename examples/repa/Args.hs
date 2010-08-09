@@ -14,6 +14,7 @@ data BuildArg
 	| ArgDoBuild
 	| ArgDoTest
 	| ArgTestIterations
+	| ArgWriteResults
 	deriving (Eq, Ord, Show)
 
 
@@ -46,6 +47,12 @@ buildArgs :: [Arg BuildArg]
 		, argAbbr	= Just 'i'
 		, argName	= Just "iterations"
 		, argData	= argDataDefaulted "iters" ArgtypeInt 1
-		, argDesc	= "Number of times to run each benchmark" }
+		, argDesc	= "Number of times to run each benchmark." }
+		
+	, Arg	{ argIndex	= ArgWriteResults
+		, argAbbr	= Just 'w'
+		, argName	= Just "write"
+		, argData	= argDataOptional "file" ArgtypeString
+		, argDesc	= "Write results to this file." }
 		
 	]

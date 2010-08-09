@@ -98,7 +98,8 @@ outRunBenchmarkSeveral iterations bench
 	outLn "ok"
 
 	let result	= BenchResult
-			{ benchResultRuns	= runResults }
+			{ benchResultName	= benchmarkName bench
+			, benchResultRuns	= runResults }
 
 	outLn pprBenchResultAspectHeader
 	
@@ -112,6 +113,7 @@ outRunBenchmarkSeveral iterations bench
 	return	result
 
 
+-- | Header to use when pretty printing benchmark results.
 pprBenchResultAspectHeader :: String
 pprBenchResultAspectHeader 
 	=  "               "
@@ -120,6 +122,7 @@ pprBenchResultAspectHeader
 	++ "     avg"
 	++ "     max"
 
+-- | Pretty print an aspect of a benchmark result.
 pprBenchResultAspect :: TimeAspect -> BenchResult -> Maybe String
 pprBenchResultAspect aspect result
  	| Just (min, avg, max)	<- takeMinAvgMaxOfBenchResult aspect result

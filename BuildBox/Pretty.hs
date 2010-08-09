@@ -1,12 +1,24 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 
 -- | Pretty printing utils.
 module BuildBox.Pretty
-	( pprPSecTime
+	( module Text.PrettyPrint
+	, Pretty(..)
+	, pprPSecTime
 	, pprFloatTime
 	, padRc, padR
 	, padLc, padL )
 where
+import Text.PrettyPrint
+
+-- Things that can be pretty printed
+class Pretty a where
+ 	ppr :: a -> Doc
+
+instance Pretty String where
+	ppr = text
 	
+
 -- | Print a floating point number of seconds as a time.
 pprFloatTime :: Float -> String
 pprFloatTime stime

@@ -46,9 +46,13 @@ data BenchRunResult
 
 	  -- | System time reported by the benchmark to run its kernel.
 	, benchRunResultKernelSysTime	:: Maybe Float }
+	deriving (Show, Read)
 
 
 -- | The result of running a benchmark several times.
 data BenchResult
 	= BenchResult
-	{ benchResultRuns	:: [BenchRunResult] }
+	{ benchResultName	:: String
+	, benchResultRuns	:: [BenchRunResult] }
+	deriving (Show, Read)
+

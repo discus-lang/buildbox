@@ -1,8 +1,10 @@
 
 import BuildBox
+
 import Args
 import Control.Monad
 import System.Console.ParseArgs
+import Data.Time
 
 -- | Buildbot command line configuration.
 data Config
@@ -11,7 +13,8 @@ data Config
 	, configTmpDir		:: String
 	, configDoBuild		:: Bool
 	, configDoTest		:: Bool 
-	, configIterations	:: Int }
+	, configIterations	:: Int
+	, configWriteResults	:: Maybe FilePath }
 	deriving Show
 
 main 
@@ -29,7 +32,8 @@ main
 		, configTmpDir		= tmpDir
 		, configDoBuild		= gotArg args ArgDoBuild
 		, configDoTest		= gotArg args ArgDoTest 
-		, configIterations	= iterations }
+		, configIterations	= iterations 
+		, configWriteResults	= getArg args ArgWriteResults }
 
 	result	<- runBuildAndPrintResult (build config)
 
@@ -41,22 +45,20 @@ build config
  = do	outLine
 	outLn "Repa BuildBot\n"
 	
-	platform	<- getHostPlatform
-	versionGHC	<- getVersionGHC
-	versionGCC	<- getVersionGCC
-
-	outLn $ pprPlatform platform	
-	outLn $ "  GHC version: " ++ versionGHC
-	outLn $ "  GCC version: " ++ versionGCC
+	env	<- getEnvironmentWith 
+			[ ("GHC", getVersionGHC)
+			, ("GCC", getVersionGCC) ]
+			
+	outLn $ render $ ppr $ env
 	
 	outLine
 	outBlank
 	
 	when (configDoBuild config)
 	 $ buildRepaIn (configTmpDir config)
-	
+		
 	when (configDoTest config)
-	 $ testRepaIn  config
+	 $ testRepa config env
 	
 
 
@@ -85,11 +87,36 @@ buildRepaIn scratchDir
 
 
 -- Testing ----------------------------------------------------------------------------------------
+data BuildResults
+	= BuildResults
+	{ buildResultTime		:: UTCTime
+	, buildResultEnvironment	:: Environment
+	, buildResultBench		:: [BenchResult] }
+	deriving (Show, Read)
 
-testRepaIn config
- = inDir (configTmpDir config ++ "/repa-head")
- $ do	mapM_ 	(outRunBenchmarkSeveral (configIterations config)) 
-		(benchmarks config)
+	
+testRepa :: Config -> Environment -> Build ()
+testRepa config env
+ = do	
+	utcTime	<- io $ getCurrentTime
+	benchResults
+	 <- inDir (configTmpDir config ++ "/repa-head")
+ 	 $ do	outLn	$ show $ configWriteResults config
+		mapM 	(outRunBenchmarkSeveral (configIterations config)) 
+			(benchmarks config)
+
+	-- Make the build results.
+	let buildResults
+		= BuildResults
+		{ buildResultTime		= utcTime
+		, buildResultEnvironment	= env
+		, buildResultBench		= benchResults }
+
+	-- Write results to a file if requested.	
+	maybe 	(return ())
+		(\fileName -> io $ writeFile fileName $ show buildResults)
+		(configWriteResults config)
+		
 
 benchmarks config
  = let	systemWithTimings' = systemWithTimings (configVerbose config)
@@ -152,6 +179,7 @@ systemWithTimings verbose cmd
 	result	<- systemWithStdout cmd
 	return	$ Just $ parseTimings result
 
+
 parseTimings :: String -> Timings
 parseTimings str
  = let	(lElapsed : _)	= lines str
@@ -159,6 +187,4 @@ parseTimings str
    in	( Just $ (read elapsedTime) / 1000
 	, Nothing
 	, Nothing)
-
-
 

@@ -1,8 +1,11 @@
 
 module BuildBox.Command.Environment
-	( -- * Build platform
-	  Platform(..)
-	, pprPlatform
+	( -- * Build Environment
+	  Environment(..)
+	, getEnvironmentWith
+	
+	  -- * Build platform
+	, Platform(..)
 	, getHostPlatform
 	, getHostName
 	, getHostArch
@@ -17,8 +20,48 @@ where
 import BuildBox.Build
 import BuildBox.Command.System
 import BuildBox.Command.File
+import BuildBox.Pretty
+
+-- Environment ------------------------------------------------------------------------------------
+-- | The environment consists of the `Platform` as well as software version strings.
+data Environment 
+	= Environment
+	{ environmentPlatform	:: Platform
+	, environmentVersions	:: [(String, String)] }
+	deriving (Show, Read)
 
 
+instance Pretty Environment where
+ ppr env
+	= hang (ppr "Environment") 2 $ vcat
+	[ ppr 	$ environmentPlatform env
+	, hang (ppr "Versions") 2 
+		$ vcat 
+		$ map (\(name, ver) -> ppr name <+> ppr ver) 
+		$ environmentVersions env ]
+
+
+
+-- | Get the current environment, including versions of this software.
+getEnvironmentWith 
+	:: [(String, Build String)]
+	-> Build Environment
+	
+getEnvironmentWith nameGets 
+ = do	platform	<- getHostPlatform
+
+	versions	<- mapM (\(name, get) -> do
+					ver	<- get
+					return	(name, ver))
+			$  nameGets
+			
+	return	$ Environment
+		{ environmentPlatform	= platform 
+		, environmentVersions	= versions }
+	
+
+
+-- Platform ---------------------------------------------------------------------------------------
 -- | Collect all the generic info about the platform we're running on.
 data Platform
 	= Platform
@@ -26,19 +69,19 @@ data Platform
 	, platformHostArch	:: String
 	, platformHostProcessor	:: String
 	, platformHostOS	:: String
-	, platformHostRelease	:: String
-	}
-	deriving Show
+	, platformHostRelease	:: String }
+	deriving (Show, Read)
 	
 	
 -- | Pretty print a platform.
-pprPlatform :: Platform -> String
-pprPlatform plat
- = unlines
-	[ "  host       : " ++ platformHostName plat
-	, "  arch       : " ++ platformHostArch plat
-	, "  processor  : " ++ platformHostProcessor plat
-	, "  system     : " ++ platformHostOS plat ++ " " ++ platformHostRelease plat ]
+instance Pretty Platform where
+ ppr plat
+	= hang (ppr "Platform") 2 $ vcat
+	[ ppr "host:      " <> (ppr $ platformHostName plat)
+	, ppr "arch:      " <> (ppr $ platformHostArch plat)
+	, ppr "processor: " <> (ppr $ platformHostProcessor plat)
+	, ppr "system:    " <> (ppr $ platformHostOS plat) <+> (ppr $ platformHostRelease plat) ]
+	
 	
 	
 -- | Get information about the host platform.
