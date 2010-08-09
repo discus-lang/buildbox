@@ -1,16 +1,36 @@
 
 import BuildBox
+import Args
 import Control.Monad
+import System.Console.ParseArgs
 
-scratchDir	= "wibble"
+data Config
+	= Config
+	{ configTmpDir	:: String
+	, configDoBuild	:: Bool
+	, configDoTest	:: Bool }
+	deriving Show
+
 
 main 
- = do	result	<- runBuildAndPrintResult build
+ = do	args		<- parseArgsIO ArgsComplete buildArgs
+
+	let Just tmpDir	=  getArg args ArgTmpDir
+	tmpDir `seq` return ()
+
+	let config
+		= Config
+		{ configTmpDir		= tmpDir
+		, configDoBuild		= gotArg args ArgDoBuild
+		, configDoTest		= gotArg args ArgDoTest }
+
+	result	<- runBuildAndPrintResult (build config)
+
 	return ()
-	
+
 	
 -- | Run the complete nightly build.
-build
+build config
  = do	outLine
 	outLn "Repa Nightly Build\n"
 	
@@ -24,8 +44,13 @@ build
 	
 	outLine
 	outBlank
-	buildRepaIn scratchDir
-	testRepaIn scratchDir
+	
+	when (configDoBuild config)
+	 $ buildRepaIn (configTmpDir config)
+	
+	when (configDoTest config)
+	 $ testRepaIn  (configTmpDir config)
+	
 
 
 -- Building ---------------------------------------------------------------------------------------	
