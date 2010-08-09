@@ -1,15 +1,29 @@
+{-# LANGUAGE PatternGuards #-}
 
 -- | Defines benchmarks that we can run.
 module BuildBox.Benchmark
 	( Benchmark(..)
 	, Timings
+	
+	, BenchRunResult(..)
+	, TimeAspect(..)
+	, takeTimeAspectOfBenchRunResult
+	
+	, BenchResult(..)
+	, takeAvgTimeOfBenchResult
+	, takeMinTimeOfBenchResult
+	, takeMaxTimeOfBenchResult
+	, takeMinAvgMaxOfBenchResult
+	
 	, runTimedCommand
 	, outRunBenchmarkSingle
-	, runBenchmarkSingle)
+	, runBenchmarkSingle
+	, outRunBenchmarkSeveral)
 where
 import BuildBox.Build	
 import BuildBox.Pretty
 import Data.Time
+import Control.Monad
 
 -- Benchmark --------------------------------------------------------------------------------------
 -- | Describes a benchmark that we can run.
@@ -33,6 +47,7 @@ type Timings
  = 	( Maybe Float
 	, Maybe Float
 	, Maybe Float)
+
 
 -- BenchRunResult ---------------------------------------------------------------------------------
 -- | The result of running a benchmark a single time.
@@ -58,6 +73,17 @@ data TimeAspect
 	| TimeAspectKernelElapsed
 	| TimeAspectKernelCpu
 	| TimeAspectKernelSys
+	deriving (Show, Enum)
+
+
+-- | Get the pretty name of a TimeAspect.
+pprTimeAspect :: TimeAspect -> String
+pprTimeAspect aspect
+ = case aspect of
+	TimeAspectElapsed		-> "elapsed"
+	TimeAspectKernelElapsed		-> "kernel elapsed"
+	TimeAspectKernelCpu		-> "kernel cpu"
+	TimeAspectKernelSys		-> "kernel system"
 
 
 -- | Get a particular aspect of a benchmark's runtime.
@@ -77,14 +103,46 @@ data BenchResult
 	{ benchResultRuns	:: [BenchRunResult] }
 
 -- | Get the average runtime from a benchmark result.
--- avgTimeOfBenchResult :: TimeAspect -> BenchResult -> DiffTime
-
+takeAvgTimeOfBenchResult :: TimeAspect -> BenchResult -> Maybe Float
+takeAvgTimeOfBenchResult aspect result
+ = let	mTimes	= sequence 
+		$ map (takeTimeAspectOfBenchRunResult aspect)
+		$ benchResultRuns result
+		
+   in	liftM (\ts -> sum ts / (fromIntegral $ length ts)) mTimes
+	
 
 -- | Get the minimum runtime from a benchmark result.
--- minTimeOfBenchResult :: BenchResult -> DiffTime
+takeMinTimeOfBenchResult :: TimeAspect -> BenchResult -> Maybe Float
+takeMinTimeOfBenchResult aspect result
+ = let	mTimes	= sequence
+		$ map (takeTimeAspectOfBenchRunResult aspect)
+		$ benchResultRuns result
+
+   in	liftM (\ts -> minimum ts) mTimes
+
 
 -- | Get the maximum runtime from a benchmark result.
--- maxTimeOfBenchResult :: BenchResult -> DiffTime
+takeMaxTimeOfBenchResult :: TimeAspect -> BenchResult -> Maybe Float
+takeMaxTimeOfBenchResult aspect result
+ = let	mTimes	= sequence
+		$ map (takeTimeAspectOfBenchRunResult aspect)
+		$ benchResultRuns result
+
+   in	liftM (\ts -> maximum ts) mTimes
+
+
+-- | Get the min, avg, and max runtimes from this benchmark result.
+takeMinAvgMaxOfBenchResult :: TimeAspect -> BenchResult -> Maybe (Float, Float, Float)
+takeMinAvgMaxOfBenchResult aspect result
+	| Just min	<- takeMinTimeOfBenchResult aspect result
+	, Just avg	<- takeAvgTimeOfBenchResult aspect result
+	, Just max	<- takeMaxTimeOfBenchResult aspect result
+	= Just (min, avg, max)
+	
+	| otherwise
+	= Nothing
+	
 
 
 -- Running Commands -------------------------------------------------------------------------------
@@ -154,5 +212,55 @@ runBenchmarkSingle bench
 		, benchRunResultKernelCpuTime	= mCpu
 		, benchRunResultKernelSysTime	= mSystem }
 
+
+-- | Run a benchmark several times
+outRunBenchmarkSeveral
+	:: Int
+	-> Benchmark
+	-> Build BenchResult
+	
+outRunBenchmarkSeveral iterations bench
+ = do	out $ "Running " ++ benchmarkName bench ++ " " ++ show iterations ++ " times..."
+	runResults	<- replicateM iterations (runBenchmarkSingle bench) 
+	outLn "ok"
+
+	let result	= BenchResult
+			{ benchResultRuns	= runResults }
+
+	outLn pprBenchResultAspectHeader
+	
+	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectElapsed	result
+	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectKernelElapsed	result
+	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectKernelCpu	result
+	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectKernelSys	result
+		
+	
+	outBlank
+	return	result
+
+
+pprBenchResultAspectHeader :: String
+pprBenchResultAspectHeader 
+	=  "               "
+	++ "    "
+	++ "     min"
+	++ "     avg"
+	++ "     max"
+
+pprBenchResultAspect :: TimeAspect -> BenchResult -> Maybe String
+pprBenchResultAspect aspect result
+ 	| Just (min, avg, max)	<- takeMinAvgMaxOfBenchResult aspect result
+	= Just
+	$	"    "
+		++ padR 15 (pprTimeAspect aspect)
+		++ "    "
+		++ (padR 7 $ pprFloatTime min)
+		++ " "
+		++ (padR 7 $ pprFloatTime avg)
+		++ " "
+		++ (padR 7 $ pprFloatTime max)
+	
+	| otherwise
+	= Nothing	
 
 

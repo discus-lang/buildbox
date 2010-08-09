@@ -4,24 +4,32 @@ import Args
 import Control.Monad
 import System.Console.ParseArgs
 
+-- | Buildbot command line configuration.
 data Config
 	= Config
-	{ configTmpDir	:: String
-	, configDoBuild	:: Bool
-	, configDoTest	:: Bool }
+	{ configVerbose		:: Bool
+	, configTmpDir		:: String
+	, configDoBuild		:: Bool
+	, configDoTest		:: Bool 
+	, configIterations	:: Int }
 	deriving Show
 
 main 
  = do	args		<- parseArgsIO ArgsComplete buildArgs
 
-	let Just tmpDir	=  getArg args ArgTmpDir
+	let Just tmpDir		= getArg args ArgTmpDir
 	tmpDir `seq` return ()
+
+	let Just iterations	= getArg args ArgTestIterations
+	iterations `seq` return ()
 
 	let config
 		= Config
-		{ configTmpDir		= tmpDir
+		{ configVerbose		= gotArg args ArgVerbose
+		, configTmpDir		= tmpDir
 		, configDoBuild		= gotArg args ArgDoBuild
-		, configDoTest		= gotArg args ArgDoTest }
+		, configDoTest		= gotArg args ArgDoTest 
+		, configIterations	= iterations }
 
 	result	<- runBuildAndPrintResult (build config)
 
@@ -31,7 +39,7 @@ main
 -- | Run the complete nightly build.
 build config
  = do	outLine
-	outLn "Repa Nightly Build\n"
+	outLn "Repa BuildBot\n"
 	
 	platform	<- getHostPlatform
 	versionGHC	<- getVersionGHC
@@ -48,7 +56,7 @@ build config
 	 $ buildRepaIn (configTmpDir config)
 	
 	when (configDoTest config)
-	 $ testRepaIn  (configTmpDir config)
+	 $ testRepaIn  config
 	
 
 
@@ -78,13 +86,20 @@ buildRepaIn scratchDir
 
 -- Testing ----------------------------------------------------------------------------------------
 
-benchmarks
- = 	-- mmult
+testRepaIn config
+ = inDir (configTmpDir config ++ "/repa-head")
+ $ do	mapM_ 	(outRunBenchmarkSeveral (configIterations config)) 
+		(benchmarks config)
+
+benchmarks config
+ = let	systemWithTimings' = systemWithTimings (configVerbose config)
+   in	
+	-- mmult
 	[ let	mmult 	= "repa-examples/dist/build/repa-mmult/repa-mmult"
 	  in	Benchmark
 			"mmult"
 			(test $ HasExecutable mmult)
-			(systemWithTimings $ mmult ++ " -random 1024 1024 -random 1024 1024 +RTS -N4 -qg")
+			(systemWithTimings' $ mmult ++ " -random 1024 1024 -random 1024 1024 +RTS -N4 -qg")
 			(return True)
 	
 	-- laplace
@@ -100,7 +115,7 @@ benchmarks
 				 $ system $ "gzip -d " ++ inputgz
 				test $ HasFile input)								
 
-			(systemWithTimings $ laplace ++ " 1000 " ++ input ++ " output/laplace.bmp +RTS -N4 -qg")
+			(systemWithTimings' $ laplace ++ " 1000 " ++ input ++ " output/laplace.bmp +RTS -N4 -qg")
 			(return True)
 
 	-- fft2d-highpass
@@ -116,8 +131,7 @@ benchmarks
 				 $ system $ "gzip -d " ++ inputgz
 				test $ HasFile input)
 
-			(do	systemWithTimings $ fft2d ++ " 1 " ++ input ++ " output/fft2d.bmp +RTS -N4 -qg"
-				return Nothing)
+			(systemWithTimings' $ fft2d ++ " 1 " ++ input ++ " output/fft2d.bmp +RTS -N4 -qg")
 			(return True)
 
 	-- fft3d-highpass
@@ -126,14 +140,16 @@ benchmarks
 			"fft3d-highpass"
 			(do	makeDirIfNeeded "output/fft3d"
 				test $ HasExecutable fft3d)
-			(do	systemNull $ fft3d ++ " 128 " ++ " output/fft3d/slice +RTS -N4 -qg"
-				return Nothing)
+			(systemWithTimings' $ fft3d ++ " 128 " ++ " output/fft3d/slice +RTS -N4 -qg")
 			(return True)			
 	]
 
-systemWithTimings :: String -> Build (Maybe Timings)
-systemWithTimings cmd
- = do	result	<- systemWithStdout cmd
+
+systemWithTimings :: Bool -> String -> Build (Maybe Timings)
+systemWithTimings verbose cmd
+ = do	when verbose
+	 $ outLn $ "\n    " ++ cmd
+	result	<- systemWithStdout cmd
 	return	$ Just $ parseTimings result
 
 parseTimings :: String -> Timings
@@ -144,8 +160,5 @@ parseTimings str
 	, Nothing
 	, Nothing)
 
-testRepaIn scratchDir
- = inDir (scratchDir ++ "/repa-head")
- $ do	mapM_ outRunBenchmarkSingle benchmarks
 
 

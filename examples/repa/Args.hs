@@ -7,10 +7,13 @@ where
 import System.Console.ParseArgs
 
 
+-- Command line args for the buildbot.
 data BuildArg
-	= ArgTmpDir
+	= ArgVerbose
+	| ArgTmpDir
 	| ArgDoBuild
 	| ArgDoTest
+	| ArgTestIterations
 	deriving (Eq, Ord, Show)
 
 
@@ -21,17 +24,28 @@ buildArgs :: [Arg BuildArg]
 		, argData	= argDataRequired "dir" ArgtypeString 
 		, argDesc	= "Scratch dir to do the build in." }
 
-	  -- Download the latest version and build it.
+	, Arg	{ argIndex	= ArgVerbose
+		, argAbbr	= Just 'v'
+		, argName	= Just "verbose"
+		, argData	= Nothing
+		, argDesc	= "Verbose logging of build commands" }
+
 	, Arg	{ argIndex	= ArgDoBuild
 		, argAbbr	= Just 'b'
 		, argName	= Just "build"
 		, argData	= Nothing
 		, argDesc	= "Download the latest version and build it." }
 		
-	  -- Run regression tests.
 	, Arg	{ argIndex	= ArgDoTest
 		, argAbbr	= Just 't'
 		, argName	= Just "test"
 		, argData	= Nothing
 		, argDesc	= "Run regression tests." }
+
+	, Arg	{ argIndex	= ArgTestIterations
+		, argAbbr	= Just 'i'
+		, argName	= Just "iterations"
+		, argData	= argDataDefaulted "iters" ArgtypeInt 1
+		, argDesc	= "Number of times to run each benchmark" }
+		
 	]
