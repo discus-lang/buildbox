@@ -10,13 +10,21 @@ module BuildBox.Pretty
 	, padLc, padL )
 where
 import Text.PrettyPrint
+import Data.Time
 
 -- Things that can be pretty printed
 class Pretty a where
  	ppr :: a -> Doc
 
+-- Basic instances
 instance Pretty String where
 	ppr = text
+	
+instance Pretty Float where
+	ppr = text . show
+
+instance Pretty UTCTime where
+	ppr = text . show
 	
 
 -- | Print a floating point number of seconds as a time.

@@ -6,7 +6,7 @@ module BuildBox.Benchmark.Base
 	, BenchResult(..))
 where
 import BuildBox.Build
-
+import BuildBox.Pretty
 
 -- | Describes a benchmark that we can run.
 data Benchmark
@@ -49,6 +49,15 @@ data BenchRunResult
 	deriving (Show, Read)
 
 
+instance Pretty BenchRunResult where
+ ppr result
+	= hang (ppr "BenchRunResult") 2 $ vcat
+	[ ppr "elapsed:        " <> (ppr $ benchRunResultElapsed result) 
+	, maybe empty (\r -> ppr "kernel elapsed: " <> ppr r) $ benchRunResultKernelElapsed result
+	, maybe empty (\r -> ppr "kernel cpu:     " <> ppr r) $ benchRunResultKernelCpuTime result
+	, maybe empty (\r -> ppr "kernel system:  " <> ppr r) $ benchRunResultKernelSysTime result ]
+	
+	
 -- | The result of running a benchmark several times.
 data BenchResult
 	= BenchResult
@@ -56,3 +65,8 @@ data BenchResult
 	, benchResultRuns	:: [BenchRunResult] }
 	deriving (Show, Read)
 
+instance Pretty BenchResult where
+ ppr result
+	= hang (ppr "BenchResult") 2 $ vcat
+	[ ppr $ benchResultName result
+	, vcat $ map ppr $ benchResultRuns result ]

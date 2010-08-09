@@ -11,6 +11,7 @@ import System.Console.ParseArgs
 data BuildArg
 	= ArgVerbose
 	| ArgTmpDir
+	| ArgDoDump
 	| ArgDoBuild
 	| ArgDoTest
 	| ArgTestIterations
@@ -19,17 +20,23 @@ data BuildArg
 
 
 buildArgs :: [Arg BuildArg]
- = 	[ Arg 	{ argIndex	= ArgTmpDir
-		, argAbbr	= Just 'd'
-		, argName	= Just "dir"
-		, argData	= argDataRequired "dir" ArgtypeString 
-		, argDesc	= "Scratch dir to do the build in." }
-
-	, Arg	{ argIndex	= ArgVerbose
+ = 	[ Arg	{ argIndex	= ArgVerbose
 		, argAbbr	= Just 'v'
 		, argName	= Just "verbose"
 		, argData	= Nothing
 		, argDesc	= "Verbose logging of build commands" }
+
+	, Arg	{ argIndex	= ArgDoDump
+		, argAbbr	= Nothing
+		, argName	= Just "dump"
+		, argData	= argDataOptional "file" ArgtypeString
+		, argDesc	= "Dump a results file in human readable format" }
+
+	, Arg 	{ argIndex	= ArgTmpDir
+		, argAbbr	= Just 'd'
+		, argName	= Just "dir"
+		, argData	= argDataOptional "dir" ArgtypeString 
+		, argDesc	= "Scratch dir to do the build in." }
 
 	, Arg	{ argIndex	= ArgDoBuild
 		, argAbbr	= Just 'b'
