@@ -1,8 +1,5 @@
 
--- | Some state of the system we can test for.
---   Running the test entails an IO action.
---   The test can return true, false, or fail with some error.
---
+-- | Some property of the system we can test for.
 module BuildBox.Build.Testable
 	( Testable(..)
 	, check
@@ -18,24 +15,23 @@ import Control.Monad.Error
 class Testable prop where
   test :: prop -> Build Bool
 
-
 -- | Testable properties are checkable.
---   If the check returns false we throw an error.
+--   If the check returns false then throw an error.
 check :: (Show prop, Testable prop) => prop -> Build ()
 check prop
  = do	result	<- test prop
 	if result
 	 then return ()
-	 else throwError $ ErrorTestFailed prop
+	 else throwError $ ErrorCheckFailed True prop
 
 
 -- | Testable properties are checkable.
---   If the check returns true we throw an error.
+--   If the check returns true then throw an error.
 checkNot :: (Show prop, Testable prop) => prop -> Build ()
 checkNot prop
  = do	result	<- test prop
 	if result
-	 then throwError $ ErrorTestFailed prop
+	 then throwError $ ErrorCheckFailed False prop
 	 else return ()
 	
 

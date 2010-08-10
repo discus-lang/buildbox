@@ -1,5 +1,7 @@
 {-# LANGUAGE PatternGuards #-}
 
+-- | Running system commands. On some platforms this may cause the command to be executed directly, so 
+--   shell tricks won't work.
 module BuildBox.Command.System 
 	( module System.Exit
 	, system
@@ -16,7 +18,7 @@ import System.Posix.IO
 import qualified System.Cmd
 
 
--- | Run a system command, expecting it to succeed.
+-- | Run a system command, expecting success.
 system :: String -> Build ()
 system cmd
  = do	code	<- io $ System.Cmd.system cmd
@@ -25,14 +27,14 @@ system cmd
 	 ExitFailure _ -> throw $ ErrorSystemCmdFailed cmd
 
 
--- | Run a system command, returning its exitcode.
+-- | Run a system command, returning its exit code.
 systemCode :: String -> Build ExitCode
 systemCode cmd
  = do	code	<- io $ System.Cmd.system cmd
 	return code
 
 
--- | Run a system command, expecting success, discarding its output.
+-- | Run a system command, expecting success, discarding anything written to @stdout@ or @stderr@.
 systemNull :: String -> Build ()
 systemNull cmd
  = do	code	<- io $ System.Cmd.system $ cmd ++ " > /dev/null 2> /dev/null"
@@ -41,16 +43,16 @@ systemNull cmd
 	 ExitFailure _	-> throw $ ErrorSystemCmdFailed cmd
 	
 	
--- | Run a system command, discarding its output and returning its exitcode.
+-- | Run a system command, returning its exit code, discarding anything written to @stdout@ or @stderr@.
 systemNullCode :: String -> Build ExitCode
 systemNullCode cmd
  = do	code	<- io $ System.Cmd.system $ cmd ++ " > /dev/null 2> /dev/null"
 	return code
 	
 
--- | Run a system command, capturing its stdout.
---   Expect success, and nothing written to its stderr.
---
+-- | Run a system command, expecting success. 
+--   If anything was written to @stderr@ then treat that as failure, otherwise return what
+--   was written to @stdout@.
 systemWithStdout :: String -> Build String
 systemWithStdout cmd
  | prog : args	<- words cmd
@@ -76,3 +78,6 @@ systemWithStdout cmd
 	 then return strOut
 	 else throw $ ErrorSystemCmdFailed cmd
 	
+ | otherwise
+ = error "systemWithStdout: empty command"
+

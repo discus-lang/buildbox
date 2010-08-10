@@ -1,4 +1,5 @@
 
+-- | What do build bots dream about?
 module BuildBox.Command.Timing
 	( sleep
 	, msleep)
@@ -11,6 +12,7 @@ import Control.Concurrent
 sleep :: Int -> Build ()
 sleep secs	
 	= io $ threadDelay $ secs * 1000000
+
 	
 -- | Sleep for a given number of milliseconds
 msleep :: Int -> Build ()

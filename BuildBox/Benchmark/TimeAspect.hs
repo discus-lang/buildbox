@@ -1,8 +1,8 @@
 {-# LANGUAGE PatternGuards #-}
 
+-- | Dealing with aspects of timing results.
 module BuildBox.Benchmark.TimeAspect
 	( TimeAspect(..)
-	, pprTimeAspect
 	, takeTimeAspectOfBenchRunResult
 	, takeAvgTimeOfBenchResult
 	, takeMinTimeOfBenchResult
@@ -10,6 +10,7 @@ module BuildBox.Benchmark.TimeAspect
 	, takeMinAvgMaxOfBenchResult)
 where
 import BuildBox.Benchmark.Base
+import BuildBox.Pretty
 import Control.Monad
 
 
@@ -23,23 +24,23 @@ data TimeAspect
 
 
 -- | Get the pretty name of a TimeAspect.
-pprTimeAspect :: TimeAspect -> String
-pprTimeAspect aspect
- = case aspect of
-	TimeAspectElapsed		-> "elapsed"
-	TimeAspectKernelElapsed		-> "kernel elapsed"
-	TimeAspectKernelCpu		-> "kernel cpu"
-	TimeAspectKernelSys		-> "kernel system"
+instance Pretty TimeAspect where
+ ppr aspect
+  = case aspect of
+	TimeAspectElapsed		-> ppr "elapsed"
+	TimeAspectKernelElapsed		-> ppr "kernel elapsed"
+	TimeAspectKernelCpu		-> ppr "kernel cpu"
+	TimeAspectKernelSys		-> ppr "kernel system"
 
 
--- | Get a particular aspect of a benchmark's runtime.
+-- | Get a particular aspect of a benchmark result.
 takeTimeAspectOfBenchRunResult :: TimeAspect -> BenchRunResult -> Maybe Float
 takeTimeAspectOfBenchRunResult aspect result
  = case aspect of
 	TimeAspectElapsed	-> Just $ benchRunResultElapsed result
-	TimeAspectKernelElapsed	-> benchRunResultKernelElapsed result
-	TimeAspectKernelCpu	-> benchRunResultKernelCpuTime result
-	TimeAspectKernelSys	-> benchRunResultKernelSysTime result
+	TimeAspectKernelElapsed	-> join $ liftM timingElapsed $ benchRunResultKernel result
+	TimeAspectKernelCpu	-> join $ liftM timingCpu     $ benchRunResultKernel result
+	TimeAspectKernelSys	-> join $ liftM timingSys     $ benchRunResultKernel result
 
 
 -- | Get the average runtime from a benchmark result.
@@ -75,10 +76,10 @@ takeMaxTimeOfBenchResult aspect result
 -- | Get the min, avg, and max runtimes from this benchmark result.
 takeMinAvgMaxOfBenchResult :: TimeAspect -> BenchResult -> Maybe (Float, Float, Float)
 takeMinAvgMaxOfBenchResult aspect result
-	| Just min	<- takeMinTimeOfBenchResult aspect result
-	, Just avg	<- takeAvgTimeOfBenchResult aspect result
-	, Just max	<- takeMaxTimeOfBenchResult aspect result
-	= Just (min, avg, max)
+	| Just tmin	<- takeMinTimeOfBenchResult aspect result
+	, Just tavg	<- takeAvgTimeOfBenchResult aspect result
+	, Just tmax	<- takeMaxTimeOfBenchResult aspect result
+	= Just (tmin, tavg, tmax)
 	
 	| otherwise
 	= Nothing

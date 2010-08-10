@@ -59,7 +59,7 @@ benchmarks config
 	]
 
 
-systemWithTimings :: Bool -> String -> Build (Maybe Timings)
+systemWithTimings :: Bool -> String -> Build (Maybe Timing)
 systemWithTimings verbose cmd
  = do	when verbose
 	 $ outLn $ "\n    " ++ cmd
@@ -67,10 +67,10 @@ systemWithTimings verbose cmd
 	return	$ Just $ parseTimings result
 
 
-parseTimings :: String -> Timings
+parseTimings :: String -> Timing
 parseTimings str
  = let	(lElapsed : _)	= lines str
 	elapsedTime	= tail $ dropWhile (/= '=') lElapsed
-   in	( Just $ (read elapsedTime) / 1000
-	, Nothing
-	, Nothing)
+   in	Timing	(Just $ (read elapsedTime) / 1000)
+		Nothing
+		Nothing

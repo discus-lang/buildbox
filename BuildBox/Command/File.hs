@@ -1,5 +1,5 @@
 
--- | Preconditions that we can check for explicitly.
+-- | Working with the file system.
 module BuildBox.Command.File
 	( PropFile(..)
 	, makeDirIfNeeded
@@ -11,19 +11,19 @@ import BuildBox.Build.Testable
 import BuildBox.Command.System
 import System.Directory
 
--- | Properties of the file system we can check.
+-- | Properties of the file system we can test for.
 data PropFile
 
-	-- | Use which to check if we have an executable.
+	-- | Some executable is in the current path.
 	= HasExecutable	String
 
-	-- | Check if a file exists.
+	-- | Some file exists.
 	| HasFile	FilePath
 
-	-- | Check if a directory exists.
+	-- | Some directory exists.
 	| HasDir  	FilePath
 
-	-- | Check if a file empty.
+	-- | Some file is empty.
 	| FileEmpty 	FilePath
 	deriving Show
 
@@ -47,7 +47,7 @@ instance Testable PropFile where
 
 
 -- Creating Directories ---------------------------------------------------------------------------
--- | Create a new directory if is isn't already there.
+-- | Create a new directory if it isn't already there, or return successfully if it is.
 makeDirIfNeeded :: FilePath -> Build ()
 makeDirIfNeeded path
  = do	already	<- io $ doesDirectoryExist path
@@ -57,6 +57,7 @@ makeDirIfNeeded path
 
 
 -- Working Directories ----------------------------------------------------------------------------
+-- | Run a command in a different working directory. Throws an error if the directory doesn't exist.
 inDir :: FilePath -> Build a -> Build a
 inDir name build
  = do	check $ HasDir name
@@ -69,7 +70,9 @@ inDir name build
 	return x
 
 -- Scratch ----------------------------------------------------------------------------------------
--- | Create a new dir with this path, change into it, run a build, change out, then delete the dir.
+-- | Create a new directory with the given name, run a command within it,
+--   then change out and recursively delete the directory. Throws an error if a directory
+--   with the given name already exists.
 inNewScratchDirNamed :: FilePath -> Build a -> Build a
 inNewScratchDirNamed name build
  = do	

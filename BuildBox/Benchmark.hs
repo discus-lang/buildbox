@@ -1,16 +1,23 @@
 {-# LANGUAGE PatternGuards #-}
 
--- | Defines benchmarks that we can run.
+-- | Running benchmarks and collecting timings. These functions expect the given `Build` commands to succeed,
+--   throwing an error if they don't. If you're not sure whether your command will succeed then test it first.
 module BuildBox.Benchmark
-	( module BuildBox.Benchmark.Base
-	, module BuildBox.Benchmark.TimeAspect
+	( module BuildBox.Benchmark.TimeAspect
 	, module BuildBox.Benchmark.Pretty
 	
+	-- * Types
+	, Benchmark(..)
+	, Timing(..)
+	, BenchRunResult(..)
+	, BenchResult(..)
+	
+	-- * Benchmarking
 	, runTimedCommand
-	, outRunBenchmarkSingle
-	, runBenchmarkSingle
-	, outRunBenchmark
-	, outRunBenchmarkAgainst)
+	, runBenchmarkOnce
+	, outRunBenchmarkOnce
+	, outRunBenchmarkAgainst
+	, outRunBenchmarkWith)
 where
 import BuildBox.Build	
 import BuildBox.Pretty
@@ -23,6 +30,7 @@ import Control.Monad
 
 
 -- Running Commands -------------------------------------------------------------------------------
+-- | Run a command, returning its elapsed time.
 runTimedCommand 
 	:: Build a
 	-> Build (NominalDiffTime, a) 
@@ -32,39 +40,14 @@ runTimedCommand cmd
 	result	<- cmd
 	finish	<- io $ getCurrentTime
 	return (diffUTCTime finish start, result)
-	
 
--- | Run a benchmark a single time, printing results.
-outRunBenchmarkSingle
-	:: Benchmark
-	-> Build BenchRunResult
-	
-outRunBenchmarkSingle bench
- = do	out $ "Running " ++ benchmarkName bench ++ "..."
-	result	<- runBenchmarkSingle bench
-	outLn "ok"
-	outLn $ "    elapsed        = " ++ (pprFloatTime $ benchRunResultElapsed result)
-		
-	maybe (return ()) (\t -> outLn $ "    kernel elapsed = " ++ pprFloatTime t) 
-		$ benchRunResultKernelElapsed result
 
-	maybe (return ()) (\t -> outLn $ "    kernel cpu     = " ++ pprFloatTime t) 
-		$ benchRunResultKernelCpuTime result
-
-	maybe (return ()) (\t -> outLn $ "    kernel system  = " ++ pprFloatTime t)
-		$ benchRunResultKernelSysTime result
-	
-	outBlank
-	
-	return result
-	
-	
--- | Run a benchmark a single time.
-runBenchmarkSingle
+-- | Run a benchmark once.
+runBenchmarkOnce
 	:: Benchmark 
 	-> Build BenchRunResult
 	
-runBenchmarkSingle bench
+runBenchmarkOnce bench
  = do	-- Run the setup command
 	_setupOk <- benchmarkSetup bench
 
@@ -72,34 +55,47 @@ runBenchmarkSingle bench
 		<- runTimedCommand 
 		$  benchmarkCommand bench
 	
-	case mKernelTimings of
-	 Nothing 
-	  -> return	
-		$ BenchRunResult
+	return	$ BenchRunResult
 		{ benchRunResultElapsed		= fromRational $ toRational diffTime
-		, benchRunResultKernelElapsed	= Nothing
-		, benchRunResultKernelCpuTime	= Nothing
-		, benchRunResultKernelSysTime	= Nothing }
+		, benchRunResultKernel		= mKernelTimings }
 
-	 Just (mElapsed, mCpu, mSystem) 
-	  -> return	
-		$ BenchRunResult
-		{ benchRunResultElapsed		= fromRational $ toRational diffTime
-		, benchRunResultKernelElapsed	= mElapsed
-		, benchRunResultKernelCpuTime	= mCpu
-		, benchRunResultKernelSysTime	= mSystem }
+
+-- | Run a benchmark once, logging activity and timings to the console.
+outRunBenchmarkOnce
+	:: Benchmark
+	-> Build BenchRunResult
+	
+outRunBenchmarkOnce bench
+ = do	out $ "Running " ++ benchmarkName bench ++ "..."
+	result	<- runBenchmarkOnce bench
+	outLn "ok"
+	outLn $ text "    elapsed        = " <> (pprFloatTime $ benchRunResultElapsed result)
+		
+	maybe (return ()) (\t -> outLn $ text "    kernel elapsed = " <> pprFloatTime t) 
+		$ takeTimeAspectOfBenchRunResult TimeAspectKernelElapsed result
+
+	maybe (return ()) (\t -> outLn $ text "    kernel cpu     = " <> pprFloatTime t) 
+		$ takeTimeAspectOfBenchRunResult TimeAspectKernelCpu result
+
+	maybe (return ()) (\t -> outLn $ text "    kernel system  = " <> pprFloatTime t)
+		$ takeTimeAspectOfBenchRunResult TimeAspectKernelSys result
+	
+	outBlank
+	
+	return result
 
 
 -- | Run a benchmark several times, logging activity to the console.
-outRunBenchmark
-	:: Int			-- ^ Number of times to run each benchmark for to get averages.
-	-> Maybe BenchResult	-- ^ Optional previous results for comparison.
+--   Optionally print a comparison with a prior results.
+outRunBenchmarkAgainst
+	:: Int			-- ^ Number of iterations.
+	-> Maybe BenchResult	-- ^ Optional previous result for comparison.
 	-> Benchmark		-- ^ Benchmark to run.
 	-> Build BenchResult
 	
-outRunBenchmark iterations mPrior bench  
+outRunBenchmarkAgainst iterations mPrior bench  
  = do	out $ "Running " ++ benchmarkName bench ++ " " ++ show iterations ++ " times..."
-	runResults	<- replicateM iterations (runBenchmarkSingle bench) 
+	runResults	<- replicateM iterations (runBenchmarkOnce bench) 
 	outLn "ok"
 
 	let result	= BenchResult
@@ -113,24 +109,21 @@ outRunBenchmark iterations mPrior bench
 	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectKernelCpu	mPrior result
 	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectKernelSys	mPrior result
 		
-	
 	outBlank
 	return	result
 
 
 -- | Run a benchmark serveral times, logging activity to the console.
---   Optionally lookup data for comparison from this list of prior results.
-outRunBenchmarkAgainst 
+--   Also lookup prior results for comparison from the given list.
+--   If there is no matching entry then run the benchmark anyway, but don't print the comparison.
+outRunBenchmarkWith
 	:: Int			-- ^ Number of times to run each benchmark to get averages.
-	-> Maybe [BenchResult]	-- ^ List of prior results.
+	-> [BenchResult]	-- ^ List of prior results.
 	-> Benchmark		-- ^ The benchmark to run.
 	-> Build BenchResult
 
-outRunBenchmarkAgainst iterations mPrior bench
-	| Just prior	<- mPrior
-	, Just baseline	<- find (\b -> benchResultName b == benchmarkName bench) prior
-	= outRunBenchmark iterations (Just baseline) bench
+outRunBenchmarkWith iterations priors bench
+ = let	mPrior	= find (\b -> benchResultName b == benchmarkName bench) priors
+   in	outRunBenchmarkAgainst iterations mPrior bench
 	
-	| otherwise
-	= outRunBenchmark iterations Nothing bench
 	

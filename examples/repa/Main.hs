@@ -138,13 +138,16 @@ testRepa config env
 			Just fileName
 			 -> do	file	<- io $ readFile fileName
 				return	$ Just file
+				
+	let resultsPrior
+		= maybe []
+			(\contents -> buildResultBench $ read contents)
+			mBaseline
 
 	-- Run the benchmarks in the build directory
 	benchResults
 	 <- inDir (configTmpDir config ++ "/repa-head")
- 	 $ do	mapM 	(outRunBenchmarkAgainst 
-				(configIterations config) 
-				(liftM (buildResultBench . read) mBaseline) )
+ 	 $ do	mapM 	(outRunBenchmarkWith (configIterations config)  resultsPrior)
 			(benchmarks config)
 
 	-- Make the build results.
@@ -160,4 +163,3 @@ testRepa config env
 		(configWriteResults config)
 	
 		
-

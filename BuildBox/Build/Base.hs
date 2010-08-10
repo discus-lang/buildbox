@@ -1,31 +1,15 @@
+{-# OPTIONS_HADDOCK hide #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
--- | Builder monad.
---   Encapsulates an IO action that can fail with some error.
---   The errors are usually things we've checked for explicitly, such as the existence of files.
---
-module BuildBox.Build.Base
-	( Build
-	, BuildError(..)
-	, throw
-	, runBuild
-	, runBuildAndPrintResult
-	, io
-	, out
-	, outLn
-	, outBlank
-	, outLine
-	, outLINE
-	, whenM)
-	
-where
+module BuildBox.Build.Base where
+import BuildBox.Pretty
 import Control.Monad.Error
 import System.IO
 
--- | A build command is an IO action that can fail with an error.
+-- | The builder monad encapsulates and IO action that can fail with an error.
 type Build a 	= ErrorT BuildError IO a
 
--- | The errors we recognise
+-- | The errors we recognise. They're encoded like this so we can produce nice error messages.
 data BuildError
 	-- | Some generic error
 	= ErrorOther String
@@ -33,9 +17,9 @@ data BuildError
 	-- | Some system command failed.
 	| ErrorSystemCmdFailed String
 
-	-- | Some testable thing failed in a way we weren't counting on.
-	--   This is a "frame work" failure as opposed to an object failure.
-	| forall prop. Show prop => ErrorTestFailed prop	
+	-- | Some property `check` was supposed to return the given boolean value, but it didn't.
+	| forall prop. Show prop => ErrorCheckFailed Bool prop	
+
 
 instance Error BuildError where
  strMsg s = ErrorOther s
@@ -49,8 +33,8 @@ instance Show BuildError where
 	ErrorSystemCmdFailed str
 	 -> "system command failure: \"" ++ str ++ "\""
 
-	ErrorTestFailed prop
-	 -> "framework test failure: " ++ show prop
+	ErrorCheckFailed expected prop
+	 -> "check failure: " ++ show prop ++ " expected " ++ show expected
 
 
 -- | Throw an error in the build monad.
@@ -64,7 +48,8 @@ runBuild build
 	= runErrorT build
 
 
--- | Execute a build command, reporting whether it succeeded or not.
+-- | Run a build command, reporting whether it succeeded to the console.
+--   If it succeeded then return Just the result, else Nothing.
 runBuildAndPrintResult :: Build a -> IO (Maybe a)
 runBuildAndPrintResult build
  = do	result	<- runErrorT build
@@ -80,36 +65,39 @@ runBuildAndPrintResult build
 		return $ Just x
 		
 
--- | Lift an IO command into the build monad.
+-- | Lift an IO action into the build monad.
+io :: IO a -> Build a
 io x		= liftIO x
 
 
 -- | Print some text to stdout.
+out :: Pretty a => a -> Build ()
 out str	
  = io 
- $ do	putStr   str
+ $ do	putStr   $ render $ ppr str
 	hFlush stdout
 
 -- | Print some text to stdout followed by a newline.
-outLn :: String -> Build ()
-outLn str	= io $ putStrLn str
+outLn :: Pretty a => a -> Build ()
+outLn str	= io $ putStrLn $ render $ ppr str
 
 
 -- | Print a blank line to stdout
 outBlank :: Build ()
-outBlank	= out "\n"
+outBlank	= out $ text "\n"
 
 
--- | Print a ----- line to stdout 
+-- | Print a @-----@ line to stdout 
 outLine :: Build ()
 outLine 	= io $ putStr (replicate 80 '-' ++ "\n")
 
 
--- | Print a ===== line to stdout
+-- | Print a @=====@ line to stdout
 outLINE :: Build ()
 outLINE		= io $ putStr (replicate 80 '=' ++ "\n")
 
 
+-- | Like `when`, but with teh monadz.
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM cb cx
  = do	b	<- cb

@@ -1,4 +1,5 @@
 
+-- | Gathering information about the build environment.
 module BuildBox.Command.Environment
 	( -- * Build Environment
 	  Environment(..)
@@ -22,8 +23,9 @@ import BuildBox.Command.System
 import BuildBox.Command.File
 import BuildBox.Pretty
 
+
 -- Environment ------------------------------------------------------------------------------------
--- | The environment consists of the `Platform` as well as software version strings.
+-- | The environment consists of the `Platform`, and some tool versions.
 data Environment 
 	= Environment
 	{ environmentPlatform	:: Platform
@@ -44,7 +46,7 @@ instance Pretty Environment where
 
 -- | Get the current environment, including versions of this software.
 getEnvironmentWith 
-	:: [(String, Build String)]
+	:: [(String, Build String)]	-- ^ List of tool names and commands to get their versions.
 	-> Build Environment
 	
 getEnvironmentWith nameGets 
@@ -62,7 +64,7 @@ getEnvironmentWith nameGets
 
 
 -- Platform ---------------------------------------------------------------------------------------
--- | Collect all the generic info about the platform we're running on.
+-- | Generic information about the platform we're running on.
 data Platform
 	= Platform
 	{ platformHostName 	:: String
@@ -73,7 +75,6 @@ data Platform
 	deriving (Show, Read)
 	
 	
--- | Pretty print a platform.
 instance Pretty Platform where
  ppr plat
 	= hang (ppr "Platform") 2 $ vcat
@@ -81,9 +82,8 @@ instance Pretty Platform where
 	, ppr "arch:      " <> (ppr $ platformHostArch plat)
 	, ppr "processor: " <> (ppr $ platformHostProcessor plat)
 	, ppr "system:    " <> (ppr $ platformHostOS plat) <+> (ppr $ platformHostRelease plat) ]
-	
-	
-	
+
+
 -- | Get information about the host platform.
 getHostPlatform :: Build Platform
 getHostPlatform 
@@ -102,7 +102,7 @@ getHostPlatform
 		
 
 -- Platform Tests ---------------------------------------------------------------------------------
--- | Get the name of this host.
+-- | Get the name of this host, using @uname@.
 getHostName :: Build String
 getHostName 	
  = do	check $ HasExecutable "uname"
@@ -110,7 +110,7 @@ getHostName
 	return	$ init name
 
 
--- | Get the host architecture.
+-- | Get the host architecture, using @uname@.
 getHostArch :: Build String
 getHostArch
  = do	check $ HasExecutable "arch"
@@ -118,7 +118,7 @@ getHostArch
 	return	$ init name
 
 
--- | Get the host processor name
+-- | Get the host processor name, using @uname@.
 getHostProcessor :: Build String
 getHostProcessor
  = do	check $ HasExecutable "uname"
@@ -126,7 +126,7 @@ getHostProcessor
 	return	$ init name
 
 
--- | Get the host operating system
+-- | Get the host operating system, using @uname@.
 getHostOS :: Build String
 getHostOS
  = do	check $ HasExecutable "uname"
@@ -134,7 +134,7 @@ getHostOS
 	return	$ init os
 
 
--- | Get the host operating system release
+-- | Get the host operating system release, using @uname@.
 getHostRelease :: Build String
 getHostRelease
  = do	check $ HasExecutable "uname"
@@ -142,14 +142,14 @@ getHostRelease
 	return	$ init str
 	
 -- Software version tests -------------------------------------------------------------------------
--- | Get the GHC version
+-- | Get the version of GHC in the current path, or thrown an error if it can't be found.
 getVersionGHC :: Build String
 getVersionGHC 
  = do	check $ HasExecutable "ghc"
 	str	<- systemWithStdout "ghc --version"
 	return	$ init str
 	
--- | Get the GCC version
+-- | Get the version of GCC in the current path, or thrown an error if it can't be found. 
 getVersionGCC :: Build String
 getVersionGCC
  = do	check $ HasExecutable "gcc"

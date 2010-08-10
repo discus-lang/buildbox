@@ -23,6 +23,13 @@ Tested-with: GHC == 6.13.20100309, GHC == 6.12.1
 Library
   Build-Depends: 
         base                 == 4.*,
+        time                 == 1.1.*,
+        mtl                  == 1.1.*,
+        directory            == 1.0.*,
+        process              == 1.0.*,
+        unix                 == 2.4.*,
+        pretty               == 1.0.*
+
 
   ghc-options:
         -Wall -fno-warn-missing-signatures
@@ -34,14 +41,14 @@ Library
         BuildBox.Benchmark.TimeAspect
         BuildBox.Benchmark
         BuildBox.Build.Base
-        Buildbox.Build.Testable
+        BuildBox.Build.Testable
         BuildBox.Build
-        Buildbox.Command.Environment
-        Buildbox.Command.File
-        Buildbox.Command.Network
-        Buildbox.Command.System
-        Buildbox.Command.Timing
-        Buildbox.Pretty
-        Buildbox
+        BuildBox.Command.Environment
+        BuildBox.Command.File
+        BuildBox.Command.Network
+        BuildBox.Command.System
+        BuildBox.Command.Timing
+        BuildBox.Pretty
+        BuildBox
 
        
