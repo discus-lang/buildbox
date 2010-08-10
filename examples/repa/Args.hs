@@ -18,7 +18,7 @@ data BuildArg
 	| ArgDoTest
 	| ArgTestIterations
 	| ArgWriteResults
-	| ArgWithResults
+	| ArgAgainstResults
 	deriving (Eq, Ord, Show)
 
 
@@ -77,9 +77,9 @@ buildArgs :: [Arg BuildArg]
 		, argData	= argDataOptional "file" ArgtypeString
 		, argDesc	= "(opt. for test mode) Write results to this file." }
 		
-	, Arg	{ argIndex	= ArgWithResults
-		, argAbbr	= Just 't'
-		, argName	= Just "with"
+	, Arg	{ argIndex	= ArgAgainstResults
+		, argAbbr	= Just 'a'
+		, argName	= Just "against"
 		, argData	= argDataOptional "file" ArgtypeString
-		, argDesc	= "(opt. for test mode) Print running comparison with results in this file." }
+		, argDesc	= "(opt. for test mode) Print running comparison against results in this file." }
 	]

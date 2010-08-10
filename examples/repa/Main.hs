@@ -53,7 +53,7 @@ mainWithArgs args
 			, configDoTest		= gotArg args ArgDoTest 
 			, configIterations	= iterations 
 			, configWriteResults	= getArg args ArgWriteResults
-			, configWithResults	= getArg args ArgWithResults }
+			, configAgainstResults	= getArg args ArgAgainstResults }
 
 		result	<- runBuildAndPrintResult (build config)
 		return ()
@@ -133,7 +133,7 @@ testRepa config env
 	utcTime	<- io $ getCurrentTime
 
 	-- Load the baseline file if it was given.
-	mBaseline <- case configWithResults config of
+	mBaseline <- case configAgainstResults config of
 			Nothing		-> return Nothing
 			Just fileName
 			 -> do	file	<- io $ readFile fileName
