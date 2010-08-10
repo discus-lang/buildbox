@@ -5,6 +5,7 @@
 module BuildBox.Benchmark
 	( module BuildBox.Benchmark.TimeAspect
 	, module BuildBox.Benchmark.Pretty
+	, module BuildBox.Benchmark.Compare
 	
 	-- * Types
 	, Benchmark(..)
@@ -24,6 +25,7 @@ import BuildBox.Pretty
 import BuildBox.Benchmark.Base
 import BuildBox.Benchmark.TimeAspect
 import BuildBox.Benchmark.Pretty
+import BuildBox.Benchmark.Compare
 import Data.Time
 import Data.List
 import Control.Monad

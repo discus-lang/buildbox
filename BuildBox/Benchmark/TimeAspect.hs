@@ -28,9 +28,9 @@ instance Pretty TimeAspect where
  ppr aspect
   = case aspect of
 	TimeAspectElapsed		-> ppr "elapsed"
-	TimeAspectKernelElapsed		-> ppr "kernel elapsed"
-	TimeAspectKernelCpu		-> ppr "kernel cpu"
-	TimeAspectKernelSys		-> ppr "kernel system"
+	TimeAspectKernelElapsed		-> ppr "k.elapsed"
+	TimeAspectKernelCpu		-> ppr "k.cpu"
+	TimeAspectKernelSys		-> ppr "k.system"
 
 
 -- | Get a particular aspect of a benchmark result.

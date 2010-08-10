@@ -32,8 +32,12 @@ mainWithArgs args
 		contentss	<- mapM readFile fileNames
 		let (results :: [BuildResults])
 				= map read contentss
-				
-		mapM_ (\t -> putStr $ render $ ppr t) results
+		
+		let [baseline, current] 
+				= map buildResultBench results
+
+		putStrLn $ render $ pprComparisons baseline current
+		
 
 	-- Building and/or Testing.
 	|    gotArg args ArgDoBuild 
