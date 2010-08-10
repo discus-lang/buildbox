@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 
 import BuildBox
 import Args
@@ -6,6 +7,7 @@ import Benchmarks
 import Control.Monad
 import System.Console.ParseArgs
 import Data.Time
+import Data.List
 
 main 
  = do	args		<- parseArgsIO ArgsComplete buildArgs
@@ -16,14 +18,12 @@ main
 		let results	=  (read contents) :: BuildResults
 		putStrLn $ render $ ppr results
 		
-
 	 Nothing 
 	  -> do	let Just tmpDir		= getArg args ArgTmpDir
 		tmpDir `seq` return ()
 
 		let Just iterations	= getArg args ArgTestIterations
-		iterations `seq` return ()
-
+	
 		let config
 			= Config
 			{ configVerbose		= gotArg args ArgVerbose
@@ -31,7 +31,8 @@ main
 			, configDoBuild		= gotArg args ArgDoBuild
 			, configDoTest		= gotArg args ArgDoTest 
 			, configIterations	= iterations 
-			, configWriteResults	= getArg args ArgWriteResults }
+			, configWriteResults	= getArg args ArgWriteResults
+			, configWithResults	= getArg args ArgWithResults }
 
 		result	<- runBuildAndPrintResult (build config)
 		return ()
@@ -57,7 +58,6 @@ build config
 	when (configDoTest config)
 	 $ testRepa config env
 	
-
 
 -- Building ---------------------------------------------------------------------------------------	
 -- | Download the Repa package from code.haskell.org,
@@ -105,11 +105,22 @@ instance Pretty BuildResults where
 testRepa :: Config -> Environment -> Build ()
 testRepa config env
  = do	
+	-- Get the current time.
 	utcTime	<- io $ getCurrentTime
+
+	-- Load the baseline file if it was given.
+	mBaseline <- case configWithResults config of
+			Nothing		-> return Nothing
+			Just fileName
+			 -> do	file	<- io $ readFile fileName
+				return	$ Just file
+
+	-- Run the benchmarks in the build directory
 	benchResults
 	 <- inDir (configTmpDir config ++ "/repa-head")
- 	 $ do	outLn	$ show $ configWriteResults config
-		mapM 	(outRunBenchmarkSeveral (configIterations config)) 
+ 	 $ do	mapM 	(outRunBenchmarkAgainst 
+				(configIterations config) 
+				(liftM (buildResultBench . read) mBaseline) )
 			(benchmarks config)
 
 	-- Make the build results.
@@ -128,5 +139,4 @@ testRepa config env
 	outLine
 	outLn $ render $ ppr buildResults
 		
-
 

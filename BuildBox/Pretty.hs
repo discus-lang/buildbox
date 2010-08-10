@@ -5,7 +5,9 @@ module BuildBox.Pretty
 	( module Text.PrettyPrint
 	, Pretty(..)
 	, pprPSecTime
+	, pprSignedPercentage
 	, pprFloatTime
+	, pprFloatTimeAgainst
 	, padRc, padR
 	, padLc, padL )
 where
@@ -34,6 +36,29 @@ pprFloatTime stime
     in	pprPSecTime psecs
 
 
+-- | Print a floating point number of seconds as a time.
+--   Also give a +- percentage relative to a reference figure.
+pprFloatTimeAgainst :: Float -> Float -> String
+pprFloatTimeAgainst stime stimeRef 
+ = let	psecs		= truncate (stime    * 10^12)
+	psecsRef	= truncate (stimeRef * 10^12)
+	diff		= (1 - (stimeRef / stime))*100
+
+   in	(pprPSecTime psecs)
+		++ "(" ++ pprSignedPercentage diff ++ ")"
+
+
+-- | Pretty print a percentage.
+pprSignedPercentage :: Float -> String
+pprSignedPercentage p
+ 	| p > 0
+	= "+" ++ padR 3 (show $ floor p)
+	
+	| otherwise
+	= "-" ++ padR 3 (show $ floor (negate p))
+	
+
+
 -- | Print a number of pico seconds as a time.
 pprPSecTime :: Integer -> String
 pprPSecTime psecs
@@ -45,7 +70,7 @@ pprPSecTime psecs
 -- | Right justify a string.
 padRc :: Int -> Char -> String -> String
 padRc n c str
-	= str ++ replicate (n - length str) c
+	= replicate (n - length str) c ++ str
 	
 
 -- | Right justify a string with spaces.
@@ -56,7 +81,7 @@ padR n str	= padRc n ' ' str
 -- | Left justify a string.
 padLc :: Int -> Char -> String -> String
 padLc n c str
-	= replicate (n - length str) c  ++ str
+	= str ++ replicate (n - length str) c
 
 
 -- | Left justify a string with spaces.

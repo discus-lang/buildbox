@@ -4,6 +4,7 @@ import Config
 import BuildBox	
 import Control.Monad
 
+benchmarks :: Config -> [Benchmark]
 benchmarks config
  = let	systemWithTimings' = systemWithTimings (configVerbose config)
    in	

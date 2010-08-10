@@ -11,5 +11,6 @@ data Config
 	, configDoBuild		:: Bool
 	, configDoTest		:: Bool 
 	, configIterations	:: Int
-	, configWriteResults	:: Maybe FilePath }
+	, configWriteResults	:: Maybe FilePath
+	, configWithResults	:: Maybe FilePath }
 	deriving Show
