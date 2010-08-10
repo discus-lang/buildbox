@@ -1,0 +1,47 @@
+Name:                buildbox
+Version:             1.0.0.0
+License:             BSD3
+License-file:        LICENSE
+Author:              Ben Lippmeier
+Maintainer:          Ben Lippmeier <benl@ouroborus.net>
+Build-Type:          Simple
+Cabal-Version:       >=1.6
+Stability:           experimental
+Category:            Development, Testing
+Homepage:            http://trac.haskell.org/repa
+Bug-reports:         http://trac.haskell.org/repa/newticket
+Description:
+        Reusable components for writing buildbots and test harnesses. Includes functions
+        for checking the host platform, running tests, capturing output, handling errors,
+        comparing runtimes against a baseline etc.
+
+Synopsis:
+        Reusable components for writing buildbots and test harnesses.
+
+Tested-with: GHC == 6.13.20100309, GHC == 6.12.1
+
+Library
+  Build-Depends: 
+        base                 == 4.*,
+
+  ghc-options:
+        -Wall -fno-warn-missing-signatures
+        -fcpr-off
+
+  Exposed-modules:
+        BuildBox.Benchmark.Base
+        BuildBox.Benchmark.Pretty
+        BuildBox.Benchmark.TimeAspect
+        BuildBox.Benchmark
+        BuildBox.Build.Base
+        Buildbox.Build.Testable
+        BuildBox.Build
+        Buildbox.Command.Environment
+        Buildbox.Command.File
+        Buildbox.Command.Network
+        Buildbox.Command.System
+        Buildbox.Command.Timing
+        Buildbox.Pretty
+        Buildbox
+
+       
