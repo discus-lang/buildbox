@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternGuards, ScopedTypeVariables #-}
 
 import BuildBox
 import Args
@@ -11,19 +11,34 @@ import Data.List
 import Data.Maybe
 
 main 
- = do	args	<- parseArgsIO ArgsComplete buildArgs
+ = do	args	<- parseArgsIO ArgsTrailing buildArgs
 	mainWithArgs args
 
 mainWithArgs args
+	-- Print usage help
+	| gotArg args ArgHelp
+	= usageError args ""
+
 	-- Dump a results file.
 	| Just fileName	<- getArg args ArgDoDump
+	, []		<- argsRest args
 	= do	contents	<- readFile fileName
 		let results	=  (read contents) :: BuildResults
 		putStrLn $ render $ ppr results
 
+	-- Compare two results files.
+	| gotArg args ArgDoCompare
+	= do	let fileNames	= argsRest args
+		contentss	<- mapM readFile fileNames
+		let (results :: [BuildResults])
+				= map read contentss
+				
+		mapM_ (\t -> putStr $ render $ ppr t) results
+
 	-- Building and/or Testing.
 	|    gotArg args ArgDoBuild 
 	  || gotArg args ArgDoTest
+	, []		<- argsRest args
 	, tmpDir	<- fromMaybe 
 				(error "you must specify --dir when using --build or --test")
 				(getArg args ArgTmpDir)
@@ -45,7 +60,8 @@ mainWithArgs args
 
 	| otherwise
 	= usageError args "You must specify at least one of --dump --build or --test.\n"
-	
+
+
 -- | Run the complete nightly build.
 build config
  = do	outLine

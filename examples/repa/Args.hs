@@ -13,6 +13,7 @@ data BuildArg
 	| ArgVerbose
 	| ArgTmpDir
 	| ArgDoDump
+	| ArgDoCompare
 	| ArgDoBuild
 	| ArgDoTest
 	| ArgTestIterations
@@ -33,6 +34,12 @@ buildArgs :: [Arg BuildArg]
 		, argName	= Just "dump"
 		, argData	= argDataOptional "file" ArgtypeString
 		, argDesc	= "Dump a results file in human readable format." }
+
+	, Arg	{ argIndex	= ArgDoCompare 
+		, argAbbr	= Nothing
+		, argName	= Just "compare"
+		, argData	= Nothing
+		, argDesc	= "Compare two results files." }
 
 	, Arg	{ argIndex	= ArgDoBuild
 		, argAbbr	= Nothing
