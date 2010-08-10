@@ -8,20 +8,26 @@ import Control.Monad
 import System.Console.ParseArgs
 import Data.Time
 import Data.List
+import Data.Maybe
 
 main 
- = do	args		<- parseArgsIO ArgsComplete buildArgs
+ = do	args	<- parseArgsIO ArgsComplete buildArgs
+	mainWithArgs args
 
-	case getArg args ArgDoDump of
-	 Just fileName
-	  -> do	contents	<- readFile fileName
+mainWithArgs args
+	-- Dump a results file.
+	| Just fileName	<- getArg args ArgDoDump
+	= do	contents	<- readFile fileName
 		let results	=  (read contents) :: BuildResults
 		putStrLn $ render $ ppr results
-		
-	 Nothing 
-	  -> do	let Just tmpDir		= getArg args ArgTmpDir
-		tmpDir `seq` return ()
 
+	-- Building and/or Testing.
+	|    gotArg args ArgDoBuild 
+	  || gotArg args ArgDoTest
+	, tmpDir	<- fromMaybe 
+				(error "you must specify --dir when using --build or --test")
+				(getArg args ArgTmpDir)
+	= tmpDir `seq` do
 		let Just iterations	= getArg args ArgTestIterations
 	
 		let config
@@ -37,6 +43,8 @@ main
 		result	<- runBuildAndPrintResult (build config)
 		return ()
 
+	| otherwise
+	= usageError args "You must specify at least one of --dump --build or --test.\n"
 	
 -- | Run the complete nightly build.
 build config
@@ -135,8 +143,5 @@ testRepa config env
 		(\fileName -> io $ writeFile fileName $ show buildResults)
 		(configWriteResults config)
 	
-	-- Print the complete set of results.	
-	outLine
-	outLn $ render $ ppr buildResults
 		
 

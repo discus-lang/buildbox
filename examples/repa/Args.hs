@@ -9,7 +9,8 @@ import System.Console.ParseArgs
 
 -- Command line args for the buildbot.
 data BuildArg
-	= ArgVerbose
+	= ArgHelp
+	| ArgVerbose
 	| ArgTmpDir
 	| ArgDoDump
 	| ArgDoBuild
@@ -21,7 +22,13 @@ data BuildArg
 
 
 buildArgs :: [Arg BuildArg]
- = 	[ Arg	{ argIndex	= ArgDoDump
+ = 	[ Arg	{ argIndex	= ArgHelp
+		, argAbbr	= Just 'h'
+		, argName	= Just "help"
+		, argData	= Nothing
+		, argDesc	= "Print this usage help." }
+
+	, Arg	{ argIndex	= ArgDoDump
 		, argAbbr	= Nothing
 		, argName	= Just "dump"
 		, argData	= argDataOptional "file" ArgtypeString
