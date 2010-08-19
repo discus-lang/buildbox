@@ -6,6 +6,7 @@ module BuildBox
 	, module BuildBox.Command.Timing
 	, module BuildBox.Command.System
 	, module BuildBox.Command.Network
+	, module BuildBox.Command.Mail
 	, module BuildBox.Command.Environment
 	, module BuildBox.Command.File)
 where
@@ -15,5 +16,6 @@ import BuildBox.Pretty
 import BuildBox.Command.Timing
 import BuildBox.Command.System
 import BuildBox.Command.Network
+import BuildBox.Command.Mail
 import BuildBox.Command.Environment
 import BuildBox.Command.File
