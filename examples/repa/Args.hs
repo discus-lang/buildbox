@@ -12,6 +12,8 @@ data BuildArg
 	= ArgHelp
 	| ArgVerbose
 	| ArgTmpDir
+	| ArgWithGhcBuild
+	| ArgDoNightly
 	| ArgDoUnpack
 	| ArgDoDump
 	| ArgDoCompare
@@ -22,7 +24,6 @@ data BuildArg
 	| ArgAgainstResults
 	| ArgMailFrom 
 	| ArgMailTo
-	| ArgWithGhcBuild
 	deriving (Eq, Ord, Show)
 
 
@@ -40,10 +41,22 @@ buildArgs :: [Arg BuildArg]
 		, argDesc	= "Verbose logging of build commands." }
 
 	, Arg	{ argIndex	= ArgTmpDir
-		, argAbbr	= Just 'd'
+		, argAbbr	= Nothing
 		, argName	= Just "dir"
 		, argData	= argDataOptional "dir" ArgtypeString
 		, argDesc	= "Scratch dir to do the build in." }
+
+	, Arg	{ argIndex	= ArgWithGhcBuild
+		, argAbbr	= Nothing
+		, argName	= Just "with-ghc-build"
+		, argData	= argDataOptional "dir" ArgtypeString
+		, argDesc	= "Build Repa with the GHC build in this dir." }
+
+	, Arg	{ argIndex	= ArgDoNightly
+		, argAbbr	= Nothing
+		, argName	= Just "nightly"
+		, argData	= Nothing
+		, argDesc	= "Run the entire nightly build: unpack, build, test" }
 
 	, Arg	{ argIndex	= ArgDoUnpack
 		, argAbbr	= Nothing

@@ -3,7 +3,7 @@
 import BuildBox
 import Args
 import Config
-import Benchmarks
+import Repa
 import Control.Monad
 import System.Console.ParseArgs
 import Data.Time
@@ -39,9 +39,7 @@ mainWithArgs args
 		putStrLn $ show $ render $ pprComparisons baseline current
 		
 	-- Building and testing.
-	|   gotArg args ArgDoUnpack
-	 || gotArg args ArgDoBuild 
-	 || gotArg args ArgDoTest
+	| or $ map (gotArg args) [ArgDoNightly, ArgDoUnpack, ArgDoBuild, ArgDoTest]
 	, tmpDir		<- fromMaybe 	(error "You must specify --dir with --unpack, --build or --test.")
 						(getArg args ArgTmpDir)
 	= tmpDir `seq` do
@@ -50,9 +48,17 @@ mainWithArgs args
 			= Config
 			{ configVerbose		= gotArg args ArgVerbose
 			, configTmpDir		= tmpDir
-			, configDoUnpack	= gotArg args ArgDoUnpack
-			, configDoBuild		= gotArg args ArgDoBuild
-			, configDoTest		= gotArg args ArgDoTest 
+			, configWithGhcBuild	= getArg args ArgWithGhcBuild
+
+ 			, configWithGhc 	= maybe "ghc" (\dir -> dir ++ "/inplace/bin/ghc-stage2") 
+						$ getArg args ArgWithGhcBuild
+
+			, configWithGhcPkg	= maybe "ghc-pkg" (\dir -> dir ++ "/inplace/bin/ghc-pkg") 
+						$ getArg args ArgWithGhcBuild
+
+			, configDoUnpack	= gotArg args ArgDoUnpack || gotArg args ArgDoNightly
+			, configDoBuild		= gotArg args ArgDoBuild  || gotArg args ArgDoNightly
+			, configDoTest		= gotArg args ArgDoTest   || gotArg args ArgDoNightly
 			, configIterations	= iterations 
 			, configWriteResults	= getArg args ArgWriteResults
 			, configAgainstResults	= getArg args ArgAgainstResults
@@ -82,8 +88,8 @@ nightly config
 	outLn "Repa BuildBot\n"
 	
 	env	<- getEnvironmentWith 
-			[ ("GHC", getVersionGHC)
-			, ("GCC", getVersionGCC) ]
+			[ ("GHC", getVersionGHC $ configWithGhc config)
+			, ("GCC", getVersionGCC "gcc") ]
 			
 	outLn $ render $ ppr $ env
 	
@@ -101,128 +107,3 @@ nightly config
 
 
 
--- Unpack -----------------------------------------------------------------------------------------
--- | Download the Repa package from code.haskell.org,
-repaUnpack config
- = do	outCheckFalseOk "* Checking build directory is empty"
-	 $ HasDir $ (configTmpDir config) ++ "/repa-head"
-	
-	outCheckOk "* Checking Google is reachable"
-	 $ HostReachable "www.google.com"
-
-	outCheckOk "* Checking code.haskell.org is reachable"
-	 $ HostReachable "code.haskell.org"
-	
-	outCheckOk "* Checking code.haskell.org web server is up"
-	 $ UrlGettable "http://code.haskell.org"
-	
-	out "\n"
-	inDir (configTmpDir config)
-	 $ do	outLn "* Getting Darcs Package"
-		system "darcs get http://code.haskell.org/repa/repa-head"
-	
-
-
--- Building ---------------------------------------------------------------------------------------	
--- | Build the packages and register then with the given compiler.
-repaBuild config
- = inDir (configTmpDir config)
- $ inDir "repa-head"
- $ do	outLn "* Building Packages"
-
-	mapM_ (repaBuildPackage True config)
-		[ "repa"
-		, "repa-bytestring"
-		, "repa-io"
-		, "repa-algorithms"]
-
-	repaBuildPackage False config "repa-examples"
-
-
-repaBuildPackage install config dirPackage
- = inDir dirPackage
- $ do	outLine
-	system	"runghc Setup.hs clean"
-	system	"runghc Setup.hs configure --user"
-	system	"runghc Setup.hs build"
-
-	when install
-	 $ system	"runghc Setup.hs install"
-
-	outBlank
-	
-	
--- Testing ----------------------------------------------------------------------------------------
-data BuildResults
-	= BuildResults
-	{ buildResultTime		:: UTCTime
-	, buildResultEnvironment	:: Environment
-	, buildResultBench		:: [BenchResult] }
-	deriving (Show, Read)
-
-instance Pretty BuildResults where
- ppr results
-	= hang (ppr "BuildResults") 2 $ vcat
-	[ ppr "time: " <> (ppr $ buildResultTime results)
-	, ppr $ buildResultEnvironment results
-	, ppr ""
-	, vcat 	$ punctuate (ppr "\n") 
-		$ map ppr 
-		$ buildResultBench results ]
-
--- | Run regression tests.	
-repaTest :: Config -> Environment -> Build ()
-repaTest config env
- = do	
-	-- Get the current time.
-	utcTime	<- io $ getCurrentTime
-
-	-- Load the baseline file if it was given.
-	mBaseline <- case configAgainstResults config of
-			Nothing		-> return Nothing
-			Just fileName
-			 -> do	file	<- io $ readFile fileName
-				return	$ Just file
-				
-	let resultsPrior
-		= maybe []
-			(\contents -> buildResultBench $ read contents)
-			mBaseline
-
-	-- Run the benchmarks in the build directory
-	benchResults
-	 <- inDir (configTmpDir config ++ "/repa-head")
- 	 $ do	mapM 	(outRunBenchmarkWith (configIterations config)  resultsPrior)
-			(benchmarks config)
-
-	-- Make the build results.
-	let buildResults
-		= BuildResults
-		{ buildResultTime		= utcTime
-		, buildResultEnvironment	= env
-		, buildResultBench		= benchResults }
-
-	-- Write results to a file if requested.	
-	maybe 	(return ())
-		(\fileName -> do
-			outLn $ "* Writing results to " ++ fileName
-			io $ writeFile fileName $ show buildResults)
-		(configWriteResults config)
-	
-	-- Mail results to recipient if requested.
-	let spaceHack = text . unlines . map (\l -> " " ++ l) . lines . render
-	maybe 	(return ())
-		(\(from, to) -> do
-			outLn $ "* Mailing results to " ++ to 
-			mail	<- createMailWithCurrentTime from to "Repa build"
-				$ render $ vcat
-				[ text "Repa Nightly Build"
-				, blank
-				, ppr env
-				, blank
-				, spaceHack $ pprComparisons resultsPrior benchResults
-				, blank ]
-				
-			sendMailWithMailer mail defaultMailer				
-			return ())
-		(configMailFromTo config)

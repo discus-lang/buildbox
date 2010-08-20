@@ -10,6 +10,9 @@ data Config
 	= Config
 	{ configVerbose		:: Bool
 	, configTmpDir		:: String
+	, configWithGhcBuild	:: Maybe FilePath
+	, configWithGhc		:: FilePath
+	, configWithGhcPkg	:: FilePath
 	, configDoUnpack	:: Bool
 	, configDoBuild		:: Bool
 	, configDoTest		:: Bool 

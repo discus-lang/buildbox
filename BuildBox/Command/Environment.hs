@@ -143,18 +143,18 @@ getHostRelease
 
 
 -- Software version tests -------------------------------------------------------------------------
--- | Get the version of GHC in the current path, or thrown an error if it can't be found.
-getVersionGHC :: Build String
-getVersionGHC 
- = do	check $ HasExecutable "ghc"
-	str	<- systemWithStdout "ghc --version"
+-- | Get the version of this GHC, or thrown an error if it can't be found.
+getVersionGHC :: FilePath -> Build String
+getVersionGHC path
+ = do	check $ HasExecutable path
+	str	<- systemWithStdout $ path ++ " --version"
 	return	$ init str
 	
--- | Get the version of GCC in the current path, or thrown an error if it can't be found. 
-getVersionGCC :: Build String
-getVersionGCC
- = do	check $ HasExecutable "gcc"
- 	str	<- systemWithStdout "gcc --version"
+-- | Get the version of this GCC, or thrown an error if it can't be found. 
+getVersionGCC :: FilePath -> Build String
+getVersionGCC path
+ = do	check $ HasExecutable path
+ 	str	<- systemWithStdout $ path ++ " --version"
 	return	$ head $ lines str
 
 
