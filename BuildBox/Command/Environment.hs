@@ -104,7 +104,7 @@ getHostPlatform
 -- Platform Tests ---------------------------------------------------------------------------------
 -- | Get the name of this host, using @uname@.
 getHostName :: Build String
-getHostName 	
+getHostName
  = do	check $ HasExecutable "uname"
 	name	<- systemWithStdout "uname -n"
 	return	$ init name
@@ -140,7 +140,8 @@ getHostRelease
  = do	check $ HasExecutable "uname"
 	str	<- systemWithStdout "uname -r"
 	return	$ init str
-	
+
+
 -- Software version tests -------------------------------------------------------------------------
 -- | Get the version of GHC in the current path, or thrown an error if it can't be found.
 getVersionGHC :: Build String

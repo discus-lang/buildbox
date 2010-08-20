@@ -7,6 +7,7 @@ import BuildBox.Build
 import BuildBox.Pretty
 import BuildBox.Command.Environment
 import BuildBox.Command.System
+import BuildBox.Command.File
 import System.Time
 import System.Locale	(defaultTimeLocale)
 import Data.Time.Clock
@@ -90,19 +91,12 @@ sendMailWithMailer mail mailer
 	
 sendMailWithMSMTP mail mailer@MailerMSMTP{}
  = withTempFile $ \fileName 
- -> do	mailDoc	<- renderMail mail
+ -> do	let mailDoc	= renderMail mail
 	io $ writeFile fileName (render mailDoc)
 
 	systemNull 
 		$ "cat " ++ fileName 
 		++ " | " ++ mailerPath mailer
 		++ " -t "			-- read recipients from the mail
-		++ (fromMaybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer)
+		++ (maybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer)
 		
-
-
-
-{-		(msgFileName, handle)	<- mkstemp "/tmp/thoth-mailXXXXXX"
-	hClose handle
-	writeFile msgFileName message
--}

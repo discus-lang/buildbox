@@ -4,12 +4,15 @@ module BuildBox.Command.File
 	( PropFile(..)
 	, makeDirIfNeeded
 	, inDir
-	, inNewScratchDirNamed)
+	, inNewScratchDirNamed
+	, withTempFile)
 where
 import BuildBox.Build.Base
 import BuildBox.Build.Testable
 import BuildBox.Command.System
+import System.Posix.Temp
 import System.Directory
+import System.IO
 
 -- | Properties of the file system we can test for.
 data PropFile
@@ -89,11 +92,20 @@ inNewScratchDirNamed name build
 -- | Create a temp file, pass it to some command, then delete the file after the command finishes.
 withTempFile :: (FilePath -> Build a) -> Build a
 withTempFile build
- = do	(fileName, handle)	<- mkstemp "/tmp/buildbox-XXXXXX"
+ = do	(fileName, handle)	<- io $ mkstemp "/tmp/buildbox-XXXXXX"
 
 	-- We just want the file name here, so close the handle to let the real
 	-- build command write to it however it wants.
-	hClose handle
+	io $ hClose handle
+	
+	-- run the real command
+	result	<- build fileName
+	
+	-- cleanup 
+	io $ removeFile fileName
+	
+	return result
+	
 	
 
 
