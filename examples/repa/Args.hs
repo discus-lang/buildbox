@@ -22,6 +22,7 @@ data BuildArg
 	| ArgAgainstResults
 	| ArgMailFrom 
 	| ArgMailTo
+	| ArgWithGhcBuild
 	deriving (Eq, Ord, Show)
 
 

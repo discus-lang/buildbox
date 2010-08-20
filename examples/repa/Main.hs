@@ -36,7 +36,7 @@ mainWithArgs args
 		let [baseline, current] 
 				= map buildResultBench results
 
-		putStrLn $ render $ pprComparisons baseline current
+		putStrLn $ show $ render $ pprComparisons baseline current
 		
 	-- Building and testing.
 	|   gotArg args ArgDoUnpack
@@ -129,10 +129,29 @@ repaBuild config
  = inDir (configTmpDir config)
  $ inDir "repa-head"
  $ do	outLn "* Building Packages"
-	system "make"
+
+	mapM_ (repaBuildPackage True config)
+		[ "repa"
+		, "repa-bytestring"
+		, "repa-io"
+		, "repa-algorithms"]
+
+	repaBuildPackage False config "repa-examples"
 
 
+repaBuildPackage install config dirPackage
+ = inDir dirPackage
+ $ do	outLine
+	system	"runghc Setup.hs clean"
+	system	"runghc Setup.hs configure --user"
+	system	"runghc Setup.hs build"
 
+	when install
+	 $ system	"runghc Setup.hs install"
+
+	outBlank
+	
+	
 -- Testing ----------------------------------------------------------------------------------------
 data BuildResults
 	= BuildResults
@@ -174,7 +193,7 @@ repaTest config env
 	benchResults
 	 <- inDir (configTmpDir config ++ "/repa-head")
  	 $ do	mapM 	(outRunBenchmarkWith (configIterations config)  resultsPrior)
-			([head $ benchmarks config])
+			(benchmarks config)
 
 	-- Make the build results.
 	let buildResults
@@ -185,19 +204,25 @@ repaTest config env
 
 	-- Write results to a file if requested.	
 	maybe 	(return ())
-		(\fileName -> io $ writeFile fileName $ show buildResults)
+		(\fileName -> do
+			outLn $ "* Writing results to " ++ fileName
+			io $ writeFile fileName $ show buildResults)
 		(configWriteResults config)
 	
 	-- Mail results to recipient if requested.
+	let spaceHack = text . unlines . map (\l -> " " ++ l) . lines . render
 	maybe 	(return ())
 		(\(from, to) -> do
+			outLn $ "* Mailing results to " ++ to 
 			mail	<- createMailWithCurrentTime from to "Repa build"
-				$ show buildResults
+				$ render $ vcat
+				[ text "Repa Nightly Build"
+				, blank
+				, ppr env
+				, blank
+				, spaceHack $ pprComparisons resultsPrior benchResults
+				, blank ]
 				
 			sendMailWithMailer mail defaultMailer				
 			return ())
 		(configMailFromTo config)
-		
-		
-			
-			

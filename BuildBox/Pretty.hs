@@ -9,7 +9,8 @@ module BuildBox.Pretty
 	, pprFloatSF
 	, pprFloatRef
 	, padRc, padR
-	, padLc, padL )
+	, padLc, padL
+	, blank)
 where
 import Text.PrettyPrint
 import Data.Time
@@ -102,3 +103,5 @@ padLc n c str
 padL :: Int -> Doc -> Doc
 padL n str	= padLc n ' ' str
 
+-- | Blank text
+blank = ppr ""
