@@ -4,13 +4,15 @@ module BuildBox.Command.Mail
 	(Mail(..))
 where
 import BuildBox.Build
-import BuildBox.Command.Environment
 import BuildBox.Pretty
+import BuildBox.Command.Environment
+import BuildBox.Command.System
+import System.Time
+import System.Locale	(defaultTimeLocale)
 import Data.Time.Clock
 import Data.Time.LocalTime
 import Data.Time.Format
-import System.Time
-import System.Locale	(defaultTimeLocale)
+import Data.Maybe
 
 
 -- | An email message that we can send.
@@ -24,7 +26,17 @@ data Mail
 	, mailMessageId		:: String
 	, mailBody		:: String }
 	deriving Show
-	
+
+
+-- | An external mailer that can send messages.
+--   	Also contains mail server info if needed.
+--	We only support msmtp at the moment.
+data Mailer
+	= MailerMSMTP
+	{ mailerPath		:: FilePath
+	, mailerPort		:: Maybe Int }
+	deriving Show
+
 
 -- | Create a mail with a given from, to, subject and body.
 --   Fill in the date and message id based on the current time.
@@ -70,3 +82,27 @@ renderMail mail
 	, ppr (mailBody mail) ]
 
 
+-- | Send a mail message.
+sendMailWithMailer :: Mail -> Mailer -> Build ()
+sendMailWithMailer mail mailer
+ = case mailer of
+	MailerMSMTP{}	-> sendMailWithMSMTP mail mailer
+	
+sendMailWithMSMTP mail mailer@MailerMSMTP{}
+ = withTempFile $ \fileName 
+ -> do	mailDoc	<- renderMail mail
+	io $ writeFile fileName (render mailDoc)
+
+	systemNull 
+		$ "cat " ++ fileName 
+		++ " | " ++ mailerPath mailer
+		++ " -t "			-- read recipients from the mail
+		++ (fromMaybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer)
+		
+
+
+
+{-		(msgFileName, handle)	<- mkstemp "/tmp/thoth-mailXXXXXX"
+	hClose handle
+	writeFile msgFileName message
+-}
