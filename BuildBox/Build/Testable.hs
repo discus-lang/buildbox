@@ -3,8 +3,9 @@
 module BuildBox.Build.Testable
 	( Testable(..)
 	, check
-	, checkNot
-	, outCheckOk)
+	, checkFalse
+	, outCheckOk
+	, outCheckFalseOk)
 where
 import System.IO
 import BuildBox.Build.Base	
@@ -27,8 +28,8 @@ check prop
 
 -- | Testable properties are checkable.
 --   If the check returns true then throw an error.
-checkNot :: (Show prop, Testable prop) => prop -> Build ()
-checkNot prop
+checkFalse :: (Show prop, Testable prop) => prop -> Build ()
+checkFalse prop
  = do	result	<- test prop
 	if result
 	 then throwError $ ErrorCheckFailed False prop
@@ -44,5 +45,17 @@ outCheckOk str prop
  = do	out $ str ++ "..."
 	io  $ hFlush stdout
 	check prop
+	out " ok\n"
+
+
+-- | Check some property while printing what we're doing.
+outCheckFalseOk 
+	:: (Show prop, Testable prop) 
+	=> String -> prop -> Build ()
+
+outCheckFalseOk str prop
+ = do	out $ str ++ "..."
+	io  $ hFlush stdout
+	checkFalse prop
 	out " ok\n"
 

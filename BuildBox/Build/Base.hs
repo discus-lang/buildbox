@@ -5,8 +5,10 @@ module BuildBox.Build.Base where
 import BuildBox.Pretty
 import Control.Monad.Error
 import System.IO
+import System.IO.Error
 
 -- | The builder monad encapsulates and IO action that can fail with an error.
+--   TODO: add logging and config to tis state.
 type Build a 	= ErrorT BuildError IO a
 
 -- | The errors we recognise. They're encoded like this so we can produce nice error messages.
@@ -16,6 +18,9 @@ data BuildError
 
 	-- | Some system command failed.
 	| ErrorSystemCmdFailed String
+
+	-- | Some other IO action failed.
+	| ErrorIOError IOError
 
 	-- | Some property `check` was supposed to return the given boolean value, but it didn't.
 	| forall prop. Show prop => ErrorCheckFailed Bool prop	
@@ -32,6 +37,9 @@ instance Show BuildError where
 
 	ErrorSystemCmdFailed str
 	 -> "system command failure: \"" ++ str ++ "\""
+
+	ErrorIOError ioerr
+	 -> "IO error: " ++ show ioerr
 
 	ErrorCheckFailed expected prop
 	 -> "check failure: " ++ show prop ++ " expected " ++ show expected
@@ -67,7 +75,13 @@ runBuildAndPrintResult build
 
 -- | Lift an IO action into the build monad.
 io :: IO a -> Build a
-io x		= liftIO x
+io x
+ = do	-- catch IOError exceptions
+	result	<- liftIO $ try x
+	
+	case result of
+	 Left err	-> throw $ ErrorIOError err
+	 Right res	-> return res
 
 
 -- | Print some text to stdout.

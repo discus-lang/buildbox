@@ -38,36 +38,46 @@ mainWithArgs args
 
 		putStrLn $ render $ pprComparisons baseline current
 		
-
-	-- Building and/or Testing.
-	|    gotArg args ArgDoBuild 
-	  || gotArg args ArgDoTest
-	, []		<- argsRest args
-	, tmpDir	<- fromMaybe 
-				(error "you must specify --dir when using --build or --test")
-				(getArg args ArgTmpDir)
+	-- Building and testing.
+	|   gotArg args ArgDoUnpack
+	 || gotArg args ArgDoBuild 
+	 || gotArg args ArgDoTest
+	, tmpDir		<- fromMaybe 	(error "You must specify --dir with --unpack, --build or --test.")
+						(getArg args ArgTmpDir)
 	= tmpDir `seq` do
 		let Just iterations	= getArg args ArgTestIterations
-	
 		let config
 			= Config
 			{ configVerbose		= gotArg args ArgVerbose
 			, configTmpDir		= tmpDir
+			, configDoUnpack	= gotArg args ArgDoUnpack
 			, configDoBuild		= gotArg args ArgDoBuild
 			, configDoTest		= gotArg args ArgDoTest 
 			, configIterations	= iterations 
 			, configWriteResults	= getArg args ArgWriteResults
-			, configAgainstResults	= getArg args ArgAgainstResults }
+			, configAgainstResults	= getArg args ArgAgainstResults
 
-		result	<- runBuildAndPrintResult (build config)
+			-- TODO: check we have both args
+			, configMailFromTo	= let result	
+							| Just from	<- getArg args ArgMailFrom
+							, Just to	<- getArg args ArgMailTo
+							= Just (from, to)
+							
+							| otherwise
+							= Nothing
+						  in	result
+			}
+
+		result	<- runBuildAndPrintResult (nightly config)
 		return ()
 
 	| otherwise
 	= usageError args "You must specify at least one of --dump --build or --test.\n"
 
 
+-- Nightly ----------------------------------------------------------------------------------------
 -- | Run the complete nightly build.
-build config
+nightly config
  = do	outLine
 	outLn "Repa BuildBot\n"
 	
@@ -80,18 +90,24 @@ build config
 	outLine
 	outBlank
 	
+	when (configDoUnpack config)
+	 $ repaUnpack config
+	
 	when (configDoBuild config)
-	 $ buildRepaIn (configTmpDir config)
+	 $ repaBuild config
 		
 	when (configDoTest config)
-	 $ testRepa config env
-	
+	 $ repaTest config env
 
--- Building ---------------------------------------------------------------------------------------	
+
+
+-- Unpack -----------------------------------------------------------------------------------------
 -- | Download the Repa package from code.haskell.org,
---   build it and register with current compiler.
-buildRepaIn scratchDir
- = do	outCheckOk "* Checking Google is reachable"
+repaUnpack config
+ = do	outCheckFalseOk "* Checking build directory is empty"
+	 $ HasDir $ (configTmpDir config) ++ "/repa-head"
+	
+	outCheckOk "* Checking Google is reachable"
 	 $ HostReachable "www.google.com"
 
 	outCheckOk "* Checking code.haskell.org is reachable"
@@ -101,14 +117,20 @@ buildRepaIn scratchDir
 	 $ UrlGettable "http://code.haskell.org"
 	
 	out "\n"
-	inDir scratchDir
+	inDir (configTmpDir config)
 	 $ do	outLn "* Getting Darcs Package"
 		system "darcs get http://code.haskell.org/repa/repa-head"
-		
-		outLn "\n"
-		inDir "repa-head"
-		 $ do	outLn "* Building Packages"
-			system "make"
+	
+
+
+-- Building ---------------------------------------------------------------------------------------	
+-- | Build the packages and register then with the given compiler.
+repaBuild config
+ = inDir (configTmpDir config)
+ $ inDir "repa-head"
+ $ do	outLn "* Building Packages"
+	system "make"
+
 
 
 -- Testing ----------------------------------------------------------------------------------------
@@ -130,8 +152,8 @@ instance Pretty BuildResults where
 		$ buildResultBench results ]
 
 -- | Run regression tests.	
-testRepa :: Config -> Environment -> Build ()
-testRepa config env
+repaTest :: Config -> Environment -> Build ()
+repaTest config env
  = do	
 	-- Get the current time.
 	utcTime	<- io $ getCurrentTime
@@ -152,7 +174,7 @@ testRepa config env
 	benchResults
 	 <- inDir (configTmpDir config ++ "/repa-head")
  	 $ do	mapM 	(outRunBenchmarkWith (configIterations config)  resultsPrior)
-			(benchmarks config)
+			([head $ benchmarks config])
 
 	-- Make the build results.
 	let buildResults
@@ -166,4 +188,16 @@ testRepa config env
 		(\fileName -> io $ writeFile fileName $ show buildResults)
 		(configWriteResults config)
 	
+	-- Mail results to recipient if requested.
+	maybe 	(return ())
+		(\(from, to) -> do
+			mail	<- createMailWithCurrentTime from to "Repa build"
+				$ show buildResults
+				
+			sendMailWithMailer mail defaultMailer				
+			return ())
+		(configMailFromTo config)
 		
+		
+			
+			

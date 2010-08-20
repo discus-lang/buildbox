@@ -12,6 +12,7 @@ data BuildArg
 	= ArgHelp
 	| ArgVerbose
 	| ArgTmpDir
+	| ArgDoUnpack
 	| ArgDoDump
 	| ArgDoCompare
 	| ArgDoBuild
@@ -19,6 +20,8 @@ data BuildArg
 	| ArgTestIterations
 	| ArgWriteResults
 	| ArgAgainstResults
+	| ArgMailFrom 
+	| ArgMailTo
 	deriving (Eq, Ord, Show)
 
 
@@ -28,6 +31,30 @@ buildArgs :: [Arg BuildArg]
 		, argName	= Just "help"
 		, argData	= Nothing
 		, argDesc	= "Print this usage help." }
+
+	, Arg	{ argIndex	= ArgVerbose
+		, argAbbr	= Just 'v'
+		, argName	= Just "verbose"
+		, argData	= Nothing
+		, argDesc	= "Verbose logging of build commands." }
+
+	, Arg	{ argIndex	= ArgTmpDir
+		, argAbbr	= Just 'd'
+		, argName	= Just "dir"
+		, argData	= argDataOptional "dir" ArgtypeString
+		, argDesc	= "Scratch dir to do the build in." }
+
+	, Arg	{ argIndex	= ArgDoUnpack
+		, argAbbr	= Nothing
+		, argName	= Just "unpack"
+		, argData	= Nothing
+		, argDesc	= "Download the latest version from code.haskell.org." }
+
+	, Arg	{ argIndex	= ArgDoBuild
+		, argAbbr	= Nothing
+		, argName	= Just "build"
+		, argData	= Nothing
+		, argDesc	= "Build and register the packages." }
 
 	, Arg	{ argIndex	= ArgDoDump
 		, argAbbr	= Nothing
@@ -41,29 +68,11 @@ buildArgs :: [Arg BuildArg]
 		, argData	= Nothing
 		, argDesc	= "Compare two results files." }
 
-	, Arg	{ argIndex	= ArgDoBuild
-		, argAbbr	= Nothing
-		, argName	= Just "build"
-		, argData	= Nothing
-		, argDesc	= "Download the latest version and build it." }
-		
 	, Arg	{ argIndex	= ArgDoTest
 		, argAbbr	= Nothing
 		, argName	= Just "test"
 		, argData	= Nothing
 		, argDesc	= "Run regression tests." }
-
-	, Arg	{ argIndex	= ArgVerbose
-		, argAbbr	= Just 'v'
-		, argName	= Just "verbose"
-		, argData	= Nothing
-		, argDesc	= "Verbose logging of build commands." }
-
-	, Arg 	{ argIndex	= ArgTmpDir
-		, argAbbr	= Just 'd'
-		, argName	= Just "dir"
-		, argData	= argDataOptional "dir" ArgtypeString 
-		, argDesc	= "(req. for build and test modes) Scratch dir to do the build in." }
 
 	, Arg	{ argIndex	= ArgTestIterations
 		, argAbbr	= Just 'i'
@@ -82,4 +91,17 @@ buildArgs :: [Arg BuildArg]
 		, argName	= Just "against"
 		, argData	= argDataOptional "file" ArgtypeString
 		, argDesc	= "(opt. for test mode) Print running comparison against results in this file." }
+		
+	, Arg	{ argIndex	= ArgMailFrom
+		, argAbbr	= Nothing
+		, argName	= Just "mailfrom"
+		, argData	= argDataOptional "address" ArgtypeString
+		, argDesc	= "Mail results from this address." }
+
+	, Arg	{ argIndex	= ArgMailTo
+		, argAbbr	= Nothing
+		, argName	= Just "mailto"
+		, argData	= argDataOptional "address" ArgtypeString
+		, argDesc	= " ...to this address." }
+		
 	]

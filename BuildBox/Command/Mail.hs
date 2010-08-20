@@ -1,7 +1,11 @@
 
 
 module BuildBox.Command.Mail
-	(Mail(..))
+	( Mail(..)
+	, Mailer(..)
+	, createMailWithCurrentTime
+	, renderMail
+	, sendMailWithMailer)
 where
 import BuildBox.Build
 import BuildBox.Pretty

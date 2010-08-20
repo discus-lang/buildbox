@@ -80,7 +80,7 @@ inNewScratchDirNamed :: FilePath -> Build a -> Build a
 inNewScratchDirNamed name build
  = do	
 	-- Make sure a dir with this name doesn't already exist.
-	checkNot $ HasDir name
+	checkFalse $ HasDir name
 
 	system $ "mkdir -p " ++ name
 	x	<- inDir name build
