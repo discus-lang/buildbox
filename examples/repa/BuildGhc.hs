@@ -1,4 +1,5 @@
 
+-- | Build stages concerning GHC.
 module BuildGhc
 	( ghcUnpack
 	, ghcBuild

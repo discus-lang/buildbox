@@ -43,8 +43,8 @@ defaultMailer
 	{ mailerPath	= "msmtp"
 	, mailerPort	= Just 587 }
 	
--- Base Packages ----------------------------------------------------------------------------------
-
+-- | These are non-repa packages we always want to download and install
+--   into a fresh GHC build.
 basePackages
  = 	[ "bmp-1.1.0.0"
 	, "QuickCheck-2.1.1.1" ]

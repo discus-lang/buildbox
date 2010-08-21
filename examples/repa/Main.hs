@@ -1,5 +1,8 @@
 {-# LANGUAGE PatternGuards, ScopedTypeVariables #-}
 
+-- Repa buildbot
+-- 	Used to automate building and performance testing of GHC and Repa
+--
 import BuildBox
 import Args
 import Config
@@ -15,7 +18,9 @@ main
  = do	args	<- parseArgsIO ArgsTrailing buildArgs
 	mainWithArgs args
 
+-- | Decide what to do
 mainWithArgs args
+
 	-- Print usage help
 	| gotArg args ArgHelp
 	= usageError args ""
@@ -39,7 +44,7 @@ mainWithArgs args
 
 		putStrLn $ show $ render $ pprComparisons baseline current
 		
-	-- Building and testing.
+	-- Do some building or testing process.
 	| or $ map (gotArg args) 
 		[ ArgDoNightly
 		, ArgDoGhcUnpack,  ArgDoGhcBuild,  ArgDoGhcLibs
@@ -58,8 +63,10 @@ mainWithArgs args
 	= usageError args "Nothing to do...\n"
 
 
+-- | Slurp configuration information from the command line arguments.
 slurpConfig args tmpDir
  = let Just iterations	= getArg args ArgTestIterations
+
    in  Config
 	{ configVerbose		= gotArg args ArgVerbose
 	, configScratchDir	= tmpDir
@@ -76,7 +83,8 @@ slurpConfig args tmpDir
 		    then getArg args ArgDoGhcUnpack
 		    else getArg args ArgWithGhcSnapshot	
 
-
+	-- What stages to run.
+	-- If --nightly is set then do them all.
 	, configDoGhcUnpack	= gotArg args ArgDoGhcUnpack  || gotArg args ArgDoNightly
 	, configDoGhcBuild	= gotArg args ArgDoGhcBuild   || gotArg args ArgDoNightly
 	, configDoGhcLibs	= gotArg args ArgDoGhcLibs    || gotArg args ArgDoNightly
@@ -84,6 +92,7 @@ slurpConfig args tmpDir
 	, configDoRepaBuild	= gotArg args ArgDoRepaBuild  || gotArg args ArgDoNightly
 	, configDoRepaTest	= gotArg args ArgDoRepaTest   || gotArg args ArgDoNightly
 
+	-- Testing config.
 	, configIterations	= iterations 
 	, configWriteResults	= getArg args ArgWriteResults
 	, configAgainstResults	= getArg args ArgAgainstResults
@@ -100,8 +109,9 @@ slurpConfig args tmpDir
 	}
 
 
--- Nightly ----------------------------------------------------------------------------------------
--- | Run the complete nightly build.
+-- | The nightly build.
+--   This only runs the stages set in the config.
+nightly :: Config -> Build ()
 nightly config
  = do	outLine
 	outLn "Repa BuildBot\n"
@@ -120,7 +130,8 @@ nightly config
 	when (configDoGhcUnpack config)
 	 $ ghcUnpack config
 	
-	-- Build GHC, and use it from now on.
+	-- If we've been told to build GHC, then use
+	-- 	the completed build as the default compiler.
 	configNew
 	  <- if configDoGhcBuild config
 	      then do ghcBuild config
@@ -129,7 +140,7 @@ nightly config
 				, configWithGhcPkg = configScratchDir config ++ "/ghc-head/inplace/bin/ghc-pkg" }
 	      else return config
 			
-	-- Use cabal to install base libs into a GHC build
+	-- Use cabal to install base libs into a GHC build.
 	when (configDoGhcLibs configNew)
 	 $ ghcLibs configNew
 			
@@ -144,4 +155,4 @@ nightly config
 	-- Test Repa and write results to file, or mail them to the list.
 	when (configDoRepaTest configNew)
 	 $ repaTest configNew env
-	
+

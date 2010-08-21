@@ -6,7 +6,6 @@ module Args
 where
 import System.Console.ParseArgs
 
-
 -- Command line args for the buildbot.
 data BuildArg
 	= ArgHelp
@@ -153,6 +152,8 @@ buildArgs :: [Arg BuildArg]
 		, argAbbr	= Nothing
 		, argName	= Just "mailto"
 		, argData	= argDataOptional "address" ArgtypeString
-		, argDesc	= "(opt. for repa-test mode) ...to this address." }
-		
+		, argDesc	= "(opt. for repa-test mode) ...to this address." }	
 	]
+	
+	
+	

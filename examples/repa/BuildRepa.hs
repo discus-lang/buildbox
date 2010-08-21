@@ -1,4 +1,5 @@
 
+-- | Build stages concerning Repa.
 module BuildRepa
 	( repaUnpack
 	, repaBuild

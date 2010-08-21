@@ -4,6 +4,7 @@ import Config
 import BuildBox	
 import Control.Monad
 
+-- | Repa benchmark configuration.
 benchmarks :: Config -> [Benchmark]
 benchmarks config
  = let	systemWithTimings' = systemWithTimings (configVerbose config)
@@ -59,6 +60,7 @@ benchmarks config
 	]
 
 
+-- | Run a system command, expecing it to print the kernel timings to stdout.
 systemWithTimings :: Bool -> String -> Build (Maybe Timing)
 systemWithTimings verbose cmd
  = do	when verbose
@@ -66,7 +68,8 @@ systemWithTimings verbose cmd
 	result	<- systemWithStdout cmd
 	return	$ Just $ parseTimings result
 
-
+-- | Parse kernel timings from a repa example program.
+--   Format is  elapsedTime/systemTime  in milliseconds.
 parseTimings :: String -> Timing
 parseTimings str
  = let	(lElapsed : _)	= lines str
