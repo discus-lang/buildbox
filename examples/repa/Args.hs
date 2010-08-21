@@ -14,6 +14,9 @@ data BuildArg
 	| ArgTmpDir
 	| ArgWithGhcBuild
 	| ArgDoNightly
+	| ArgDoUnpackGhc
+	| ArgWithGhcSnapshot
+	| ArgDoBuildGhc
 	| ArgDoUnpack
 	| ArgDoDump
 	| ArgDoCompare
@@ -46,29 +49,47 @@ buildArgs :: [Arg BuildArg]
 		, argData	= argDataOptional "dir" ArgtypeString
 		, argDesc	= "Scratch dir to do the build in." }
 
-	, Arg	{ argIndex	= ArgWithGhcBuild
-		, argAbbr	= Nothing
-		, argName	= Just "with-ghc-build"
-		, argData	= argDataOptional "dir" ArgtypeString
-		, argDesc	= "Build Repa with the GHC build in this dir." }
-
 	, Arg	{ argIndex	= ArgDoNightly
 		, argAbbr	= Nothing
 		, argName	= Just "nightly"
 		, argData	= Nothing
-		, argDesc	= "Run the entire nightly build: unpack, build, test" }
+		, argDesc	= "Run the entire nightly build: unpack, build, test." }
+
+	, Arg	{ argIndex	= ArgDoUnpackGhc
+		, argAbbr	= Nothing
+		, argName	= Just "unpack-ghc"
+		, argData	= argDataOptional "file" ArgtypeString
+		, argDesc	= "Unpack this GHC snapshot and update it from darcs.haskell.org." }
+
+	, Arg	{ argIndex	= ArgDoBuildGhc
+		, argAbbr	= Nothing
+		, argName	= Just "build-ghc"
+		, argData	= Nothing
+		, argDesc	= "Build the GHC repo." }
+
+	, Arg	{ argIndex	= ArgWithGhcSnapshot
+		, argAbbr	= Nothing
+		, argName	= Just "with-ghc-snapshot"
+		, argData	= argDataOptional "file" ArgtypeString
+		, argDesc	= "Use this GHC snapshot" }
 
 	, Arg	{ argIndex	= ArgDoUnpack
 		, argAbbr	= Nothing
 		, argName	= Just "unpack"
 		, argData	= Nothing
-		, argDesc	= "Download the latest version from code.haskell.org." }
+		, argDesc	= "Download the latest version of Repa from code.haskell.org." }
 
 	, Arg	{ argIndex	= ArgDoBuild
 		, argAbbr	= Nothing
 		, argName	= Just "build"
 		, argData	= Nothing
-		, argDesc	= "Build and register the packages." }
+		, argDesc	= "Build and register the Repa packages." }
+
+	, Arg	{ argIndex	= ArgWithGhcBuild
+		, argAbbr	= Nothing
+		, argName	= Just "with-ghc-build"
+		, argData	= argDataOptional "dir" ArgtypeString
+		, argDesc	= "Build Repa with the GHC build in this dir." }
 
 	, Arg	{ argIndex	= ArgDoDump
 		, argAbbr	= Nothing
