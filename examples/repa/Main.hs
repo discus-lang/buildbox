@@ -3,7 +3,8 @@
 import BuildBox
 import Args
 import Config
-import Repa
+import BuildRepa
+import BuildGhc
 import Control.Monad
 import System.Console.ParseArgs
 import Data.Time
@@ -143,51 +144,4 @@ nightly config
 	-- Test Repa and write results to file, or mail them to the list.
 	when (configDoRepaTest configNew)
 	 $ repaTest configNew env
-
-
-ghcUnpack config
- = inDir (configScratchDir config)
- $ do	outLn "* Unpacking GHC"
-	outCheckFalseOk " - Checking build directory is empty"
-	 $ HasDir $ " -ghc-head"
-
-	let Just snapshot = configWithGhcSnapshot config
-
-	outLn $ " - Unpacking snapshot " ++ snapshot
-	system $ "tar zxf " ++ snapshot
-	
-	outLn $ " - Updating snapshot"
-	inDir "ghc-head"
-	 $ system "./darcs-all pull -av"
-	
-
-ghcBuild config
- = inDir (configScratchDir config)
- $ inDir "ghc-head"
- $ do	outLn "* Building GHC"
-	
-	system $ "perl boot"
-	system $ "./configure"
-	system $ "make"
-	
-	inDir "inplace/bin"
-	 $ system $ "ln -s ghc-stage2 ghc"
-
-
-ghcLibs config
- = do	let ghcPkg	= configWithGhcPkg
-	outLn "* Building base libraries."
-	outCheckOk " - Checking for cabal"
-	 $ HasExecutable "cabal"
-	
-	let cabal	= "cabal "
-			++ " --with-compiler=" ++ configWithGhc config
-			++ " --with-hc-pkg="   ++ configWithGhcPkg config
-	
-	let cabalInstall pkg
-		= do	outLn   $ "- Building " ++ pkg
-			system	$ cabal ++ " install " ++ pkg
-			outBlank
-		
-	mapM_ cabalInstall basePackages
 	

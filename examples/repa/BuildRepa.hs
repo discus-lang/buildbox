@@ -1,5 +1,5 @@
 
-module Repa
+module BuildRepa
 	( repaUnpack
 	, repaBuild
 	, repaTest
