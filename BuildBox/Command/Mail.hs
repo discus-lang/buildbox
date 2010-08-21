@@ -12,12 +12,11 @@ import BuildBox.Pretty
 import BuildBox.Command.Environment
 import BuildBox.Command.System
 import BuildBox.Command.File
-import System.Time
 import System.Locale	(defaultTimeLocale)
 import Data.Time.Clock
 import Data.Time.LocalTime
 import Data.Time.Format
-import Data.Maybe
+import Data.Time.Calendar
 
 
 -- | An email message that we can send.
@@ -52,14 +51,12 @@ createMailWithCurrentTime from to subject body
 	-- Use RFC 2822 format timestamp.
 	utime		<- io $ getCurrentTime
 	zone		<- io $ getCurrentTimeZone
-	let dateString	= formatTime defaultTimeLocale "%a, %e %b %Y %H:%M:%S %z"
-			$ utcToZonedTime zone utime
 
 	-- Generate a messageid based on the clock time.
-	date		<- io $ getClockTime 
 	hostName	<- getHostName
-	let TOD secs psecs	= date
-	let messageId	=  "<" ++ show secs ++ "." ++ take 6 (show psecs)
+	let dayNum	= toModifiedJulianDay $ utctDay utime
+	let secTime	= utctDayTime utime
+	let messageId	=  "<" ++ show dayNum ++ "." ++ show secTime
 			++ "@" ++ hostName ++ ">"
 		
 	return	$ Mail

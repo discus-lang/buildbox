@@ -11,18 +11,28 @@ import System.Console.ParseArgs
 data BuildArg
 	= ArgHelp
 	| ArgVerbose
-	| ArgTmpDir
-	| ArgWithGhcBuild
+	| ArgScratchDir
+
+	-- Recipies
 	| ArgDoNightly
-	| ArgDoUnpackGhc
+
+	-- GHC building
 	| ArgWithGhcSnapshot
-	| ArgDoBuildGhc
-	| ArgDoUnpack
+	| ArgDoGhcUnpack
+	| ArgDoGhcBuild
+	| ArgDoGhcLibs
+
+	-- Repa building
+	| ArgWithGhcBuild
+	| ArgDoRepaUnpack
+	| ArgDoRepaBuild
+
+	| ArgDoRepaTest
+	| ArgTestIterations
+
+	-- Working with results files
 	| ArgDoDump
 	| ArgDoCompare
-	| ArgDoBuild
-	| ArgDoTest
-	| ArgTestIterations
 	| ArgWriteResults
 	| ArgAgainstResults
 	| ArgMailFrom 
@@ -43,9 +53,9 @@ buildArgs :: [Arg BuildArg]
 		, argData	= Nothing
 		, argDesc	= "Verbose logging of build commands." }
 
-	, Arg	{ argIndex	= ArgTmpDir
+	, Arg	{ argIndex	= ArgScratchDir
 		, argAbbr	= Nothing
-		, argName	= Just "dir"
+		, argName	= Just "scratch-dir"
 		, argData	= argDataOptional "dir" ArgtypeString
 		, argDesc	= "Scratch dir to do the build in." }
 
@@ -55,41 +65,53 @@ buildArgs :: [Arg BuildArg]
 		, argData	= Nothing
 		, argDesc	= "Run the entire nightly build: unpack, build, test." }
 
-	, Arg	{ argIndex	= ArgDoUnpackGhc
-		, argAbbr	= Nothing
-		, argName	= Just "unpack-ghc"
-		, argData	= argDataOptional "file" ArgtypeString
-		, argDesc	= "Unpack this GHC snapshot and update it from darcs.haskell.org." }
-
-	, Arg	{ argIndex	= ArgDoBuildGhc
-		, argAbbr	= Nothing
-		, argName	= Just "build-ghc"
-		, argData	= Nothing
-		, argDesc	= "Build the GHC repo." }
-
 	, Arg	{ argIndex	= ArgWithGhcSnapshot
 		, argAbbr	= Nothing
 		, argName	= Just "with-ghc-snapshot"
 		, argData	= argDataOptional "file" ArgtypeString
-		, argDesc	= "Use this GHC snapshot" }
+		, argDesc	= "Use this GHC snapshot, something like ghc-head-DATE.tgz" }
 
-	, Arg	{ argIndex	= ArgDoUnpack
+	, Arg	{ argIndex	= ArgDoGhcUnpack
 		, argAbbr	= Nothing
-		, argName	= Just "unpack"
-		, argData	= Nothing
-		, argDesc	= "Download the latest version of Repa from code.haskell.org." }
+		, argName	= Just "ghc-unpack"
+		, argData	= argDataOptional "file" ArgtypeString
+		, argDesc	= "Unpack this GHC snapshot and update it from darcs.haskell.org." }
 
-	, Arg	{ argIndex	= ArgDoBuild
+	, Arg	{ argIndex	= ArgDoGhcBuild
 		, argAbbr	= Nothing
-		, argName	= Just "build"
+		, argName	= Just "ghc-build"
 		, argData	= Nothing
-		, argDesc	= "Build and register the Repa packages." }
+		, argDesc	= "Build an unpacked GHC snapshot." }
+
+	, Arg	{ argIndex	= ArgDoGhcLibs
+		, argAbbr	= Nothing
+		, argName	= Just "ghc-libs"
+		, argData	= Nothing
+		, argDesc	= "Download and install base libraries into a GHC build." }
 
 	, Arg	{ argIndex	= ArgWithGhcBuild
 		, argAbbr	= Nothing
 		, argName	= Just "with-ghc-build"
 		, argData	= argDataOptional "dir" ArgtypeString
-		, argDesc	= "Build Repa with the GHC build in this dir." }
+		, argDesc	= "Use this existing GHC build." }
+
+	, Arg	{ argIndex	= ArgDoRepaUnpack
+		, argAbbr	= Nothing
+		, argName	= Just "repa-unpack"
+		, argData	= Nothing
+		, argDesc	= "Download the latest version of Repa from code.haskell.org." }
+
+	, Arg	{ argIndex	= ArgDoRepaBuild
+		, argAbbr	= Nothing
+		, argName	= Just "repa-build"
+		, argData	= Nothing
+		, argDesc	= "Build and register the Repa packages with a GHC build." }
+
+	, Arg	{ argIndex	= ArgDoRepaTest
+		, argAbbr	= Nothing
+		, argName	= Just "repa-test"
+		, argData	= Nothing
+		, argDesc	= "Run Repa regression tests." }
 
 	, Arg	{ argIndex	= ArgDoDump
 		, argAbbr	= Nothing
@@ -103,40 +125,34 @@ buildArgs :: [Arg BuildArg]
 		, argData	= Nothing
 		, argDesc	= "Compare two results files." }
 
-	, Arg	{ argIndex	= ArgDoTest
-		, argAbbr	= Nothing
-		, argName	= Just "test"
-		, argData	= Nothing
-		, argDesc	= "Run regression tests." }
-
 	, Arg	{ argIndex	= ArgTestIterations
 		, argAbbr	= Just 'i'
 		, argName	= Just "iterations"
 		, argData	= argDataDefaulted "int" ArgtypeInt 1
-		, argDesc	= "(opt. for test mode) Number of times to run each benchmark." }
+		, argDesc	= "(opt. for repa-test mode) Number of times to run each benchmark." }
 		
 	, Arg	{ argIndex	= ArgWriteResults
 		, argAbbr	= Just 'w'
 		, argName	= Just "write"
 		, argData	= argDataOptional "file" ArgtypeString
-		, argDesc	= "(opt. for test mode) Write results to this file." }
+		, argDesc	= "(opt. for repa-test mode) Write results to this file." }
 		
 	, Arg	{ argIndex	= ArgAgainstResults
 		, argAbbr	= Just 'a'
 		, argName	= Just "against"
 		, argData	= argDataOptional "file" ArgtypeString
-		, argDesc	= "(opt. for test mode) Print running comparison against results in this file." }
+		, argDesc	= "(opt. for repa-test mode) Print running comparison against results in this file." }
 		
 	, Arg	{ argIndex	= ArgMailFrom
 		, argAbbr	= Nothing
 		, argName	= Just "mailfrom"
 		, argData	= argDataOptional "address" ArgtypeString
-		, argDesc	= "Mail results from this address." }
+		, argDesc	= "(opt. for repa-test mode) Mail results from this address." }
 
 	, Arg	{ argIndex	= ArgMailTo
 		, argAbbr	= Nothing
 		, argName	= Just "mailto"
 		, argData	= argDataOptional "address" ArgtypeString
-		, argDesc	= " ...to this address." }
+		, argDesc	= "(opt. for repa-test mode) ...to this address." }
 		
 	]

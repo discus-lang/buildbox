@@ -1,9 +1,12 @@
 
 module BuildBox.Build 
 	( module BuildBox.Build.Testable
-	, Build
 	, BuildError(..)
 	, throw
+	, BuildConfig(..)
+	, buildConfigInit
+	, logSystem
+	, Build
 	, runBuild
 	, runBuildAndPrintResult
 	, io

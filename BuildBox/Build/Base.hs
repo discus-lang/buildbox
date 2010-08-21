@@ -4,14 +4,12 @@
 module BuildBox.Build.Base where
 import BuildBox.Pretty
 import Control.Monad.Error
+import Control.Monad.Reader
 import System.IO
 import System.IO.Error
 
--- | The builder monad encapsulates and IO action that can fail with an error.
---   TODO: add logging and config to tis state.
-type Build a 	= ErrorT BuildError IO a
-
--- | The errors we recognise. They're encoded like this so we can produce nice error messages.
+-- BuildError -------------------------------------------------------------------------------------
+-- | The errors we recognise.
 data BuildError
 	-- | Some generic error
 	= ErrorOther String
@@ -24,7 +22,6 @@ data BuildError
 
 	-- | Some property `check` was supposed to return the given boolean value, but it didn't.
 	| forall prop. Show prop => ErrorCheckFailed Bool prop	
-
 
 instance Error BuildError where
  strMsg s = ErrorOther s
@@ -44,23 +41,49 @@ instance Show BuildError where
 	ErrorCheckFailed expected prop
 	 -> "check failure: " ++ show prop ++ " expected " ++ show expected
 
-
 -- | Throw an error in the build monad.
 throw :: BuildError -> Build a
 throw	= throwError
 
 
+-- BuildConfig ------------------------------------------------------------------------------------
+-- | Global builder configuration.
+data BuildConfig
+	= BuildConfig
+	{ -- | Log all system commands executed to this file handle.
+	  buildConfigLogSystem	:: Maybe Handle }
+
+buildConfigInit
+	= BuildConfig
+	{ buildConfigLogSystem	= Nothing }
+
+-- | Log a system command.
+logSystem :: String -> Build ()
+logSystem cmd
+ = do	mHandle	<- asks buildConfigLogSystem
+	case mHandle of
+	 Nothing	-> return ()
+	 Just handle	
+	  -> do	io $ hPutStr handle cmd
+		return ()
+
+-- Build ------------------------------------------------------------------------------------------
+-- | The builder monad encapsulates and IO action that can fail with an error, 
+--   and also read some global configuration info.
+type Build a 	= ErrorT BuildError (ReaderT BuildConfig IO) a
+
+
 -- | Run a build command.
 runBuild :: Build a -> IO (Either BuildError a)
 runBuild build
-	= runErrorT build
+	= runReaderT (runErrorT build) buildConfigInit
 
 
 -- | Run a build command, reporting whether it succeeded to the console.
 --   If it succeeded then return Just the result, else Nothing.
 runBuildAndPrintResult :: Build a -> IO (Maybe a)
 runBuildAndPrintResult build
- = do	result	<- runErrorT build
+ = do	result	<- runReaderT (runErrorT build) buildConfigInit
 	case result of
 	 Left err
 	  -> do	putStrLn "\nBuild failed"
@@ -73,6 +96,7 @@ runBuildAndPrintResult build
 		return $ Just x
 		
 
+-- Utils ------------------------------------------------------------------------------------------
 -- | Lift an IO action into the build monad.
 io :: IO a -> Build a
 io x

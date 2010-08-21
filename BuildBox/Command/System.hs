@@ -21,7 +21,8 @@ import qualified System.Cmd
 -- | Run a system command, expecting success.
 system :: String -> Build ()
 system cmd
- = do	code	<- io $ System.Cmd.system cmd
+ = do	logSystem cmd
+	code	<- io $ System.Cmd.system cmd
 	case code of
 	 ExitSuccess   -> return ()
 	 ExitFailure _ -> throw $ ErrorSystemCmdFailed cmd
@@ -30,23 +31,28 @@ system cmd
 -- | Run a system command, returning its exit code.
 systemCode :: String -> Build ExitCode
 systemCode cmd
- = do	code	<- io $ System.Cmd.system cmd
+ = do	logSystem cmd
+	code	<- io $ System.Cmd.system cmd
 	return code
 
 
 -- | Run a system command, expecting success, discarding anything written to @stdout@ or @stderr@.
 systemNull :: String -> Build ()
 systemNull cmd
- = do	code	<- io $ System.Cmd.system $ cmd ++ " > /dev/null 2> /dev/null"
+ = do	let cmd'	= cmd ++ " > /dev/null 2> /dev/null"
+	logSystem cmd'
+	code		<- io $ System.Cmd.system $ cmd'
 	case code of
 	 ExitSuccess	-> return ()
-	 ExitFailure _	-> throw $ ErrorSystemCmdFailed cmd
+	 ExitFailure _	-> throw $ ErrorSystemCmdFailed cmd'
 	
 	
 -- | Run a system command, returning its exit code, discarding anything written to @stdout@ or @stderr@.
 systemNullCode :: String -> Build ExitCode
 systemNullCode cmd
- = do	code	<- io $ System.Cmd.system $ cmd ++ " > /dev/null 2> /dev/null"
+ = do	let cmd'	= cmd ++ " > /dev/null 2> /dev/null"
+	logSystem cmd'
+	code	<- io $ System.Cmd.system cmd'
 	return code
 	
 
@@ -56,7 +62,8 @@ systemNullCode cmd
 systemWithStdout :: String -> Build String
 systemWithStdout cmd
  | prog : args	<- words cmd
- = do	(fdOutRead, fdOutWrite)	<- io $ createPipe
+ = do	logSystem cmd
+	(fdOutRead, fdOutWrite)	<- io $ createPipe
 	hOutRead		<- io $ fdToHandle fdOutRead
 	hOutWrite		<- io $ fdToHandle fdOutWrite
 

@@ -1,7 +1,8 @@
 
 module Config 
 	( Config(..)
-	, defaultMailer)
+	, defaultMailer
+	, basePackages)
 where
 import BuildBox
 
@@ -9,7 +10,7 @@ import BuildBox
 data Config
 	= Config
 	{ configVerbose		:: Bool
-	, configTmpDir		:: String
+	, configScratchDir	:: String
 
 	-- GHC config
 	, configWithGhcBuild	:: Maybe FilePath
@@ -19,11 +20,12 @@ data Config
 	, configWithGhcSnapshot	:: Maybe FilePath
 
 	-- Build stages
-	, configDoUnpackGhc	:: Bool
-	, configDoBuildGhc	:: Bool
-	, configDoUnpack	:: Bool
-	, configDoBuild		:: Bool
-	, configDoTest		:: Bool 
+	, configDoGhcUnpack	:: Bool
+	, configDoGhcBuild	:: Bool
+	, configDoGhcLibs	:: Bool
+	, configDoRepaUnpack	:: Bool
+	, configDoRepaBuild	:: Bool
+	, configDoRepaTest	:: Bool 
 
 	-- Testing config.
 	, configIterations	:: Int
@@ -35,8 +37,15 @@ data Config
 	deriving Show
 
 
--- Hard coded config.
+-- Hard coded config ------------------------------------------------------------------------------
 defaultMailer
 	= MailerMSMTP
 	{ mailerPath	= "msmtp"
 	, mailerPort	= Just 587 }
+	
+-- Base Packages ----------------------------------------------------------------------------------
+
+basePackages
+ = 	[ "bmp-1.1.0.0"
+	, "QuickCheck-2.1.1.1" ]
+	
