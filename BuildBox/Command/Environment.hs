@@ -44,7 +44,7 @@ instance Pretty Environment where
 
 
 
--- | Get the current environment, including versions of this software.
+-- | Get the current environment, including versions of these tools.
 getEnvironmentWith 
 	:: [(String, Build String)]	-- ^ List of tool names and commands to get their versions.
 	-> Build Environment
@@ -143,14 +143,14 @@ getHostRelease
 
 
 -- Software version tests -------------------------------------------------------------------------
--- | Get the version of this GHC, or thrown an error if it can't be found.
+-- | Get the version of this GHC, or throw an error if it can't be found.
 getVersionGHC :: FilePath -> Build String
 getVersionGHC path
  = do	check $ HasExecutable path
 	str	<- systemWithStdout $ path ++ " --version"
 	return	$ init str
 	
--- | Get the version of this GCC, or thrown an error if it can't be found. 
+-- | Get the version of this GCC, or throw an error if it can't be found. 
 getVersionGCC :: FilePath -> Build String
 getVersionGCC path
  = do	check $ HasExecutable path

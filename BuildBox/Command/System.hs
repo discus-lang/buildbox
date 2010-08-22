@@ -1,7 +1,8 @@
 {-# LANGUAGE PatternGuards #-}
 
 -- | Running system commands. On some platforms this may cause the command to be executed directly, so 
---   shell tricks won't work.
+--   shell tricks won't work. The `Build` monad can be made to log all commands executed with versions
+--   of `system` by setting `buildConfigLogSystem` in the `BuildConfig` passed to `runBuildPrintWithConfig`.
 module BuildBox.Command.System 
 	( module System.Exit
 	, system

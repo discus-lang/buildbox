@@ -11,12 +11,12 @@ Category:            Development, Testing
 Homepage:            http://trac.haskell.org/repa
 Bug-reports:         http://trac.haskell.org/repa/newticket
 Description:
-        Reusable components for writing buildbots and test harnesses. Includes functions
+        Rehackable components for writing buildbots and test harnesses. Includes functions
         for checking the host platform, running tests, capturing output, handling errors,
         comparing runtimes against a baseline etc.
 
 Synopsis:
-        Reusable components for writing buildbots and test harnesses.
+        Rehackable components for writing buildbots and test harnesses.
 
 Tested-with: GHC == 6.13.20100309, GHC == 6.12.1
 

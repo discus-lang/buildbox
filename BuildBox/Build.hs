@@ -1,15 +1,17 @@
 
+-- | Defines the main `Build` monad and common utils.
 module BuildBox.Build 
 	( module BuildBox.Build.Testable
-	, BuildError(..)
-	, throw
-	, BuildConfig(..)
-	, buildConfigInit
-	, logSystem
 	, Build
+	, BuildError(..)
+	, BuildConfig(..)
+	, buildConfigDefault
 	, runBuild
-	, runBuildAndPrintResult
+	, runBuildPrint
+	, runBuildPrintWithConfig
+	, throw
 	, io
+	, logSystem
 	, out
 	, outLn
 	, outBlank

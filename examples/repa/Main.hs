@@ -73,7 +73,7 @@ mainWithArgs args
 
 		config	<- slurpConfig args tmpDir
 
-		result	<- runBuildAndPrintResult (nightly config)
+		result	<- runBuildPrint (nightly config)
 		return ()
 
 	| otherwise
