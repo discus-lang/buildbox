@@ -27,6 +27,7 @@ import BuildGhc
 import Control.Monad
 import System.Console.ParseArgs
 import System.Directory
+import System.IO
 import Data.Time
 import Data.List
 import Data.Maybe
@@ -72,8 +73,13 @@ mainWithArgs args
 				(getArg args ArgScratchDir)
 
 		config	<- slurpConfig args tmpDir
+		let buildConfig
+			= BuildConfig
+			{ buildConfigLogSystem	= if gotArg args ArgVerbose
+				 			then Just stdout
+							else Nothing }
 
-		result	<- runBuildPrint (nightly config)
+		result	<- runBuildPrintWithConfig buildConfig (nightly config)
 		return ()
 
 	| otherwise

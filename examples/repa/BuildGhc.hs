@@ -54,7 +54,7 @@ ghcLibs config
 			++ " --with-hc-pkg="   ++ configWithGhcPkg config
 
 	outLn " - Updating cabal package database"
-	system $ "cabal update"
+	systemNull $ "cabal update"
 		
 	let cabalInstall pkg
 		= do	outLn   $ " - Building " ++ pkg

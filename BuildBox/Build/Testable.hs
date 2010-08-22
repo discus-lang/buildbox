@@ -42,10 +42,8 @@ outCheckOk
 	=> String -> prop -> Build ()
 
 outCheckOk str prop
- = do	out $ str ++ "..."
-	io  $ hFlush stdout
+ = do	outLn str
 	check prop
-	out " ok\n"
 
 
 -- | Check some property while printing what we're doing.
@@ -54,8 +52,6 @@ outCheckFalseOk
 	=> String -> prop -> Build ()
 
 outCheckFalseOk str prop
- = do	out $ str ++ "..."
-	io  $ hFlush stdout
+ = do	outLn str
 	checkFalse prop
-	out " ok\n"
 

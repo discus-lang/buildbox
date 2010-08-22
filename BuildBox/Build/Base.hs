@@ -65,7 +65,8 @@ logSystem cmd
 	case mHandle of
 	 Nothing	-> return ()
 	 Just handle	
-	  -> do	io $ hPutStr handle cmd
+	  -> do	io $ hPutStr   handle "buildbox system: "
+		io $ hPutStrLn handle cmd
 		return ()
 
 -- Build ------------------------------------------------------------------------------------------
@@ -148,3 +149,4 @@ whenM :: Monad m => m Bool -> m () -> m ()
 whenM cb cx
  = do	b	<- cb
 	if b then cx else return ()
+	
