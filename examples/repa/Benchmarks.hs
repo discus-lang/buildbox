@@ -25,7 +25,7 @@ benchmarks config
 	  in  	Benchmark
 		 	"laplace"
 			(do	makeDirIfNeeded "output"
-				test $ HasExecutable laplace
+				check $ HasExecutable laplace
 				whenM (test $ HasFile inputgz)
 				 $ system $ "gzip -d " ++ inputgz
 				test $ HasFile input)								
@@ -41,7 +41,7 @@ benchmarks config
 	  in	Benchmark 
 			"fft2d-highpass"
 			(do	makeDirIfNeeded "output"
-				test $ HasExecutable fft2d
+				check $ HasExecutable fft2d
 				whenM (test $ HasFile inputgz)
 				 $ system $ "gzip -d " ++ inputgz
 				test $ HasFile input)

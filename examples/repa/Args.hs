@@ -40,6 +40,7 @@ data BuildArg
 
 
 buildArgs :: [Arg BuildArg]
+buildArgs
  = 	[ Arg	{ argIndex	= ArgHelp
 		, argAbbr	= Just 'h'
 		, argName	= Just "help"

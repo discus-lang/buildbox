@@ -104,4 +104,5 @@ padL :: Int -> Doc -> Doc
 padL n str	= padLc n ' ' str
 
 -- | Blank text
+blank :: Doc
 blank = ppr ""

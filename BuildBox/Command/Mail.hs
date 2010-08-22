@@ -89,7 +89,8 @@ sendMailWithMailer :: Mail -> Mailer -> Build ()
 sendMailWithMailer mail mailer
  = case mailer of
 	MailerMSMTP{}	-> sendMailWithMSMTP mail mailer
-	
+
+sendMailWithMSMTP :: Mail -> Mailer -> Build ()
 sendMailWithMSMTP mail mailer@MailerMSMTP{}
  = withTempFile $ \fileName 
  -> do	let mailDoc	= renderMail mail

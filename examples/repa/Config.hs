@@ -39,7 +39,7 @@ data Config
 
 -- Hard coded config.
 --	Can't be bothered turning these into cmd line args.
-
+defaultMailer :: Mailer
 defaultMailer
 	= MailerMSMTP
 	{ mailerPath	= "msmtp"
@@ -47,6 +47,7 @@ defaultMailer
 	
 -- | These are non-repa packages we always want to download and install
 --   into a fresh GHC build.
+basePackages :: [String]
 basePackages
  = 	[ "bmp-1.1.1.1"
 	, "QuickCheck-2.1.1.1" ]

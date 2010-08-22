@@ -25,18 +25,18 @@ import Config
 import BuildRepa
 import BuildGhc
 import Control.Monad
-import System.Console.ParseArgs
+import System.Console.ParseArgs	hiding (args)
 import System.Directory
 import System.IO
-import Data.Time
-import Data.List
 import Data.Maybe
 
+main :: IO ()
 main 
  = do	args	<- parseArgsIO ArgsTrailing buildArgs
 	mainWithArgs args
 
 -- | Decide what to do
+mainWithArgs :: Args BuildArg -> IO ()
 mainWithArgs args
 
 	-- Print usage help
@@ -79,7 +79,7 @@ mainWithArgs args
 				 			then Just stdout
 							else Nothing }
 
-		result	<- runBuildPrintWithConfig buildConfig (nightly config)
+		_	<- runBuildPrintWithConfig buildConfig (nightly config)
 		return ()
 
 	| otherwise
@@ -87,6 +87,7 @@ mainWithArgs args
 
 
 -- | Slurp configuration information from the command line arguments.
+slurpConfig :: Args BuildArg -> FilePath -> IO Config
 slurpConfig args scratchDir
  = do 	let Just iterations	= getArg args ArgTestIterations
 	

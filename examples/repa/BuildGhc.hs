@@ -5,13 +5,10 @@ module BuildGhc
 	, ghcBuild
 	, ghcLibs)
 where
-import Benchmarks
 import Config
 import BuildBox
-import Data.Time
-import Control.Monad
 
-
+ghcUnpack :: Config -> Build ()
 ghcUnpack config
  = inDir (configScratchDir config)
  $ do	outLn "* Unpacking GHC"
@@ -28,6 +25,7 @@ ghcUnpack config
 	 $ system "./darcs-all pull -av"
 	
 
+ghcBuild :: Config -> Build ()
 ghcBuild config
  = inDir (configScratchDir config)
  $ inDir "ghc-head"
@@ -43,9 +41,9 @@ ghcBuild config
 	outBlank
 	outBlank
 
+ghcLibs :: Config -> Build ()
 ghcLibs config
- = do	let ghcPkg	= configWithGhcPkg
-	outLn "* Building base libraries."
+ = do	outLn "* Building base libraries."
 	outCheckOk " - Checking for cabal"
 	 $ HasExecutable "cabal"
 
