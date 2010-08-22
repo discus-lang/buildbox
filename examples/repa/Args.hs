@@ -62,7 +62,7 @@ buildArgs :: [Arg BuildArg]
 		, argAbbr	= Nothing
 		, argName	= Just "nightly"
 		, argData	= Nothing
-		, argDesc	= "Run the entire nightly build: unpack, build, test." }
+		, argDesc	= "Run the entire nightly build." }
 
 	, Arg	{ argIndex	= ArgWithGhcSnapshot
 		, argAbbr	= Nothing

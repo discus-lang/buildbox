@@ -39,20 +39,25 @@ ghcBuild config
 	
 	inDir "inplace/bin"
 	 $ system $ "ln -s ghc-stage2 ghc"
-
+	
+	outBlank
+	outBlank
 
 ghcLibs config
  = do	let ghcPkg	= configWithGhcPkg
 	outLn "* Building base libraries."
 	outCheckOk " - Checking for cabal"
 	 $ HasExecutable "cabal"
-	
+
 	let cabal	= "cabal "
 			++ " --with-compiler=" ++ configWithGhc config
 			++ " --with-hc-pkg="   ++ configWithGhcPkg config
-	
+
+	outLn " - Updating cabal package database"
+	system $ "cabal update"
+		
 	let cabalInstall pkg
-		= do	outLn   $ "- Building " ++ pkg
+		= do	outLn   $ " - Building " ++ pkg
 			system	$ cabal ++ " install " ++ pkg
 			outBlank
 		

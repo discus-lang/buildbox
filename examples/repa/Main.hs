@@ -3,6 +3,22 @@
 -- Repa buildbot
 -- 	Used to automate building and performance testing of GHC and Repa
 --
+-- 	TODO: Fix BMP library.
+----
+--	TODO: Add sleeping / build-at-midnight mode.
+--
+--	TODO: Finish verbose logging of system commands.
+--
+--	TODO: Capture output of system commands for logging on website.
+--	      Make a log file for each of the stages, and post to web site along with results file.
+--	      We might need to write a "tee" function in Haskell
+--
+--	TODO: Rewrite system cmds without using shell hacks.
+--
+--	TODO: Timestamp "current" build results file. Rename to results-DATE.
+--
+--	TODO: Set number of threads to test with for Repa on cmd line.
+--
 import BuildBox
 import Args
 import Config
@@ -10,6 +26,7 @@ import BuildRepa
 import BuildGhc
 import Control.Monad
 import System.Console.ParseArgs
+import System.Directory
 import Data.Time
 import Data.List
 import Data.Maybe
@@ -54,7 +71,7 @@ mainWithArgs args
 				(error "You must specify --scratch-dir with --repa-unpack, --repa-build or --repa-test.")
 				(getArg args ArgScratchDir)
 
-		let config = slurpConfig args tmpDir
+		config	<- slurpConfig args tmpDir
 
 		result	<- runBuildAndPrintResult (nightly config)
 		return ()
@@ -64,49 +81,61 @@ mainWithArgs args
 
 
 -- | Slurp configuration information from the command line arguments.
-slurpConfig args tmpDir
- = let Just iterations	= getArg args ArgTestIterations
+slurpConfig args scratchDir
+ = do 	let Just iterations	= getArg args ArgTestIterations
+	
+	-- canonicalize all the paths we were given.
+	withScratchDir	<- canonicalizePath scratchDir
+	
+	withGhc		<- canonicalizePath
+			$  maybe "ghc" (\dir -> dir ++ "/inplace/bin/ghc-stage2") 
+			$  getArg args ArgWithGhcBuild
 
-   in  Config
-	{ configVerbose		= gotArg args ArgVerbose
-	, configScratchDir	= tmpDir
-	, configWithGhcBuild	= getArg args ArgWithGhcBuild
+	withGhcPkg	<- canonicalizePath
+			$  maybe "ghc-pkg" (\dir -> dir ++ "/inplace/bin/ghc-pkg") 
+			$  getArg args ArgWithGhcBuild
 
-	, configWithGhc 	= maybe "ghc" (\dir -> dir ++ "/inplace/bin/ghc-stage2") 
-				$ getArg args ArgWithGhcBuild
+	withGhcSnapshot	<- if gotArg args ArgDoGhcUnpack
+			     then maybe (return Nothing)
+					(liftM Just . canonicalizePath)
+					(getArg args ArgDoGhcUnpack)
+					
+			     else maybe	(return Nothing)
+					(liftM Just . canonicalizePath)
+					(getArg args ArgWithGhcSnapshot)
+	
+    	return $ Config
+		{ configVerbose		= gotArg args ArgVerbose
+		, configScratchDir	= withScratchDir
+		, configWithGhcBuild	= getArg args ArgWithGhcBuild
+		, configWithGhc 	= withGhc
+		, configWithGhcPkg	= withGhcPkg
+		, configWithGhcSnapshot	= withGhcSnapshot
 
-	, configWithGhcPkg	= maybe "ghc-pkg" (\dir -> dir ++ "/inplace/bin/ghc-pkg") 
-				$ getArg args ArgWithGhcBuild
+		-- What stages to run.
+		-- If --nightly is set then do them all.
+		, configDoGhcUnpack	= gotArg args ArgDoGhcUnpack  || gotArg args ArgDoNightly
+		, configDoGhcBuild	= gotArg args ArgDoGhcBuild   || gotArg args ArgDoNightly
+		, configDoGhcLibs	= gotArg args ArgDoGhcLibs    || gotArg args ArgDoNightly
+		, configDoRepaUnpack	= gotArg args ArgDoRepaUnpack || gotArg args ArgDoNightly
+		, configDoRepaBuild	= gotArg args ArgDoRepaBuild  || gotArg args ArgDoNightly
+		, configDoRepaTest	= gotArg args ArgDoRepaTest   || gotArg args ArgDoNightly
 
-	, configWithGhcSnapshot	
-		= if gotArg args ArgDoGhcUnpack
-		    then getArg args ArgDoGhcUnpack
-		    else getArg args ArgWithGhcSnapshot	
+		-- Testing config.
+		, configIterations	= iterations 
+		, configWriteResults	= getArg args ArgWriteResults
+		, configAgainstResults	= getArg args ArgAgainstResults
 
-	-- What stages to run.
-	-- If --nightly is set then do them all.
-	, configDoGhcUnpack	= gotArg args ArgDoGhcUnpack  || gotArg args ArgDoNightly
-	, configDoGhcBuild	= gotArg args ArgDoGhcBuild   || gotArg args ArgDoNightly
-	, configDoGhcLibs	= gotArg args ArgDoGhcLibs    || gotArg args ArgDoNightly
-	, configDoRepaUnpack	= gotArg args ArgDoRepaUnpack || gotArg args ArgDoNightly
-	, configDoRepaBuild	= gotArg args ArgDoRepaBuild  || gotArg args ArgDoNightly
-	, configDoRepaTest	= gotArg args ArgDoRepaTest   || gotArg args ArgDoNightly
-
-	-- Testing config.
-	, configIterations	= iterations 
-	, configWriteResults	= getArg args ArgWriteResults
-	, configAgainstResults	= getArg args ArgAgainstResults
-
-	-- TODO: check we have both args
-	, configMailFromTo	= let result	
-					| Just from	<- getArg args ArgMailFrom
-					, Just to	<- getArg args ArgMailTo
-					= Just (from, to)
+		-- TODO: check we have both args
+		, configMailFromTo	= let result	
+						| Just from	<- getArg args ArgMailFrom
+						, Just to	<- getArg args ArgMailTo
+						= Just (from, to)
 							
-					| otherwise
-					= Nothing
-				  in	result
-	}
+						| otherwise
+						= Nothing
+				  		in	result
+		}
 
 
 -- | The nightly build.
