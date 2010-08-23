@@ -3,11 +3,7 @@
 -- Repa buildbot
 -- 	Used to automate building and performance testing of GHC and Repa
 --
--- 	TODO: Fix BMP library.
-----
 --	TODO: Add sleeping / build-at-midnight mode.
---
---	TODO: Finish verbose logging of system commands.
 --
 --	TODO: Capture output of system commands for logging on website.
 --	      Make a log file for each of the stages, and post to web site along with results file.
@@ -60,7 +56,7 @@ mainWithArgs args
 		let [baseline, current] 
 				= map buildResultBench results
 
-		putStrLn $ show $ render $ pprComparisons baseline current
+		putStrLn $ render $ pprComparisons baseline current
 		
 	-- Do some building or testing process.
 	| or $ map (gotArg args) 

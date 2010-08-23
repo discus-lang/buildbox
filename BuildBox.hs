@@ -8,7 +8,8 @@ module BuildBox
 	, module BuildBox.Command.Network
 	, module BuildBox.Command.Mail
 	, module BuildBox.Command.Environment
-	, module BuildBox.Command.File)
+	, module BuildBox.Command.File
+	, module BuildBox.Cron)
 where
 import BuildBox.Build
 import BuildBox.Benchmark
@@ -19,3 +20,4 @@ import BuildBox.Command.Network
 import BuildBox.Command.Mail
 import BuildBox.Command.Environment
 import BuildBox.Command.File
+import BuildBox.Cron

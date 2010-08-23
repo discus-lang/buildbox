@@ -1,5 +1,6 @@
 
-
+-- | Sending email. We've got baked in support for @msmtp@, which is easy to set up. Adding support for other mailers 
+--   should be easy. Get @msmtp@ here: <http://msmtp.sourceforge.net>
 module BuildBox.Command.Mail
 	( Mail(..)
 	, Mailer(..)
@@ -44,7 +45,14 @@ data Mailer
 
 -- | Create a mail with a given from, to, subject and body.
 --   Fill in the date and message id based on the current time.
-createMailWithCurrentTime :: String -> String -> String -> String -> Build Mail
+--   Valid dates and message ids are needed to prevent the mail
+--   being bounced by spambots.
+createMailWithCurrentTime 
+	:: String 	-- ^ ``from`` field. Should be an email address.
+	-> String	-- ^ ``to`` field. Should be an email address.
+	-> String	-- ^ Subject line.
+	-> String	-- ^ Message  body.
+	-> Build Mail
 createMailWithCurrentTime from to subject body
  = do
 	-- We need to add the date otherwise our messages will get marked as spam.
