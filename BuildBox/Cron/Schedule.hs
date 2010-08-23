@@ -74,8 +74,8 @@ data WhenModifier
 	--   on program start.
 	= Immediate
 
-	-- | Skip the first invocation.
-	| SkipFirst
+	-- | Wait until after this time before doing it first.
+	| WaitUntil UTCTime
 	deriving (Read, Show, Eq)
 
 
@@ -94,10 +94,6 @@ data Event
 
 	  -- | Modifier to the previous.
 	, eventWhenModifier	:: Maybe WhenModifier
-
-	  -- | Records whether we've skipped a potential invocation.
-	  --   Used to manage the `SkipFirst` modifier.
-	, eventSkipped		:: Bool
 
 	  -- | When the event was last started, if any.
 	, eventLastStarted	:: Maybe UTCTime
@@ -122,19 +118,23 @@ earliestEventToStartNow curTime events
 eventCouldStartNow :: UTCTime -> Event -> Bool
 eventCouldStartNow curTime event
  
-	-- If the current end time is before the start time, 
-	-- then the most recent iteration is still running, 
-	-- so don't start it again.
+	-- If the current end time is before the start time, then the most
+	-- recent iteration is still running, so don't start it again.
 	| Just lastStarted	<- eventLastStarted event
  	, Just lastEnded	<- eventLastEnded   event
  	= lastEnded < lastStarted
  
-	-- If the event has never started or ended, and is 
-	-- marked as immediate, then start it right away.
+	-- If the event has never started or ended, and is marked as immediate,
+	-- then start it right away.
 	| Nothing		<- eventLastStarted  event
 	, Nothing		<- eventLastEnded    event
 	, Just Immediate	<- eventWhenModifier event
 	= True
+
+	-- Keep waiting if there's a seconday wait modifier.
+	| Just (WaitUntil waitTime)	<- eventWhenModifier event
+	, curTime < waitTime
+	= False
 
 	-- Otherwise we have to look at the real schedule.
 	| otherwise
@@ -185,7 +185,7 @@ eventsOfSchedule (Schedule sched)
 makeSchedule :: [(EventName, When, Maybe WhenModifier, cmd)] -> Schedule cmd
 makeSchedule tuples
  = let	makeSched (name, whn, mMod, cmd)
-	  =	(name, (Event name whn mMod False Nothing Nothing, cmd))
+	  =	(name, (Event name whn mMod Nothing Nothing, cmd))
    in	Schedule $ Map.fromList $ map makeSched tuples
 
 

@@ -1,6 +1,6 @@
 
 -- | What do build 'bots dream about?
-module BuildBox.Command.Timing
+module BuildBox.Command.Sleep
 	( sleep
 	, msleep)
 where

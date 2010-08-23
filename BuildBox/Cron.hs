@@ -8,13 +8,13 @@ module BuildBox.Cron
 where
 import BuildBox.Build
 import BuildBox.Cron.Schedule
-import BuildBox.Command.Timing
+import BuildBox.Command.Sleep
 import Data.Time
 
 -- | Given a schedule of commands, run them when they're time is due.
---   Only one command runs at a time. If several commands could be started
---   at a specific moment, then we run the one with the earliest
---   start time. If any command throws an error in the `Build` monad then the whole loop does.
+--   This only runs one command at a time. If several commands could be started at a specific
+--   moment, then we take the one with the earliest potential start time. If any command throws
+--   an error in the `Build` monad then the whole loop does.
 --
 cronLoop :: Schedule (Build ())-> Build ()
 cronLoop schedule
@@ -24,18 +24,7 @@ cronLoop schedule
 	 Nothing 
 	  -> do	sleep 1
 		cronLoop schedule
-
- 	 -- If we should skip first run, but haven't skipped before, then skip it.
-	 Just event
-	  | Just SkipFirst	<- eventWhenModifier event
-	  , not $ eventSkipped event
-	  -> do	let event'	= event
-				{ eventSkipped	= True }
-				
-		let schedule'	= adjustEventOfSchedule event' schedule
-		cronLoop schedule'
 		
-
 	 Just event 
 	  -> do	let Just build	= lookupCommandOfSchedule (eventName event) schedule
 		build

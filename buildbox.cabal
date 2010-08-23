@@ -49,7 +49,7 @@ Library
         BuildBox.Command.Mail
         BuildBox.Command.Network
         BuildBox.Command.System
-        BuildBox.Command.Timing
+        BuildBox.Command.Sleep
         BuildBox.Cron.Schedule
         BuildBox.Cron
         BuildBox.Pretty
