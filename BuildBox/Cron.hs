@@ -19,10 +19,22 @@ import Data.Time
 cronLoop :: Schedule (Build ())-> Build ()
 cronLoop schedule
  = do	startTime	<- io $ getCurrentTime
+
 	case earliestEventToStartNow startTime $ eventsOfSchedule schedule of
 	 Nothing 
 	  -> do	sleep 1
 		cronLoop schedule
+
+ 	 -- If we should skip first run, but haven't skipped before, then skip it.
+	 Just event
+	  | Just SkipFirst	<- eventWhenModifier event
+	  , not $ eventSkipped event
+	  -> do	let event'	= event
+				{ eventSkipped	= True }
+				
+		let schedule'	= adjustEventOfSchedule event' schedule
+		cronLoop schedule'
+		
 
 	 Just event 
 	  -> do	let Just build	= lookupCommandOfSchedule (eventName event) schedule

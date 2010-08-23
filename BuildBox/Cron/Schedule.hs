@@ -9,12 +9,13 @@ module BuildBox.Cron.Schedule
 
 	-- * When
 	, When		(..)
+	, WhenModifier	(..)
 
 	-- * Events
 	, EventName
 	, Event		(..)
 	, earliestEventToStartNow
-	, eventShouldStartNow
+	, eventCouldStartNow
 
 	-- * Schedules
 	, Schedule	(..)
@@ -67,6 +68,17 @@ data When
 	deriving (Read, Show, Eq)
 
 
+-- | Modifier to when.
+data WhenModifier
+	-- | If the event hasn't been invoked before then do it immediately
+	--   on program start.
+	= Immediate
+
+	-- | Skip the first invocation.
+	| SkipFirst
+	deriving (Read, Show, Eq)
+
+
 -- Event ------------------------------------------------------------------------------------------
 type EventName	= String
 
@@ -80,26 +92,35 @@ data Event
 	  -- | When to run the command.
 	, eventWhen		:: When
 
-	  -- | When the command was last started, if any.
+	  -- | Modifier to the previous.
+	, eventWhenModifier	:: Maybe WhenModifier
+
+	  -- | Records whether we've skipped a potential invocation.
+	  --   Used to manage the `SkipFirst` modifier.
+	, eventSkipped		:: Bool
+
+	  -- | When the event was last started, if any.
 	, eventLastStarted	:: Maybe UTCTime
-	
-	  -- | When the command last finished, if any.
+		
+	  -- | When the event last finished, if any.
 	, eventLastEnded	:: Maybe UTCTime }
 	deriving (Read, Show, Eq)
-
+	
 
 -- | Given the current time and a list of events, determine which one should be started now.
 --   If several events are avaliable then take the one with the earliest start time.
 earliestEventToStartNow :: UTCTime -> [Event] -> Maybe Event
 earliestEventToStartNow curTime events
- = let	eventsStartable	= filter (eventShouldStartNow curTime)   events
+ = let	eventsStartable	= filter (eventCouldStartNow curTime)   events
 	eventsSorted	= sortBy (compare `on` eventLastStarted) eventsStartable
    in	listToMaybe eventsSorted
 
 
--- | Given the current time, decide whether an event should be started.
-eventShouldStartNow :: UTCTime -> Event -> Bool
-eventShouldStartNow curTime event
+-- | Given the current time, decide whether an event could be started.
+--   If the `WhenModifier` is `Immediate` this always returns true.
+--   The `SkipFirst` modifier is ignored, as this is handled separately.
+eventCouldStartNow :: UTCTime -> Event -> Bool
+eventCouldStartNow curTime event
  
 	-- If the current end time is before the start time, 
 	-- then the most recent iteration is still running, 
@@ -108,6 +129,14 @@ eventShouldStartNow curTime event
  	, Just lastEnded	<- eventLastEnded   event
  	= lastEnded < lastStarted
  
+	-- If the event has never started or ended, and is 
+	-- marked as immediate, then start it right away.
+	| Nothing		<- eventLastStarted  event
+	, Nothing		<- eventLastEnded    event
+	, Just Immediate	<- eventWhenModifier event
+	= True
+
+	-- Otherwise we have to look at the real schedule.
 	| otherwise
 	= case eventWhen event of
 		Always		-> True
@@ -152,11 +181,11 @@ eventsOfSchedule (Schedule sched)
 
 
 -- | A nice way to produce a schedule.
---   This also checks that the names are unique.
-makeSchedule :: [(EventName, When, cmd)] -> Schedule cmd
+--   TODO: also checks that the names are unique.
+makeSchedule :: [(EventName, When, Maybe WhenModifier, cmd)] -> Schedule cmd
 makeSchedule tuples
- = let	makeSched (name, whn, cmd)
-	  =	(name, (Event name whn Nothing Nothing, cmd))
+ = let	makeSched (name, whn, mMod, cmd)
+	  =	(name, (Event name whn mMod False Nothing Nothing, cmd))
    in	Schedule $ Map.fromList $ map makeSched tuples
 
 
