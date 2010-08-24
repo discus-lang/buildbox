@@ -1,5 +1,7 @@
 
 -- | Some property of the system we can test for.
+--
+--   They have `Show` instances so we can make nice error messages if a `check` fails.
 module BuildBox.Build.Testable
 	( Testable(..)
 	, check

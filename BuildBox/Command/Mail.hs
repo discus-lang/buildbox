@@ -47,8 +47,8 @@ data Mailer
 --   Valid dates and message ids are needed to prevent the mail
 --   being bounced by spambots.
 createMailWithCurrentTime 
-	:: String 	-- ^ ``from`` field. Should be an email address.
-	-> String	-- ^ ``to`` field. Should be an email address.
+	:: String 	-- ^ ''from'' field. Should be an email address.
+	-> String	-- ^ ''to'' field. Should be an email address.
 	-> String	-- ^ Subject line.
 	-> String	-- ^ Message  body.
 	-> Build Mail

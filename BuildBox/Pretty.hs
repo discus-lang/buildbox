@@ -103,6 +103,6 @@ padLc n c str
 padL :: Int -> Doc -> Doc
 padL n str	= padLc n ' ' str
 
--- | Blank text
+-- | Blank text. This is different different from `empty` because it comes out a a newline when used in a `vcat`.
 blank :: Doc
 blank = ppr ""

@@ -14,8 +14,8 @@ module BuildBox.Cron.Schedule
 	-- * Events
 	, EventName
 	, Event		(..)
-	, earliestEventToStartNow
-	, eventCouldStartNow
+	, earliestEventToStartAt
+	, eventCouldStartAt
 
 	-- * Schedules
 	, Schedule	(..)
@@ -63,7 +63,7 @@ data When
 	-- | Do it some time after it last finished.
 	| After NominalDiffTime
 	
-	-- | Do it each day at this time.
+	-- | Do it each day at this time. The ''days'' are UTC days, not local ones.
 	| Daily TimeOfDay
 	deriving (Read, Show, Eq)
 
@@ -71,7 +71,7 @@ data When
 -- | Modifier to when.
 data WhenModifier
 	-- | If the event hasn't been invoked before then do it immediately
-	--   on program start.
+	--   when we start the cron process.
 	= Immediate
 
 	-- | Wait until after this time before doing it first.
@@ -105,9 +105,9 @@ data Event
 
 -- | Given the current time and a list of events, determine which one should be started now.
 --   If several events are avaliable then take the one with the earliest start time.
-earliestEventToStartNow :: UTCTime -> [Event] -> Maybe Event
-earliestEventToStartNow curTime events
- = let	eventsStartable	= filter (eventCouldStartNow curTime)   events
+earliestEventToStartAt :: UTCTime -> [Event] -> Maybe Event
+earliestEventToStartAt curTime events
+ = let	eventsStartable	= filter (eventCouldStartAt curTime)   events
 	eventsSorted	= sortBy (compare `on` eventLastStarted) eventsStartable
    in	listToMaybe eventsSorted
 
@@ -115,8 +115,8 @@ earliestEventToStartNow curTime events
 -- | Given the current time, decide whether an event could be started.
 --   If the `WhenModifier` is `Immediate` this always returns true.
 --   The `SkipFirst` modifier is ignored, as this is handled separately.
-eventCouldStartNow :: UTCTime -> Event -> Bool
-eventCouldStartNow curTime event
+eventCouldStartAt :: UTCTime -> Event -> Bool
+eventCouldStartAt curTime event
  
 	-- If the current end time is before the start time, then the most
 	-- recent iteration is still running, so don't start it again.
@@ -169,7 +169,7 @@ eventCouldStartNow curTime event
 
 
 -- Schedule ---------------------------------------------------------------------------------------
--- | Map of event names to their event details and build commands.
+-- | Map of event names to their details and build commands.	
 data Schedule cmd
 	= Schedule (Map EventName (Event, cmd))
 
@@ -181,7 +181,6 @@ eventsOfSchedule (Schedule sched)
 
 
 -- | A nice way to produce a schedule.
---   TODO: also checks that the names are unique.
 makeSchedule :: [(EventName, When, Maybe WhenModifier, cmd)] -> Schedule cmd
 makeSchedule tuples
  = let	makeSched (name, whn, mMod, cmd)

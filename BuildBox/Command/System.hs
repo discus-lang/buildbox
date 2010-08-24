@@ -10,19 +10,17 @@
 module BuildBox.Command.System 
 	( module System.Exit
 
-	-- * Simple wrappers
+	-- * Wrappers
 	, system
 	, ssystem
 	, qsystem
 	, qssystem
 	, ssystemOut
 	, qssystemOut
-
-	-- * Tee versions
-	, ssystemTee
 	, systemTee
+	, ssystemTee
 
-	-- * The Core Function
+	-- * The real function
 	, systemTeeIO)
 where
 import BuildBox.Command.System.Internals
@@ -49,7 +47,7 @@ system cmd
 
 
 -- | Run a successful system command.
---   If it fails throw an error in the `Build` monad.
+--   If the exit code is `ExitFailure` then throw an error in the `Build` monad.
 ssystem :: String -> Build ()
 ssystem cmd
  = do	(code, strOut, strErr)	<- systemTee True cmd ""
@@ -66,7 +64,7 @@ qsystem cmd
 
 
 -- | Quietly run a successful system command.
---   If it fails thrown an `ErrorSystemCmdFailed` in the `Build` monad.
+--   If the exit code is `ExitFailure` then throw an error in the `Build` monad.
 qssystem :: String -> Build ()
 qssystem cmd
  = do	(code, strOut, strErr)	<- systemTee False cmd ""
@@ -78,7 +76,7 @@ qssystem cmd
 -- | Run a successful system command, returning what it wrote to its @stdout@.
 --   If anything was written to @stderr@ then treat that as failure. 
 --   If it fails due to writing to @stderr@ or returning `ExitFailure`
---   then throw an `ErrorSystemCmdFailed` in the `Build` monad.
+--   then throw an error in the `Build` monad.
 ssystemOut :: String -> Build String
 ssystemOut cmd
  = do	(code, strOut, strErr)	<- systemTee True cmd ""
@@ -90,7 +88,7 @@ ssystemOut cmd
 -- | Quietly run a successful system command, returning what it wrote to its @stdout@.
 --   If anything was written to @stderr@ then treat that as failure. 
 --   If it fails due to writing to @stderr@ or returning `ExitFailure`
---   then throw an `ErrorSystemCmdFailed` in the `Build` monad.
+--   then throw an error in the `Build` monad.
 qssystemOut :: String -> Build String
 qssystemOut cmd
  = do	(code, strOut, strErr)	<- systemTee False cmd ""
@@ -102,29 +100,36 @@ qssystemOut cmd
 
 
 -- Tee versions -----------------------------------------------------------------------------------
-ssystemTee  :: Bool -> String -> String -> Build ()
-ssystemTee tee cmd strIn
- = do	(code, strOut, strErr)	<- systemTee tee cmd strIn
-	when (code /= ExitSuccess)
-	 $ throw $ ErrorSystemCmdFailed cmd code strOut strErr
 
-
-
--- | Run a system command, returning its `ExitCode` and what was written to @stdout@ and @stderr@.
---   to the parent while the process runs.
+-- | Like `systemTeeIO`, but in the `Build` monad.
 systemTee 
-	:: Bool 	-- ^ Whether @stdout@ and @stderr@ are forwarded to the parent.
-	-> String	-- ^ Command to run.
-	-> String	-- ^ What to write to the commands stdin.
+	:: Bool 	
+	-> String	
+	-> String	
 	-> Build (ExitCode, String, String)
 
 systemTee tee cmd strIn
  = do	logSystem cmd
 	io $ systemTeeIO tee cmd strIn
+
+
+-- | Like `systemTeeIO`, but in the `Build` monad and throw an error if it returns `ExitFailure`.
+ssystemTee  :: Bool -> String -> String -> Build ()
+ssystemTee tee cmd strIn
+ = do	logSystem cmd
+	(code, strOut, strErr)	<- systemTee tee cmd strIn
+	when (code /= ExitSuccess)
+	 $ throw $ ErrorSystemCmdFailed cmd code strOut strErr
+
 	
 
--- | Like `systemTee` but in the plain `IO` monad.
-systemTeeIO :: Bool -> String -> String -> IO (ExitCode, String, String)
+-- | Run a system command, returning its `ExitCode` and what was written to @stdout@ and @stderr@.
+systemTeeIO 
+	:: Bool 	-- ^ Whether @stdout@ and @stderr@ should be forwarded to the parent process.
+	-> String 	-- ^ Command to run.
+	-> String	-- ^ What to pass to the command's @stdin@.
+	-> IO (ExitCode, String, String)
+
 systemTeeIO tee cmd strIn
  = do	trace $ "systemTeeIO " ++ show tee ++ ": " ++ cmd
 

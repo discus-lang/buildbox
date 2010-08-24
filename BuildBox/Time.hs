@@ -37,7 +37,7 @@ getStampyTime
 	return	$  formatTime defaultTimeLocale "%Y%m%d_%k%M%S" time
 
 
--- | Get the local midnight we've just ad as a `LocalTime`.
+-- | Get the local midnight we've just had as a `LocalTime`.
 getMidnightTodayLocal :: IO LocalTime
 getMidnightTodayLocal
  = do	curTime	<- getZonedTime
@@ -46,7 +46,7 @@ getMidnightTodayLocal
 		, localTimeOfDay	= midnight }
 
 
--- | For the local midnight that we've just had, convert that to a `UTCTime`.
+-- | Get the local midnight that we've just had, as a `UTCTime`.
 getMidnightTodayUTC :: IO UTCTime 
 getMidnightTodayUTC
  = do	curTime	<- getZonedTime
@@ -66,7 +66,7 @@ getMidnightTomorrowLocal
 		{ localDay		= addDays 1 (localDay (zonedTimeToLocalTime curTime)) 
 		, localTimeOfDay	= midnight }
 
--- | For the local midnight we're about to have, convert that to a `UTCTime`.
+-- | Get the local midnight we're about to have as a `UTCTime`.
 getMidnightTomorrowUTC 	 :: IO UTCTime
 getMidnightTomorrowUTC
  = do	curTime	<- getZonedTime

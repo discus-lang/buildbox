@@ -1,7 +1,9 @@
 {-# LANGUAGE PatternGuards #-}
 
--- | Running benchmarks and collecting timings. These functions expect the given `Build` commands to succeed,
---   throwing an error if they don't. If you're not sure whether your command will succeed then test it first.
+-- | Running benchmarks and collecting timings. 
+--
+--  These functions expect the given `Build` commands to succeed,
+--  throwing an error if they don't. If you're not sure whether your command will succeed then test it first.
 module BuildBox.Benchmark
 	( module BuildBox.Benchmark.TimeAspect
 	, module BuildBox.Benchmark.Pretty
@@ -51,11 +53,13 @@ runBenchmarkOnce
 	
 runBenchmarkOnce bench
  = do	-- Run the setup command
-	_setupOk <- benchmarkSetup bench
+	benchmarkSetup bench
 
 	(diffTime, mKernelTimings)	
 		<- runTimedCommand 
 		$  benchmarkCommand bench
+	
+	benchmarkCheck bench
 	
 	return	$ BenchRunResult
 		{ benchRunResultElapsed		= fromRational $ toRational diffTime

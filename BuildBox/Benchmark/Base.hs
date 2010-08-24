@@ -17,14 +17,13 @@ data Benchmark
 	  benchmarkName		:: String
 
 	  -- | Setup command to run before the main benchmark.
-	  --   Returns True when the setup succeeded.
-	, benchmarkSetup	:: Build Bool
+	, benchmarkSetup	:: Build ()
 
 	  -- | The benchmark command to run. Only the time taken to run this part is measured.
 	, benchmarkCommand	:: Build (Maybe Timing)
 
-	  -- | Check command to test whether the benchmark produced the correct answer.
-	, benchmarkCheck	:: Build Bool
+	  -- | Check \/ cleanup command to run after the main benchmark.
+	, benchmarkCheck	:: Build ()
 	}
 
 

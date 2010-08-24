@@ -2,10 +2,10 @@
 -- | Working with the file system.
 module BuildBox.Command.File
 	( PropFile(..)
-	, makeDirIfNeeded
 	, inDir
-	, inNewScratchDirNamed
+	, inScratchDir
 	, clobberDir
+	, ensureDir
 	, withTempFile)
 where
 import BuildBox.Build.Base
@@ -50,16 +50,6 @@ instance Testable PropFile where
 		return (null contents)
 
 
--- Directories ------------------------------------------------------------------------------------
--- | Create a new directory if it isn't already there, or return successfully if it is.
-makeDirIfNeeded :: FilePath -> Build ()
-makeDirIfNeeded path
- = do	already	<- io $ doesDirectoryExist path
-	if already
-	 then return ()
-	 else ssystem $ "mkdir -p " ++ path
-
-
 -- | Run a command in a different working directory. Throws an error if the directory doesn't exist.
 inDir :: FilePath -> Build a -> Build a
 inDir name build
@@ -72,21 +62,11 @@ inDir name build
 
 	return x
 
-
--- | Delete a dir recursively if it's there, otherwise do nothing.
---   This behaves differently than `removeDirectoryRecursive` because it does
---   not follow symlinks, just deletes them.
-clobberDir :: FilePath -> Build ()
-clobberDir path
- = 	ssystem $ "rm -Rf " ++ path
-
-
--- Scratch ----------------------------------------------------------------------------------------
 -- | Create a new directory with the given name, run a command within it,
 --   then change out and recursively delete the directory. Throws an error if a directory
 --   with the given name already exists.
-inNewScratchDirNamed :: FilePath -> Build a -> Build a
-inNewScratchDirNamed name build
+inScratchDir :: FilePath -> Build a -> Build a
+inScratchDir name build
  = do	
 	-- Make sure a dir with this name doesn't already exist.
 	checkFalse $ HasDir name
@@ -96,6 +76,23 @@ inNewScratchDirNamed name build
 	
 	ssystem $ "rm -Rf " ++ name 
 	return x
+
+
+-- | Delete a dir recursively if it's there, otherwise do nothing.
+--   Unlike `removeDirectoryRecursive`, this function does
+--   not follow symlinks, it just deletes them.
+clobberDir :: FilePath -> Build ()
+clobberDir path
+ = 	ssystem $ "rm -Rf " ++ path
+
+
+-- | Create a new directory if it isn't already there, or return successfully if it is.
+ensureDir :: FilePath -> Build ()
+ensureDir path
+ = do	already	<- io $ doesDirectoryExist path
+	if already
+	 then return ()
+	 else ssystem $ "mkdir -p " ++ path
 
 
 -- | Create a temp file, pass it to some command, then delete the file after the command finishes.
@@ -115,8 +112,3 @@ withTempFile build
 	
 	return result
 	
-	
-
-
-
-
