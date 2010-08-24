@@ -8,8 +8,8 @@ Build-Type:          Simple
 Cabal-Version:       >=1.6
 Stability:           experimental
 Category:            Development, Testing
-Homepage:            http://trac.haskell.org/repa
-Bug-reports:         http://trac.haskell.org/repa/newticket
+Homepage:            http://code.haskell.org/~benl/code/buildbox-head
+Bug-reports:         benl@ouroborus.net
 Description:
         Rehackable components for writing buildbots and test harnesses. Includes functions
         for checking the host platform, running tests, capturing output, handling errors,
@@ -21,7 +21,8 @@ Description:
 Synopsis:
         Rehackable components for writing buildbots and test harnesses.
 
-Tested-with: GHC == 6.13.20100309, GHC == 6.12.1
+Tested-with:
+        GHC == 6.12.1
 
 Library
   Build-Depends: 
@@ -36,7 +37,7 @@ Library
         containers           == 0.3.*
 
   ghc-options:
-        -Wall -Werror
+        -Wall
 
   Exposed-modules:
         BuildBox.Benchmark.Base

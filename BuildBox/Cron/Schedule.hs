@@ -200,8 +200,8 @@ lookupCommandOfSchedule name (Schedule sched)
 	= liftM snd $ Map.lookup name sched
 
 
--- | Add this event to a schedule, overwriting any version already there.
---   If the event is present in the schedule, then return the original.
+-- | Given a new version of an event, update any matching event in the schedule.
+--   If the event not already there then return the original schedule.
 adjustEventOfSchedule :: Event -> Schedule cmd -> Schedule cmd
 adjustEventOfSchedule event (Schedule sched)
 	= Schedule 
