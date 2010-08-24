@@ -5,6 +5,7 @@ module BuildBox.Command.File
 	, makeDirIfNeeded
 	, inDir
 	, inNewScratchDirNamed
+	, clobberDir
 	, withTempFile)
 where
 import BuildBox.Build.Base
@@ -35,7 +36,7 @@ instance Testable PropFile where
  test prop 
   = case prop of
 	HasExecutable name
-	 -> do	code	<- systemNullCode $ "which " ++ name
+	 -> do	code	<- qsystem $ "which " ++ name
 		return	$ code == ExitSuccess
 
 	HasFile path	
@@ -49,17 +50,16 @@ instance Testable PropFile where
 		return (null contents)
 
 
--- Creating Directories ---------------------------------------------------------------------------
+-- Directories ------------------------------------------------------------------------------------
 -- | Create a new directory if it isn't already there, or return successfully if it is.
 makeDirIfNeeded :: FilePath -> Build ()
 makeDirIfNeeded path
  = do	already	<- io $ doesDirectoryExist path
 	if already
 	 then return ()
-	 else system $ "mkdir -p " ++ path
+	 else ssystem $ "mkdir -p " ++ path
 
 
--- Working Directories ----------------------------------------------------------------------------
 -- | Run a command in a different working directory. Throws an error if the directory doesn't exist.
 inDir :: FilePath -> Build a -> Build a
 inDir name build
@@ -72,6 +72,15 @@ inDir name build
 
 	return x
 
+
+-- | Delete a dir recursively if it's there, otherwise do nothing.
+--   This behaves differently than `removeDirectoryRecursive` because it does
+--   not follow symlinks, just deletes them.
+clobberDir :: FilePath -> Build ()
+clobberDir path
+ = 	ssystem $ "rm -Rf " ++ path
+
+
 -- Scratch ----------------------------------------------------------------------------------------
 -- | Create a new directory with the given name, run a command within it,
 --   then change out and recursively delete the directory. Throws an error if a directory
@@ -82,10 +91,10 @@ inNewScratchDirNamed name build
 	-- Make sure a dir with this name doesn't already exist.
 	checkFalse $ HasDir name
 
-	system $ "mkdir -p " ++ name
+	ssystem $ "mkdir -p " ++ name
 	x	<- inDir name build
 	
-	system $ "rm -Rf " ++ name 
+	ssystem $ "rm -Rf " ++ name 
 	return x
 
 

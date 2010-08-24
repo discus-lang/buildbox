@@ -106,7 +106,7 @@ getHostPlatform
 getHostName :: Build String
 getHostName
  = do	check $ HasExecutable "uname"
-	name	<- systemWithStdout "uname -n"
+	name	<- qssystemOut "uname -n"
 	return	$ init name
 
 
@@ -114,7 +114,7 @@ getHostName
 getHostArch :: Build String
 getHostArch
  = do	check $ HasExecutable "arch"
-	name	<- systemWithStdout "arch"
+	name	<- qssystemOut "arch"
 	return	$ init name
 
 
@@ -122,7 +122,7 @@ getHostArch
 getHostProcessor :: Build String
 getHostProcessor
  = do	check $ HasExecutable "uname"
-	name	<- systemWithStdout "uname -p"
+	name	<- qssystemOut "uname -p"
 	return	$ init name
 
 
@@ -130,7 +130,7 @@ getHostProcessor
 getHostOS :: Build String
 getHostOS
  = do	check $ HasExecutable "uname"
-	os	<- systemWithStdout "uname -s"
+	os	<- qssystemOut "uname -s"
 	return	$ init os
 
 
@@ -138,7 +138,7 @@ getHostOS
 getHostRelease :: Build String
 getHostRelease
  = do	check $ HasExecutable "uname"
-	str	<- systemWithStdout "uname -r"
+	str	<- qssystemOut "uname -r"
 	return	$ init str
 
 
@@ -147,14 +147,14 @@ getHostRelease
 getVersionGHC :: FilePath -> Build String
 getVersionGHC path
  = do	check $ HasExecutable path
-	str	<- systemWithStdout $ path ++ " --version"
+	str	<- qssystemOut $ path ++ " --version"
 	return	$ init str
 	
 -- | Get the version of this GCC, or throw an error if it can't be found. 
 getVersionGCC :: FilePath -> Build String
 getVersionGCC path
  = do	check $ HasExecutable path
- 	str	<- systemWithStdout $ path ++ " --version"
+ 	str	<- qssystemOut $ path ++ " --version"
 	return	$ head $ lines str
 
 

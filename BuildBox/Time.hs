@@ -3,12 +3,15 @@
 module BuildBox.Time
 	( module Data.Time
 	, readLocalTimeOfDayAsUTC
+	, getStampyTime
 	, getMidnightTodayLocal
 	, getMidnightTodayUTC
 	, getMidnightTomorrowLocal
 	, getMidnightTomorrowUTC)
 where
 import Data.Time
+import System.Locale
+
 
 -- | Read a time of day string like @17:34:05@ in the local time zone
 --   and convert that to a UTC time of day. Good for parsing command line args to buildbots.
@@ -25,8 +28,15 @@ readLocalTimeOfDayAsUTC str
 			(read str) 
 
 	return timeOfDayUTC
-	
-	
+
+
+-- | Get a local time stamp with format YYYYMMDD_HHMMSS. Good for naming files with.
+getStampyTime :: IO String
+getStampyTime
+ = do	time	<- getZonedTime
+	return	$  formatTime defaultTimeLocale "%Y%m%d_%k%M%S" time
+
+
 -- | Get the local midnight we've just ad as a `LocalTime`.
 getMidnightTodayLocal :: IO LocalTime
 getMidnightTodayLocal
@@ -66,3 +76,7 @@ getMidnightTomorrowUTC
 				{ localDay		= addDays 1 (localDay (zonedTimeToLocalTime curTime)) 
 				, localTimeOfDay	= midnight })
 			(zonedTimeZone curTime)
+
+
+	
+	

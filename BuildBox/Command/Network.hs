@@ -29,7 +29,7 @@ instance Testable PropNetwork where
 	-- -o               exit successfully after recieving one reply packet.
 	HostReachable hostName
 	 -> do	check	$ HasExecutable "ping"
-		code	<- systemNullCode $ "ping -o " ++ hostName
+		code	<- qsystem $ "ping -o " ++ hostName
 		return $ code == ExitSuccess
 		
 	-- Works on OSX 10.6.2, wget 1.12
@@ -37,7 +37,7 @@ instance Testable PropNetwork where
 	--  --delete-after  delete page after downloading.
 	UrlGettable url
 	 -> do	check	$ HasExecutable "wget"
-		code 	<- systemNullCode $ "wget -q --delete-after " ++ url
+		code 	<- qsystem $ "wget -q --delete-after " ++ url
 		return	$ code == ExitSuccess
 		
 

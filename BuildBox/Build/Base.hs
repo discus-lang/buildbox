@@ -7,6 +7,7 @@ import Control.Monad.Error
 import Control.Monad.Reader
 import System.IO
 import System.IO.Error
+import System.Exit
 
 -- | The builder monad encapsulates and IO action that can fail with an error, 
 --   and also read some global configuration info.
@@ -18,9 +19,13 @@ data BuildError
 	-- | Some generic error
 	= ErrorOther String
 
-	-- | Some system command failed.
-	| ErrorSystemCmdFailed String
-
+	-- | Some system command fell over, and it barfed out the given stdout and stderr.
+	| ErrorSystemCmdFailed
+		{ buildErrorCmd 	:: String
+		, buildErrorCode	:: ExitCode
+		, buildErrorStdout	:: String
+		, buildErrorStderr	:: String }
+		
 	-- | Some other IO action failed.
 	| ErrorIOError IOError
 
@@ -30,20 +35,36 @@ data BuildError
 instance Error BuildError where
  strMsg s = ErrorOther s
 
-instance Show BuildError where
- show err
+instance Pretty BuildError where
+ ppr err
   = case err of
 	ErrorOther str
-	 -> "other error: " ++ str
+	 -> text "Other error: " <> text str
 
-	ErrorSystemCmdFailed str
-	 -> "system command failure: \"" ++ str ++ "\""
-
+	ErrorSystemCmdFailed{}
+	 -> vcat 
+		[ text "System command failure."
+		, text "    command: " <> (text $ buildErrorCmd err)
+		, text "  exit code: " <> (text $ show $ buildErrorCode err)
+		, blank
+		, if (not $ null $ buildErrorStdout err)
+		   then vcat 	[ text "-- stdout (last 10 lines) ------------------------------------------------------"
+				, vcat $ map text $ reverse $ take 10 $ reverse $ lines $ buildErrorStdout err]
+		   else text ""
+		, blank
+		, if (not $ null $ buildErrorStderr err)
+		   then vcat	[ text "-- stderr (last 10 lines) ------------------------------------------------------"
+				, vcat $ map text $ reverse $ take 10 $ reverse $ lines $ buildErrorStderr err]
+		   else text ""
+		
+		, 		  text "--------------------------------------------------------------------------------" ]
+	
 	ErrorIOError ioerr
-	 -> "IO error: " ++ show ioerr
+	 -> text "IO error: " <> (text $ show ioerr)
 
 	ErrorCheckFailed expected prop
-	 -> "check failure: " ++ show prop ++ " expected " ++ show expected
+	 -> text "Check failure: " <> (text $ show prop) <> (text " expected ") <> (text $ show expected)
+
 
 -- BuildConfig ------------------------------------------------------------------------------------
 -- | Global builder configuration.
@@ -95,7 +116,7 @@ runBuildPrintWithConfig config build
 	 Left err
 	  -> do	putStrLn "\nBuild failed"
 		putStr   "  due to "
-		putStrLn $ show err
+		putStrLn $ render $ ppr err
 		return $ Nothing
 		
 	 Right x

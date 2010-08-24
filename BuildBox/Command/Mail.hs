@@ -12,7 +12,6 @@ import BuildBox.Build
 import BuildBox.Pretty
 import BuildBox.Command.Environment
 import BuildBox.Command.System
-import BuildBox.Command.File
 import System.Locale	(defaultTimeLocale)
 import Data.Time.Clock
 import Data.Time.LocalTime
@@ -53,6 +52,7 @@ createMailWithCurrentTime
 	-> String	-- ^ Subject line.
 	-> String	-- ^ Message  body.
 	-> Build Mail
+
 createMailWithCurrentTime from to subject body
  = do
 	-- We need to add the date otherwise our messages will get marked as spam.
@@ -100,13 +100,10 @@ sendMailWithMailer mail mailer
 
 sendMailWithMSMTP :: Mail -> Mailer -> Build ()
 sendMailWithMSMTP mail mailer@MailerMSMTP{}
- = withTempFile $ \fileName 
- -> do	let mailDoc	= renderMail mail
-	io $ writeFile fileName (render mailDoc)
+ 	= ssystemTee False
+		(mailerPath mailer 
+			++ " -t " -- read recipients from the mail
+			++ (maybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer))
+		(render $ renderMail mail)
 
-	systemNull 
-		$ "cat " ++ fileName 
-		++ " | " ++ mailerPath mailer
-		++ " -t "			-- read recipients from the mail
-		++ (maybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer)
 		
