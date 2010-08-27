@@ -32,6 +32,11 @@ streamOuts :: [(Chan (Maybe ByteString), (Maybe Handle), QSem)] -> IO ()
 streamOuts !chans 
  = streamOuts' False [] chans
 
+	-- There doesn't seem to be a way to perform a unix-style "select" on channels.
+	-- We want to wait until any of the channels becomes available for reading.
+	-- We're doing this just by polling them each in turn, and waiting a bit
+	--	if none of them had any data.
+		
  where	-- we're done.
 	streamOuts' _ []   []	
 		= return ()
@@ -41,7 +46,7 @@ streamOuts !chans
 	 = 	streamOuts' False [] prev
 
 	streamOuts' False prev []
-	 = do	yield
+	 = do	threadDelay 100000
 		streamOuts' False [] prev
 
 	-- try to read from the current chan.
