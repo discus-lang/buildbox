@@ -18,18 +18,23 @@ module BuildBox.Command.System
 	, ssystemOut
 	, qssystemOut
 	, systemTee
+	, systemTeeLog
 	, ssystemTee
+	, systemTeeIO
 
 	-- * The real function
-	, systemTeeIO)
+	, systemTeeLogIO)
 where
 import BuildBox.Command.System.Internals
 import BuildBox.Build
 import Control.Concurrent
-import System.Process	hiding (system)
 import System.Exit
 import System.IO
 import Control.Monad
+import Data.ByteString.Char8		(ByteString)
+import BuildBox.Data.Log		(Log)
+import System.Process			hiding (system)
+import qualified BuildBox.Data.Log	as Log
 
 debug :: Bool
 debug	= False
@@ -42,7 +47,7 @@ trace s	= when debug $ putStrLn s
 -- | Run a system command, returning its exit code.
 system :: String -> Build ExitCode
 system cmd
- = do	(code, _, _)		<- systemTee True cmd ""
+ = do	(code, _, _)		<- systemTeeLog True cmd Log.empty
 	return code
 
 
@@ -50,16 +55,16 @@ system cmd
 --   If the exit code is `ExitFailure` then throw an error in the `Build` monad.
 ssystem :: String -> Build ()
 ssystem cmd
- = do	(code, strOut, strErr)	<- systemTee True cmd ""
+ = do	(code, logOut, logErr)	<- systemTeeLog True cmd Log.empty
 
 	when (code /= ExitSuccess)
-	 $ throw $ ErrorSystemCmdFailed cmd code strOut strErr
+	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
 
 
 -- | Quietly run a system command, returning its exit code.
 qsystem :: String -> Build ExitCode
 qsystem cmd
- = do	(code, _, _)		<- systemTee False cmd ""
+ = do	(code, _, _)		<- systemTeeLog False cmd Log.empty
 	return code
 
 
@@ -67,10 +72,10 @@ qsystem cmd
 --   If the exit code is `ExitFailure` then throw an error in the `Build` monad.
 qssystem :: String -> Build ()
 qssystem cmd
- = do	(code, strOut, strErr)	<- systemTee False cmd ""
+ = do	(code, logOut, logErr)	<- systemTeeLog False cmd Log.empty
 
 	when (code /= ExitSuccess)
-	 $ throw $ ErrorSystemCmdFailed cmd code strOut strErr
+	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
 	
 
 -- | Run a successful system command, returning what it wrote to its @stdout@.
@@ -79,11 +84,11 @@ qssystem cmd
 --   then throw an error in the `Build` monad.
 ssystemOut :: String -> Build String
 ssystemOut cmd
- = do	(code, strOut, strErr)	<- systemTee True cmd ""
-	when (code /= ExitSuccess || (not $ null strErr))
-	 $ throw $ ErrorSystemCmdFailed cmd code strOut strErr
+ = do	(code, logOut, logErr)	<- systemTeeLog True cmd Log.empty
+	when (code /= ExitSuccess || (not $ Log.null logErr))
+	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
 
-	return strOut
+	return $ Log.toString logOut
 
 -- | Quietly run a successful system command, returning what it wrote to its @stdout@.
 --   If anything was written to @stderr@ then treat that as failure. 
@@ -91,46 +96,53 @@ ssystemOut cmd
 --   then throw an error in the `Build` monad.
 qssystemOut :: String -> Build String
 qssystemOut cmd
- = do	(code, strOut, strErr)	<- systemTee False cmd ""
-	when (code /= ExitSuccess || (not $ null strErr))
-	 $ throw $ ErrorSystemCmdFailed cmd code strOut strErr
+ = do	(code, logOut, logErr)	<- systemTeeLog False cmd Log.empty
+	when (code /= ExitSuccess || (not $ Log.null logErr))
+	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
 
-	return strOut
+	return $ Log.toString logOut
 
 
 
 -- Tee versions -----------------------------------------------------------------------------------
 
 -- | Like `systemTeeIO`, but in the `Build` monad.
-systemTee 
-	:: Bool 	
-	-> String	
-	-> String	
-	-> Build (ExitCode, String, String)
-
+systemTee :: Bool -> String -> String -> Build (ExitCode, String, String)
 systemTee tee cmd strIn
  = do	logSystem cmd
 	io $ systemTeeIO tee cmd strIn
+
+-- | Like `systemTeeLogIO`, but in the `Build` monad.
+systemTeeLog :: Bool -> String -> Log -> Build (ExitCode, Log, Log)
+systemTeeLog tee cmd logIn
+ = do	logSystem cmd
+	io $ systemTeeLogIO tee cmd logIn
 
 
 -- | Like `systemTeeIO`, but in the `Build` monad and throw an error if it returns `ExitFailure`.
 ssystemTee  :: Bool -> String -> String -> Build ()
 ssystemTee tee cmd strIn
  = do	logSystem cmd
-	(code, strOut, strErr)	<- systemTee tee cmd strIn
+	(code, logOut, logErr)	<- systemTeeLog tee cmd (Log.fromString strIn)
 	when (code /= ExitSuccess)
-	 $ throw $ ErrorSystemCmdFailed cmd code strOut strErr
+	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
 
-	
+
+-- | Like `systemTeeLogIO`, but with strings.
+systemTeeIO :: Bool -> String -> String -> IO (ExitCode, String, String)
+systemTeeIO tee cmd strIn
+ = do	(code, logOut, logErr)	<- systemTeeLogIO tee cmd $ Log.fromString strIn
+	return	(code, Log.toString logOut, Log.toString logErr)
+
 
 -- | Run a system command, returning its `ExitCode` and what was written to @stdout@ and @stderr@.
-systemTeeIO 
+systemTeeLogIO
 	:: Bool 	-- ^ Whether @stdout@ and @stderr@ should be forwarded to the parent process.
 	-> String 	-- ^ Command to run.
-	-> String	-- ^ What to pass to the command's @stdin@.
-	-> IO (ExitCode, String, String)
+	-> Log		-- ^ What to pass to the command's @stdin@.
+	-> IO (ExitCode, Log, Log)
 
-systemTeeIO tee cmd strIn
+systemTeeLogIO tee cmd logIn
  = do	trace $ "systemTeeIO " ++ show tee ++ ": " ++ cmd
 
 	-- Create some new pipes for the process to write its stdout and stderr to.
@@ -147,7 +159,7 @@ systemTeeIO tee cmd strIn
 			, close_fds	= False }
 
 	-- Push input into in handle
-	hPutStr hInWrite strIn
+	hPutStr hInWrite $ Log.toString logIn
 			
 	-- To implement the tee-like behavior we'll fork some threads that read lines from the
 	-- processes stdout and stderr and write them to these channels. 
@@ -186,22 +198,20 @@ systemTeeIO tee cmd strIn
 	-- Get what was written to its stdout and stderr.
 	--	getChanContents is a lazy read, so don't pull from the channel after
 	--	seeing a Nothing else we'll block forever.
-	strOut		<- liftM (concat . slurpUntilNothing) $ getChanContents chanOutAcc
-	strErr		<- liftM (concat . slurpUntilNothing) $ getChanContents chanErrAcc
+	logOut		<- slurpChan chanOutAcc Log.empty
+	logErr		<- slurpChan chanErrAcc Log.empty
 
-	trace $ "systemTeeIO stdout: " ++ strOut
-	trace $ "systemTeeIO stderr: " ++ strErr
+	trace $ "systemTeeIO stdout: " ++ Log.toString logOut
+	trace $ "systemTeeIO stderr: " ++ Log.toString logErr
 
 	trace $ "systemTeeIO: All done"
-	code `seq` strOut `seq` strErr `seq` 
-		return	(code, strOut, strErr)
+	code `seq` logOut `seq` logErr `seq` 
+		return	(code, logOut, logErr)
 
-
-
-slurpUntilNothing :: [Maybe a] -> [a]
-slurpUntilNothing xx
- = case xx of
-	[]		-> []
-	Nothing : _	-> []
-	Just x  : xs	-> x : slurpUntilNothing xs
+slurpChan :: Chan (Maybe ByteString) -> Log -> IO Log
+slurpChan !chan !ll
+ = do	mStr	<- readChan chan
+	case mStr of
+	 Nothing	-> return ll
+	 Just str	-> slurpChan chan (ll Log.|> str)
 

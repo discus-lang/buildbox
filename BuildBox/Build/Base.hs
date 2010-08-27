@@ -8,6 +8,9 @@ import Control.Monad.Reader
 import System.IO
 import System.IO.Error
 import System.Exit
+import BuildBox.Data.Log		(Log)
+import qualified BuildBox.Data.Log	as Log
+
 
 -- | The builder monad encapsulates and IO action that can fail with an error, 
 --   and also read some global configuration info.
@@ -23,8 +26,8 @@ data BuildError
 	| ErrorSystemCmdFailed
 		{ buildErrorCmd 	:: String
 		, buildErrorCode	:: ExitCode
-		, buildErrorStdout	:: String
-		, buildErrorStderr	:: String }
+		, buildErrorStdout	:: Log
+		, buildErrorStderr	:: Log }
 		
 	-- | Some other IO action failed.
 	| ErrorIOError IOError
@@ -47,14 +50,14 @@ instance Pretty BuildError where
 		, text "    command: " <> (text $ buildErrorCmd err)
 		, text "  exit code: " <> (text $ show $ buildErrorCode err)
 		, blank
-		, if (not $ null $ buildErrorStdout err)
+		, if (not $ Log.null $ buildErrorStdout err)
 		   then vcat 	[ text "-- stdout (last 10 lines) ------------------------------------------------------"
-				, vcat $ map text $ reverse $ take 10 $ reverse $ lines $ buildErrorStdout err]
+				, text $ Log.toString $ Log.lastLines 10 $ buildErrorStdout err]
 		   else text ""
 		, blank
-		, if (not $ null $ buildErrorStderr err)
+		, if (not $ Log.null $ buildErrorStderr err)
 		   then vcat	[ text "-- stderr (last 10 lines) ------------------------------------------------------"
-				, vcat $ map text $ reverse $ take 10 $ reverse $ lines $ buildErrorStderr err]
+				, text $ Log.toString $ Log.lastLines 10 $ buildErrorStderr err]
 		   else text ""
 		
 		, 		  text "--------------------------------------------------------------------------------" ]
@@ -64,6 +67,9 @@ instance Pretty BuildError where
 
 	ErrorCheckFailed expected prop
 	 -> text "Check failure: " <> (text $ show prop) <> (text " expected ") <> (text $ show expected)
+
+instance Show BuildError where
+ show err = render $ ppr err
 
 
 -- BuildConfig ------------------------------------------------------------------------------------

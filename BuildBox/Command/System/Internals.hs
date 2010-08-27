@@ -1,15 +1,18 @@
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternGuards, BangPatterns #-}
 module BuildBox.Command.System.Internals
 	( streamIn
 	, streamOuts)
 where
 import System.IO
-import Control.Concurrent	
+import Control.Concurrent
+import Data.ByteString.Char8		(ByteString)
+import qualified Data.ByteString.Char8	as BS	
+
 
 -- | Continually read lines from a handle and write them to this channel.
 --   When the handle hits EOF then write `Nothing` to the channel.
-streamIn  :: Handle -> Chan (Maybe String) -> IO ()
-streamIn hRead chan
+streamIn  :: Handle -> Chan (Maybe ByteString) -> IO ()
+streamIn !hRead !chan
  = do	eof	<- hIsEOF hRead
 	if eof
 	 then do
@@ -17,16 +20,16 @@ streamIn hRead chan
 		return ()
 		
 	 else do
-		str	<- hGetLine hRead
-		writeChan chan (Just (str ++ "\n"))
+		str	<- BS.hGetLine hRead
+		writeChan chan (Just str)
 		streamIn hRead chan
 
 
 -- | Continually read lines from some channels and write them to handles.
 --   When all the channels return `Nothing` then we're done.
 --   When we're done, signal this fact on the semaphore.
-streamOuts :: [(Chan (Maybe String), (Maybe Handle), QSem)] -> IO ()
-streamOuts chans 
+streamOuts :: [(Chan (Maybe ByteString), (Maybe Handle), QSem)] -> IO ()
+streamOuts !chans 
  = streamOuts' False [] chans
 
  where	-- we're done.
@@ -42,7 +45,7 @@ streamOuts chans
 		streamOuts' False [] prev
 
 	-- try to read from the current chan.
-	streamOuts' active prev (x@(chan, mHandle, qsem) : rest)
+	streamOuts' !active !prev (!x@(!chan, !mHandle, !qsem) : rest)
 	 = isEmptyChan chan >>= \empty -> 
 	   if empty 
 	    then streamOuts' active (prev ++ [x]) rest
@@ -55,7 +58,8 @@ streamOuts chans
 
 		 Just str 
 		  | Just h	<- mHandle
-		  -> do	hPutStr h str
+		  -> do	BS.hPutStr h str
+			hPutChar   h '\n'
 			streamOuts' True (prev ++ [x]) rest
 
 		  | otherwise
