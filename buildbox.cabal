@@ -40,12 +40,10 @@ Library
 
   Exposed-modules:
         BuildBox.Data.Log
-        BuildBox.Benchmark.Base
         BuildBox.Benchmark.Compare
         BuildBox.Benchmark.Pretty
         BuildBox.Benchmark.TimeAspect
         BuildBox.Benchmark
-        BuildBox.Build.Base
         BuildBox.Build.Testable
         BuildBox.Build
         BuildBox.Command.Environment
@@ -62,4 +60,6 @@ Library
 
   Other-modules:
         BuildBox.Command.System.Internals
+        BuildBox.Benchmark.Base
+        BuildBox.Build.Base
        
