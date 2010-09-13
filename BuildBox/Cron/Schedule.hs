@@ -33,7 +33,6 @@ import Control.Monad
 import Data.Map			(Map)
 import qualified Data.Map	as Map
 
-
 instance Read NominalDiffTime where
  readsPrec n str
   = let	[(secs :: Double, rest)] = readsPrec n str
@@ -117,24 +116,24 @@ earliestEventToStartAt curTime events
 --   The `SkipFirst` modifier is ignored, as this is handled separately.
 eventCouldStartAt :: UTCTime -> Event -> Bool
 eventCouldStartAt curTime event
- 
 	-- If the current end time is before the start time, then the most
 	-- recent iteration is still running, so don't start it again.
 	| Just lastStarted	<- eventLastStarted event
  	, Just lastEnded	<- eventLastEnded   event
- 	= lastEnded < lastStarted
- 
+ 	, lastEnded < lastStarted
+	= False
+
+	-- Keep waiting if there's a seconday wait modifier.
+	| Just (WaitUntil waitTime)	<- eventWhenModifier event
+	, curTime < waitTime
+	= False
+
 	-- If the event has never started or ended, and is marked as immediate,
 	-- then start it right away.
 	| Nothing		<- eventLastStarted  event
 	, Nothing		<- eventLastEnded    event
 	, Just Immediate	<- eventWhenModifier event
 	= True
-
-	-- Keep waiting if there's a seconday wait modifier.
-	| Just (WaitUntil waitTime)	<- eventWhenModifier event
-	, curTime < waitTime
-	= False
 
 	-- Otherwise we have to look at the real schedule.
 	| otherwise
