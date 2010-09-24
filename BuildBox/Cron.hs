@@ -35,6 +35,7 @@ cronLoop schedule
 				, eventLastEnded	= Just endTime }
 
 		let schedule'	= adjustEventOfSchedule event' schedule
+	
 		cronLoop schedule'
 				
 		

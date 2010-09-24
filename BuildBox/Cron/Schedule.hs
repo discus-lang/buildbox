@@ -116,6 +116,13 @@ earliestEventToStartAt curTime events
 --   The `SkipFirst` modifier is ignored, as this is handled separately.
 eventCouldStartAt :: UTCTime -> Event -> Bool
 eventCouldStartAt curTime event
+	-- If the event has never started or ended, and is marked as immediate,
+	-- then start it right away.
+	| Nothing		<- eventLastStarted  event
+	, Nothing		<- eventLastEnded    event
+	, Just Immediate	<- eventWhenModifier event
+	= True
+
 	-- If the current end time is before the start time, then the most
 	-- recent iteration is still running, so don't start it again.
 	| Just lastStarted	<- eventLastStarted event
@@ -127,13 +134,6 @@ eventCouldStartAt curTime event
 	| Just (WaitUntil waitTime)	<- eventWhenModifier event
 	, curTime < waitTime
 	= False
-
-	-- If the event has never started or ended, and is marked as immediate,
-	-- then start it right away.
-	| Nothing		<- eventLastStarted  event
-	, Nothing		<- eventLastEnded    event
-	, Just Immediate	<- eventWhenModifier event
-	= True
 
 	-- Otherwise we have to look at the real schedule.
 	| otherwise
@@ -152,10 +152,10 @@ eventCouldStartAt curTime event
 			(eventLastEnded event)
 	
 		Daily timeOfDay
-		 -- If it's been more than a day since we last started it, then do it now.
+		 -- If it's been less than a day since we last started it, then don't do it yet.
 		 | Just lastStarted	<- eventLastStarted event
-		 , (curTime `diffUTCTime` lastStarted) > day
-		 -> True
+		 , (curTime `diffUTCTime` lastStarted) < day
+		 -> False
 		
 		 | otherwise
 		 -> let	-- If we were going to run it today, this is when it would be.
