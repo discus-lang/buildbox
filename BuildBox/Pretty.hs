@@ -6,7 +6,7 @@ module BuildBox.Pretty
 	, Pretty(..)
 	, pprPSecTime
 	, pprFloatTime
-	, pprFloatSF
+	, pprFloatSR
 	, pprFloatRef
 	, padRc, padR
 	, padLc, padL
@@ -50,36 +50,38 @@ ten12i = 10^(12 :: Integer)
 -- | Print a number of picoseconds as a time.
 pprPSecTime :: Integer -> Doc
 pprPSecTime psecs
-  	=  text (show (psecs `div` ten12i))
+  	=  text (show (psecs `quot` ten12i))
 	<> text "." 
- 	<> (text $ (take 3 $ render $ padRc 12 '0' $ text $ show $ psecs `mod` ten12i))
+ 	<> (text $ (take 3 $ render $ padRc 12 '0' $ text $ show $ psecs `rem` ten12i))
 
 
 -- | Print a float number of seconds as a time.
 pprFloatTime :: Float -> Doc
 pprFloatTime stime
-  = let	psecs	= truncate (stime * ten12)
-    in	pprPSecTime psecs
+  = let (secs, frac)	= properFraction stime
+	msecs		= frac * 1000
+    in	text (show secs) 
+	 <> text "."
+	 <> (padRc 3 '0' $ text $ show $ round $ msecs)
 
 
 -- | Pretty print a signed float, with a percentage change relative to a reference figure.
 --   Comes out like @0.235( +5)@ for a +5 percent swing.
 pprFloatRef :: Float -> Float -> Doc
 pprFloatRef stime stimeRef 
- = let	psecs		= truncate (stime    * ten12)
-	diff		= (1 - (stimeRef / stime))*100
-   in	pprPSecTime psecs
-	 <> parens (padR 3 $ pprFloatSF diff)
+ = let	diff		= ((stime - stimeRef) / stimeRef )*100
+   in	pprFloatTime stime
+	 <> parens (padR 3 $ pprFloatSR diff)
 
 
--- | Print a float number of seconds, flooring it and, prefixing with @+@ or @-@ appropriately.
-pprFloatSF :: Float -> Doc
-pprFloatSF p
+-- | Print a float number of seconds, rounding it and, prefixing with @+@ or @-@ appropriately.
+pprFloatSR :: Float -> Doc
+pprFloatSR p
  	| p > 0
-	= text "+" <> (ppr $ (floor p :: Integer))
+	= text "+" <> (ppr $ (round p :: Integer))
 	
 	| otherwise
-	= text "-" <> (ppr $ (floor (negate p) :: Integer))
+	= text "-" <> (ppr $ (round (negate p) :: Integer))
 
 
 -- | Right justify a doc, padding with a given character.
