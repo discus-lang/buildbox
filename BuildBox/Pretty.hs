@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, ScopedTypeVariables #-}
 
 -- | Pretty printing utils.
 module BuildBox.Pretty
@@ -40,9 +40,6 @@ instance Pretty UTCTime where
 	
 
 -- To handle type defaulting
-ten12 :: Float
-ten12 = 10^(12 :: Integer)
-
 ten12i :: Integer
 ten12i = 10^(12 :: Integer)
 
@@ -58,11 +55,13 @@ pprPSecTime psecs
 -- | Print a float number of seconds as a time.
 pprFloatTime :: Float -> Doc
 pprFloatTime stime
-  = let (secs, frac)	= properFraction stime
+  = let (secs :: Integer, frac :: Float)	
+			= properFraction stime
+
 	msecs		= frac * 1000
     in	text (show secs) 
 	 <> text "."
-	 <> (padRc 3 '0' $ text $ show $ round $ msecs)
+	 <> (padRc 3 '0' $ text $ show $ ((round $ msecs) :: Integer) )
 
 
 -- | Pretty print a signed float, with a percentage change relative to a reference figure.
