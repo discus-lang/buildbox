@@ -64,7 +64,7 @@ createMailWithCurrentTime from to subject body
 	hostName	<- getHostName
 	let dayNum	= toModifiedJulianDay $ utctDay utime
 	let secTime	= utctDayTime utime
-	let messageId	=  "<" ++ show dayNum ++ "." ++ show secTime
+	let messageId	=  "<" ++ show dayNum ++ "." ++ (init $ show secTime)
 			++ "@" ++ hostName ++ ">"
 		
 	return	$ Mail
