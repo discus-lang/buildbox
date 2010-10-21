@@ -10,6 +10,7 @@ data ResultsArg
 	= ArgHelp
 	| ArgDump
 	| ArgCompare
+	| ArgMerge
 	deriving (Eq, Ord, Show)
 
 
@@ -33,4 +34,11 @@ resultsArgs
 		, argName	= Just "compare"
 		, argData	= Nothing
 		, argDesc	= "Compare two test results files." }
+
+	, Arg	{ argIndex	= ArgMerge
+		, argAbbr	= Nothing
+		, argName	= Just "merge"
+		, argData	= Nothing
+		, argDesc	= "Merge several test results files." }
+
 	]	

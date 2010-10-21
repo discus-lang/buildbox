@@ -13,8 +13,8 @@ import BuildBox.Pretty
 pprBenchResultAspectHeader :: Doc
 pprBenchResultAspectHeader 
 	=  vcat
-	[ text "    aspect       min   ref%   avg   ref%   max   ref%   spread% "
-	, text "    ---------    ----------   ----------   ----------   ------- " ]
+	[ text "    aspect       min    ref%   avg    ref%   max    ref%   spread% "
+	, text "    ---------    -----------   -----------   -----------   ------- " ]
 
 
 -- | Pretty print an aspect of a benchmark result.
@@ -33,9 +33,9 @@ pprBenchResultAspect aspect prior result
 	, Just (tmin', tavg', tmax')	<- takeMinAvgMaxOfBenchResult aspect result'
 	= Just	$   text "    "
 		<>  padL 10 (ppr aspect)
-		<+> (padR 12 $ pprFloatRef tmin tmin')
-		<+> (padR 12 $ pprFloatRef tavg tavg')
-		<+> (padR 12 $ pprFloatRef tmax tmax')
+		<+> (padR 13 $ pprFloatRef tmin tmin')
+		<+> (padR 13 $ pprFloatRef tavg tavg')
+		<+> (padR 13 $ pprFloatRef tmax tmax')
 		<+> (padR 8  $ ppr spreadPercent)
 
  	| Just (tmin, tavg, tmax)	<- takeMinAvgMaxOfBenchResult aspect result
@@ -43,9 +43,9 @@ pprBenchResultAspect aspect prior result
 	, spreadPercent			<- (floor $ (spread / tavg) * 100) :: Integer
 	= Just	$   text "    "
 		<>  padL 10 (ppr aspect)
-		<+> (padR 12 $ (pprFloatTime tmin <> text "     "))
-		<+> (padR 12 $ (pprFloatTime tavg <> text "     "))
-		<+> (padR 12 $ (pprFloatTime tmax <> text "     "))
+		<+> (padR 13 $ (pprFloatTime tmin <> text "     "))
+		<+> (padR 13 $ (pprFloatTime tavg <> text "     "))
+		<+> (padR 13 $ (pprFloatTime tmax <> text "     "))
 		<+> (padR 8 $ ppr spreadPercent)
 	
 	| otherwise

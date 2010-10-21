@@ -70,12 +70,15 @@ pprFloatRef :: Float -> Float -> Doc
 pprFloatRef stime stimeRef 
  = let	diff		= ((stime - stimeRef) / stimeRef )*100
    in	pprFloatTime stime
-	 <> parens (padR 3 $ pprFloatSR diff)
+	 <> parens (padR 4 $ pprFloatSR diff)
 
 
 -- | Print a float number of seconds, rounding it and, prefixing with @+@ or @-@ appropriately.
 pprFloatSR :: Float -> Doc
 pprFloatSR p
+	| p == 0
+	= text "----"
+
  	| p > 0
 	= text "+" <> (ppr $ (round p :: Integer))
 	

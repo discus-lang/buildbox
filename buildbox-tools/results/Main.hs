@@ -4,13 +4,12 @@ import Args
 import BuildBox
 import BuildBox.FileFormat.BuildResults
 import System.Console.ParseArgs	hiding (args)
-
+import Data.List
 
 main :: IO ()
 main 
  = do	args	<- parseArgsIO ArgsTrailing resultsArgs
 	mainWithArgs args
-
 
 mainWithArgs :: Args ResultsArg -> IO ()
 mainWithArgs args
@@ -39,6 +38,18 @@ mainWithArgs args
 
 		putStrLn $ render $ pprComparisons baseline current
 
+	-- Merge two results files, prefering benchmark results on the left.
+	-- The time and environment fields are taken from the file on the right.
+	| gotArg args ArgMerge
+	= do	
+		-- Read all the files.
+		let fileNames	= argsRest args
+		contentss <- mapM readFile fileNames
+		let (results :: [BuildResults])
+			  = map read contentss
+			
+		print $ mergeResults results
 
 	| otherwise
 	= usageError args "Nothing to do...\n"
+
