@@ -16,10 +16,6 @@ type Build a 	= ErrorT BuildError (StateT BuildState IO) a
 
 
 -- Build ------------------------------------------------------------------------------------------
--- | Throw an error in the build monad.
-throw :: BuildError -> Build a
-throw	= throwError
-
 -- | Run a build command.
 runBuild :: FilePath -> Build a -> IO (Either BuildError a)
 runBuild scratchDir build
@@ -59,6 +55,17 @@ getUniqueId :: IO Integer
 getUniqueId
  	= randomRIO (0, 1000000000)	
 
+-- Errors -----------------------------------------------------------------------------------------
+-- | Throw an error in the build monad.
+throw :: BuildError -> Build a
+throw	= throwError
+
+
+-- | Throw a needs error saying we needs the given file.
+needs :: FilePath -> Build ()
+needs filePath
+	= throw $ ErrorNeeds filePath
+
 
 -- Utils ------------------------------------------------------------------------------------------
 -- | Lift an IO action into the build monad.
@@ -74,6 +81,14 @@ io x
 	 Right res	-> return res
 
 
+-- | Like `when`, but with teh monadz.
+whenM :: Monad m => m Bool -> m () -> m ()
+whenM cb cx
+ = do	b	<- cb
+	if b then cx else return ()
+
+
+-- Output -----------------------------------------------------------------------------------------
 -- | Print some text to stdout.
 out :: Pretty a => a -> Build ()
 out str	
@@ -99,11 +114,4 @@ outLine 	= io $ putStr (replicate 80 '-' ++ "\n")
 -- | Print a @=====@ line to stdout
 outLINE :: Build ()
 outLINE		= io $ putStr (replicate 80 '=' ++ "\n")
-
-
--- | Like `when`, but with teh monadz.
-whenM :: Monad m => m Bool -> m () -> m ()
-whenM cb cx
- = do	b	<- cb
-	if b then cx else return ()
 	

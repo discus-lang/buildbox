@@ -5,18 +5,28 @@ module BuildBox.Build
 	, module BuildBox.Build.BuildError
 	, module BuildBox.Build.BuildState
 	, Build
+
+	-- * Building
 	, runBuild
 	, runBuildPrint
 	, runBuildPrintWithState
+
+	-- * Errors
 	, throw
+	, needs
+
+	-- * Utils
 	, io
-	, logSystem
+	, whenM
+
+	-- * Output
 	, out
 	, outLn
 	, outBlank
 	, outLine
 	, outLINE
-	, whenM)
+	, logSystem)
+
 where
 import BuildBox.Build.Base
 import BuildBox.Build.Testable
