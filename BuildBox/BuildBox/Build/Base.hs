@@ -1,100 +1,19 @@
 {-# OPTIONS_HADDOCK hide #-}
-{-# LANGUAGE ExistentialQuantification #-}
 
 module BuildBox.Build.Base where
 import BuildBox.Pretty
+import BuildBox.Build.BuildError
+import BuildBox.Build.BuildState
 import Control.Monad.Error
-import Control.Monad.Reader
+import Control.Monad.State
 import System.IO
 import System.IO.Error
-import System.Exit
-import BuildBox.Data.Log		(Log)
-import qualified BuildBox.Data.Log	as Log
 
 
 -- | The builder monad encapsulates and IO action that can fail with an error, 
 --   and also read some global configuration info.
-type Build a 	= ErrorT BuildError (ReaderT BuildConfig IO) a
+type Build a 	= ErrorT BuildError (StateT BuildState IO) a
 
--- BuildError -------------------------------------------------------------------------------------
--- | The errors we recognise.
-data BuildError
-	-- | Some generic error
-	= ErrorOther String
-
-	-- | Some system command fell over, and it barfed out the given stdout and stderr.
-	| ErrorSystemCmdFailed
-		{ buildErrorCmd 	:: String
-		, buildErrorCode	:: ExitCode
-		, buildErrorStdout	:: Log
-		, buildErrorStderr	:: Log }
-		
-	-- | Some other IO action failed.
-	| ErrorIOError IOError
-
-	-- | Some property `check` was supposed to return the given boolean value, but it didn't.
-	| forall prop. Show prop => ErrorCheckFailed Bool prop	
-
-instance Error BuildError where
- strMsg s = ErrorOther s
-
-instance Pretty BuildError where
- ppr err
-  = case err of
-	ErrorOther str
-	 -> text "Other error: " <> text str
-
-	ErrorSystemCmdFailed{}
-	 -> vcat 
-		[ text "System command failure."
-		, text "    command: " <> (text $ buildErrorCmd err)
-		, text "  exit code: " <> (text $ show $ buildErrorCode err)
-		, blank
-		, if (not $ Log.null $ buildErrorStdout err)
-		   then vcat 	[ text "-- stdout (last 10 lines) ------------------------------------------------------"
-				, text $ Log.toString $ Log.lastLines 10 $ buildErrorStdout err]
-		   else text ""
-		, blank
-		, if (not $ Log.null $ buildErrorStderr err)
-		   then vcat	[ text "-- stderr (last 10 lines) ------------------------------------------------------"
-				, text $ Log.toString $ Log.lastLines 10 $ buildErrorStderr err]
-		   else text ""
-		
-		, 		  text "--------------------------------------------------------------------------------" ]
-	
-	ErrorIOError ioerr
-	 -> text "IO error: " <> (text $ show ioerr)
-
-	ErrorCheckFailed expected prop
-	 -> text "Check failure: " <> (text $ show prop) <> (text " expected ") <> (text $ show expected)
-
-instance Show BuildError where
- show err = render $ ppr err
-
-
--- BuildConfig ------------------------------------------------------------------------------------
--- | Global builder configuration.
-data BuildConfig
-	= BuildConfig
-	{ -- | Log all system commands executed to this file handle.
-	  buildConfigLogSystem	:: Maybe Handle }
-
--- | The default build config.
-buildConfigDefault :: BuildConfig
-buildConfigDefault
-	= BuildConfig
-	{ buildConfigLogSystem	= Nothing }
-
--- | Log a system command to the handle in our `BuildConfig`, if any.
-logSystem :: String -> Build ()
-logSystem cmd
- = do	mHandle	<- asks buildConfigLogSystem
-	case mHandle of
-	 Nothing	-> return ()
-	 Just handle	
-	  -> do	io $ hPutStr   handle "buildbox system: "
-		io $ hPutStrLn handle cmd
-		return ()
 
 -- Build ------------------------------------------------------------------------------------------
 -- | Throw an error in the build monad.
@@ -104,20 +23,20 @@ throw	= throwError
 -- | Run a build command.
 runBuild :: Build a -> IO (Either BuildError a)
 runBuild build
-	= runReaderT (runErrorT build) buildConfigDefault
+	= evalStateT (runErrorT build) buildStateDefault
 
 
 -- | Run a build command, reporting whether it succeeded to the console.
 --   If it succeeded then return Just the result, else Nothing.
 runBuildPrint :: Build a -> IO (Maybe a)
 runBuildPrint 
- 	= runBuildPrintWithConfig buildConfigDefault
+ 	= runBuildPrintWithState buildStateDefault
 
 
 -- | Like `runBuildPrintWithConfig` but also takes a `BuildConfig`.
-runBuildPrintWithConfig :: BuildConfig -> Build a -> IO (Maybe a)
-runBuildPrintWithConfig config build
- = do	result	<- runReaderT (runErrorT build) config
+runBuildPrintWithState :: BuildState -> Build a -> IO (Maybe a)
+runBuildPrintWithState state build
+ = do	result	<- evalStateT (runErrorT build) state
 	case result of
 	 Left err
 	  -> do	putStrLn "\nBuild failed"

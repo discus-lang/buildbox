@@ -10,6 +10,7 @@ module BuildBox.Build.Testable
 	, outCheckFalseOk)
 where
 import BuildBox.Build.Base	
+import BuildBox.Build.BuildError
 import Control.Monad.Error
 
 
