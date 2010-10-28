@@ -8,7 +8,7 @@ import Control.Monad.Error
 import Control.Monad.State
 import System.IO
 import System.IO.Error
-
+import System.Random
 
 -- | The builder monad encapsulates and IO action that can fail with an error, 
 --   and also read some global configuration info.
@@ -21,16 +21,20 @@ throw :: BuildError -> Build a
 throw	= throwError
 
 -- | Run a build command.
-runBuild :: Build a -> IO (Either BuildError a)
-runBuild build
-	= evalStateT (runErrorT build) buildStateDefault
+runBuild :: FilePath -> Build a -> IO (Either BuildError a)
+runBuild scratchDir build
+ = do	uid		<- getUniqueId
+	let state	= buildStateDefault uid scratchDir
+	evalStateT (runErrorT build) state
 
 
 -- | Run a build command, reporting whether it succeeded to the console.
 --   If it succeeded then return Just the result, else Nothing.
-runBuildPrint :: Build a -> IO (Maybe a)
-runBuildPrint 
- 	= runBuildPrintWithState buildStateDefault
+runBuildPrint :: FilePath -> Build a -> IO (Maybe a)
+runBuildPrint scratchDir build
+ = do	uid		<- getUniqueId
+	let state	= buildStateDefault uid scratchDir
+	runBuildPrintWithState state build
 
 
 -- | Like `runBuildPrintWithConfig` but also takes a `BuildConfig`.
@@ -47,6 +51,13 @@ runBuildPrintWithState state build
 	 Right x
 	  -> do	putStrLn "Build succeeded."
 		return $ Just x
+
+
+-- | Get a unique(ish) id for this process.
+--   The random seeds the global generator with the cpu time in psecs, which should be good enough.
+getUniqueId :: IO Integer
+getUniqueId
+ 	= randomRIO (0, 1000000000)	
 
 
 -- Utils ------------------------------------------------------------------------------------------

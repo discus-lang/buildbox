@@ -8,12 +8,10 @@ module BuildBox.Command.File
 	, ensureDir
 	, withTempFile)
 where
-import BuildBox.Build.Base
-import BuildBox.Build.Testable
+import BuildBox.Build
 import BuildBox.Command.System
-import System.Posix.Temp
 import System.Directory
-import System.IO
+import Control.Monad.State
 
 -- | Properties of the file system we can test for.
 data PropFile
@@ -98,12 +96,8 @@ ensureDir path
 -- | Create a temp file, pass it to some command, then delete the file after the command finishes.
 withTempFile :: (FilePath -> Build a) -> Build a
 withTempFile build
- = do	(fileName, handle)	<- io $ mkstemp "/tmp/buildbox-XXXXXX"
+ = do	fileName	<- newTempFile
 
-	-- We just want the file name here, so close the handle to let the real
-	-- build command write to it however it wants.
-	io $ hClose handle
-	
 	-- run the real command
 	result	<- build fileName
 	
@@ -112,3 +106,34 @@ withTempFile build
 	
 	return result
 	
+
+-- | Allocate a new temporary file name
+newTempFile :: Build FilePath
+newTempFile 
+ = do	buildDir	<- gets buildStateScratchDir
+	buildId		<- gets buildStateId 
+	buildSeq	<- gets buildStateSeq 
+	
+	-- Increment the sequence number.
+	modify $ \s -> s { buildStateSeq = buildStateSeq s + 1 }
+	
+	-- Build the file name we'll try to use.
+	fileName	<- io $ canonicalizePath 
+			$  buildDir ++ "/buildbox-" ++ show buildId ++ "-" ++ show buildSeq
+	
+	-- If it already exists then something has gone badly wrong.
+	--   Maybe the unique Id for the process wasn't as unique as we thought.
+	exists		<- io $ doesFileExist fileName
+	when exists
+	 $ error "buildbox: panic, supposedly fresh file already exists."
+	
+	-- Touch the file for good measure.
+	--   If the unique id wasn't then we want to detect this.
+	io $ writeFile fileName ""
+	
+	return fileName
+
+
+
+
+
