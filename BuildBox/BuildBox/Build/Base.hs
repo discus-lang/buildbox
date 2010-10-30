@@ -9,6 +9,7 @@ import Control.Monad.State
 import System.IO
 import System.IO.Error
 import System.Random
+import System.Directory
 
 -- | The builder monad encapsulates and IO action that can fail with an error, 
 --   and also read some global configuration info.
@@ -64,7 +65,12 @@ throw	= throwError
 -- | Throw a needs error saying we needs the given file.
 needs :: FilePath -> Build ()
 needs filePath
-	= throw $ ErrorNeeds filePath
+ = do	isFile	<- io $ doesFileExist filePath
+	isDir	<- io $ doesDirectoryExist filePath
+	
+	if isFile || isDir
+	 then return ()
+	 else throw $ ErrorNeeds filePath
 
 
 -- Utils ------------------------------------------------------------------------------------------

@@ -45,6 +45,8 @@ Library
         BuildBox.Benchmark.TimeAspect
         BuildBox.Benchmark
         BuildBox.Build.Testable
+        BuildBox.Build.BuildError
+        BuildBox.Build.BuildState
         BuildBox.Build
         BuildBox.Command.Environment
         BuildBox.Command.File
@@ -56,6 +58,7 @@ Library
         BuildBox.Cron
         BuildBox.FileFormat.BuildResults
         BuildBox.IO.Directory
+        BuildBox.IO.File
         BuildBox.Pretty
         BuildBox.Time
         BuildBox
