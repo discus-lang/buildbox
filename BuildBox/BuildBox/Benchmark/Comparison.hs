@@ -11,6 +11,18 @@ import BuildBox.Benchmark.TimeAspect
 import Data.Maybe
 import Data.List
 
+-- | The comparison of two benchmarks.
+data BenchComparison
+	= BenchComparison
+	{ benchComparisonBaseline	:: BenchResult
+	, benchComparisonCurrent	:: BenchResult
+
+	  -- Fractional difference compared to the baseline (current / baseline)
+	, benchComparisonDifference	:: [(TimeAspect, Float)] }
+
+
+	
+
 -- | Pretty print a comparison of all the aspects of these two benchmark results.
 --   The first result is the ``baseline'', while the second is the ``current'' one.
 --   The numbers from the current results are printed, with a percentage relative to the baseline.
