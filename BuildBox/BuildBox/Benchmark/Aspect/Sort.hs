@@ -36,4 +36,4 @@ unitsOfAspectSort s
 	RuntimeKernelWall{}	-> Seconds
 	RuntimeKernelCpu{}	-> Seconds
 	RuntimeKernelSys{}	-> Seconds
-	BinarySize{}	-> Bytes
+	BinarySize{}		-> Bytes

@@ -1,8 +1,14 @@
-{-# LANGUAGE PatternGuards, FlexibleInstances, FlexibleContexts, GADTs, MultiParamTypeClasses #-}
+{-# LANGUAGE 
+	PatternGuards,
+	FlexibleInstances,
+	FlexibleContexts,
+	GADTs,
+	MultiParamTypeClasses #-}
 
--- | Dealing with aspects of timing results.
+-- | Dealing with aspects of benchmark results.
 module BuildBox.Benchmark.Aspect
 where
+import BuildBox.Benchmark.Aspect.Tagged
 import BuildBox.Benchmark.Aspect.Mode
 import BuildBox.Benchmark.Aspect.Sort
 import BuildBox.Benchmark.Aspect.Units
@@ -12,7 +18,7 @@ import Data.Map			(Map)
 import qualified Data.Map	as Map
 
 
--- AspectDatum ------------------------------------------------------------------------------------
+-- SomeData ---------------------------------------------------------------------------------------
 -- | Used to reify the type of data stored in an aspect.
 data SomeData t a where
 	SomeFloat   	:: t Float   -> SomeData t Float
@@ -26,19 +32,7 @@ instance AspectData t Float where
 
 instance AspectData t Integer where
 	takeData i	= SomeInteger i
-	
-
--- Tagged -----------------------------------------------------------------------------------------
-data Tagged c
-	= TagFloat	(c Float)
-	| TagInteger	(c Integer)
-
-instance Show (Tagged (Aspect Single)) where
-	show ta
-	 = case ta of
-		TagFloat aspect		-> show (splitAspect aspect)
-		TagInteger aspect	-> show (splitAspect aspect)
-
+		
 
 -- Aspect -----------------------------------------------------------------------------------------
 -- | Typed benchmark aspects.
@@ -48,6 +42,16 @@ data Aspect t a where
 	AspectRuntimeKernelCpu	:: t Float	-> Aspect t Float
 	AspectRuntimeKernelSys	:: t Float	-> Aspect t Float
 	AspectBinarySize	:: t Integer	-> Aspect t Integer
+
+
+-- Do the show via tagged because Aspect is a GADT and GHC won't derive it.
+instance (Show (a Float), Show (a Integer)) 
+      => Show (Tagged (Aspect a)) where
+	show ta
+	 = case ta of
+		TagFloat aspect		-> show (splitAspect aspect)
+		TagInteger aspect	-> show (splitAspect aspect)
+
 
 
 -- | Make an aspect form its sort and data.
@@ -84,12 +88,13 @@ splitAspect aspect
 valueOfAspect :: Aspect t a -> t a
 valueOfAspect aspect	= snd $ splitAspect aspect
 
+
 -- | Take the sort of an aspect.
 sortOfAspect  :: Aspect t a -> AspectSort
 sortOfAspect aspect	= fst $ splitAspect aspect
 
 
--- | Collate a list of single aspects into their stats.s
+-- | Collate a list of single aspects into their stats.
 collateAspects 
 	:: (Num a, Ord a, Dividable a, AspectData Stats a) 
 	=> [Aspect Single a] 
@@ -102,6 +107,19 @@ collateAspects aspects
 			| (sort, xs) <- gather $ map splitAspect aspects ]
    in	stats
 
+
+-- | Collate a list of tagged aspects.
+collateTagged 
+	:: [Tagged (Aspect Single)]
+	-> [Tagged (Aspect Stats)]
+	
+collateTagged as
+ = let	asFloat		= [a | TagFloat a 	<- as]
+	asInteger	= [a | TagInteger a 	<- as]
+	
+   in	   (map TagFloat   $ collateAspects asFloat)
+	++ (map TagInteger $ collateAspects asInteger)
+	
 
 -- | Gather a list of pairs on the first element
 --	gather [(0, 1), (0, 2), (3, 2), (4, 5), (3, 1)] 
