@@ -42,9 +42,9 @@ pprComparisons baselines currents
 		, fromMaybe empty $ pprBenchResultAspect TimeAspectKernelSys	 mBaseline current ]
 
    in	vcat
-	[ nest 30 pprBenchResultAspectHeader
+	[ nest 8 pprBenchResultAspectHeader
 	, vcat	$ punctuate (text "\n")
-		$ map (\c -> (text (benchResultName c) $$ (nest 30 $ comparison c)))
+		$ map (\c -> vcat [text (benchResultName c), nest 8 $ comparison c])
 		$ currents ]
 
 

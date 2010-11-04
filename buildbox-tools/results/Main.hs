@@ -25,6 +25,17 @@ mainWithArgs args
 		let results	=  (read contents) :: BuildResults
 		putStrLn $ render $ ppr results
 
+	-- Print the names of all the benchmarks in a file.
+	| Just fileName	<- getArg args ArgNames
+	, []		<- argsRest args
+	= do	contents	<- readFile fileName
+		let results	= (read contents) :: BuildResults
+		putStrLn 
+			$ render 
+			$ vcat
+			$ map (text . benchResultName)
+			$ buildResultBench results
+		
 	-- Compare two results files.
 	| gotArg args ArgCompare
 	= do	let fileNames	= argsRest args
