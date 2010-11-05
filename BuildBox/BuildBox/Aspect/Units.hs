@@ -46,7 +46,7 @@ instance Num Seconds where
 	(*) (Seconds f1) (Seconds f2)	= Seconds (f1 * f2)
 	abs (Seconds f1) 		= Seconds (abs f1)
 	signum (Seconds f1)		= Seconds (signum f1)
-	fromInteger int			= Seconds (fromInteger int)
+	fromInteger i			= Seconds (fromInteger i)
 	
 instance Pretty Seconds where
 	ppr (Seconds f)	= ppr f <> text "s"
@@ -66,7 +66,7 @@ instance Num Bytes where
 	(*) (Bytes f1) (Bytes f2)	= Bytes (f1 * f2)
 	abs (Bytes f1) 			= Bytes (abs f1)
 	signum (Bytes f1)		= Bytes (signum f1)
-	fromInteger int			= Bytes (fromInteger int)
+	fromInteger i			= Bytes (fromInteger i)
 
 instance Pretty Bytes where
 	ppr (Bytes b)	= ppr b <> text "B"
@@ -84,7 +84,7 @@ instance Num a => Num (Single a) where
 	(*) (Single f1) (Single f2)	= Single (f1 * f2)
 	abs (Single f1) 		= Single (abs f1)
 	signum (Single f1)		= Single (signum f1)
-	fromInteger int			= Single (fromInteger int)
+	fromInteger i			= Single (fromInteger i)
 
 instance Eq a => Eq (Single a) where
 	(==) (Single f1) (Single f2)	= f1 == f2
@@ -132,8 +132,8 @@ instance  (Pretty (t Bytes), Pretty (t Seconds))
 	=> Pretty (WithUnits t) where
  ppr withUnits
   = case withUnits of
-	WithSeconds secs	-> ppr secs
-	WithBytes   bytes	-> ppr bytes
+	WithSeconds s	-> ppr s
+	WithBytes   b	-> ppr b
 
 -- | Helpful wrapper for constructing seconds-valued aspect data. Examples:
 -- 

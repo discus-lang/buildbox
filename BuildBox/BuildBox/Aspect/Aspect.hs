@@ -12,10 +12,8 @@ import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
 import BuildBox.Aspect.Stats
 import BuildBox.Pretty
-import Data.List
 import Text.Read
 import qualified Data.Map	as Map
-import Debug.Trace
 
 
 data Aspect carrier units where

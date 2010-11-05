@@ -5,7 +5,6 @@ module BuildBox.Benchmark.BenchResult
 where
 import BuildBox.Aspect
 import BuildBox.Pretty
-import Control.Monad
 
 -- BenchResult ------------------------------------------------------------------------------------
 -- | The result of running a benchmark several times.
