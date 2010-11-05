@@ -1,4 +1,4 @@
-
+{-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances #-}
 module BuildBox.Benchmark.BenchResult
 	( BenchResult (..)
 	, BenchRunResult (..))
@@ -7,52 +7,52 @@ import BuildBox.Aspect
 import BuildBox.Pretty
 import Control.Monad
 
-
+-- BenchResult ------------------------------------------------------------------------------------
 -- | The result of running a benchmark several times.
 --   We include the name of the original benchmark to it's easy to lookup the results.
-data BenchResult
+data BenchResult carrier
 	= BenchResult
 	{ benchResultName	:: String
-	, benchResultRuns	:: [BenchRunResult] }
-	deriving (Show, Read)
+	, benchResultRuns	:: [BenchRunResult carrier] }
+
+deriving instance ( Show (carrier Seconds), Show (carrier Bytes)) 
+	         => Show (BenchResult carrier)
+
+deriving instance ( HasUnits (carrier Bytes) Bytes
+		  , Read (carrier Bytes)
+                  , HasUnits (carrier Seconds) Seconds
+		  , Read (carrier Seconds))
+		 => Read (BenchResult carrier)
+
+instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
+	 => Pretty (BenchResult carrier) where
+ ppr result
+	= hang (ppr "BenchResult" <+> text (benchResultName result)) 2
+	$ vcat $ map ppr $ benchResultRuns result
 
 
+-- BenchRunResult ---------------------------------------------------------------------------------
 -- | The result of running a benchmark once.
-data BenchRunResult
+data BenchRunResult carrier
 	= BenchRunResult
 	{ -- | What iteration this run was.
-	  benchRunResultIndex	:: Float
+	  benchRunResultIndex	:: Integer
 
 	  -- | Aspects of the benchmark run.
-	, benchRunResultAspects	:: [WithUnits (Aspect Single)] }
-	deriving (Show, Read)
+	, benchRunResultAspects	:: [WithUnits (Aspect carrier)] }
 
+deriving instance ( Show (carrier Seconds), Show (carrier Bytes)) 
+		 => Show (BenchRunResult carrier)
 
+deriving instance ( HasUnits (carrier Bytes) Bytes
+		  , Read (carrier Bytes)
+		  , HasUnits (carrier Seconds) Seconds
+		  , Read (carrier Seconds))
+		 => Read (BenchRunResult carrier)
 
--- Pretty Printers --------------------------------------------------------------------------------
-instance Pretty BenchResult where
+instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes)) 
+	 => Pretty (BenchRunResult carrier) where
  ppr result
-	= hang (ppr "BenchResult") 2 $ vcat
-	[ ppr $ benchResultName result
-	, vcat $ map ppr $ benchResultRuns result ]
-
-
-
-instance Pretty BenchRunResult where
- ppr result
-	= hang (ppr "BenchRunResult") 2 
+	= hang (ppr "BenchRunResult" <+> ppr (benchRunResultIndex result)) 2 
 	$ vcat $ map ppr $ benchRunResultAspects result
-	
-	
-	
-	
-{-	ppr "elapsed:        " <> (ppr $ benchRunResultElapsed result) 
-	, maybe empty (\r -> ppr "k.elapsed: " <> ppr r) 
-		$ join $ liftM timingElapsed $ benchRunResultKernel result
 
-	, maybe empty (\r -> ppr "k.cpu:     " <> ppr r)
-		$ join $ liftM timingCpu     $ benchRunResultKernel result
-
-	, maybe empty (\r -> ppr "k.system:  " <> ppr r)
-		$ join $ liftM timingSys     $ benchRunResultKernel result ]
--}

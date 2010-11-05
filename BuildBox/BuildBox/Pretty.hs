@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances, ScopedTypeVariables, OverlappingInstances, IncoherentInstances #-}
 
 -- | Pretty printing utils.
 module BuildBox.Pretty
@@ -22,9 +22,6 @@ class Pretty a where
 -- Basic instances
 instance Pretty Doc where
 	ppr = id
-
-instance Pretty String where
-	ppr = text
 	
 instance Pretty Float where
 	ppr = text . show
@@ -38,6 +35,12 @@ instance Pretty Integer where
 instance Pretty UTCTime where
 	ppr = text . show
 	
+instance Pretty a => Pretty [a] where
+	ppr xx 
+		= lbrack <> (hcat $ punctuate (text ", ") (map ppr xx)) <> rbrack
+
+instance Pretty String where
+	ppr = text
 
 -- To handle type defaulting
 ten12i :: Integer

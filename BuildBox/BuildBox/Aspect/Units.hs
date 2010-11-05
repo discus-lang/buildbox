@@ -29,7 +29,7 @@ module BuildBox.Aspect.Units
 	
 where
 import BuildBox.Data.Dividable
-
+import BuildBox.Pretty
 
 -- Unit types -------------------------------------------------------------------------------------
 -- | Seconds of time.
@@ -48,6 +48,9 @@ instance Num Seconds where
 	signum (Seconds f1)		= Seconds (signum f1)
 	fromInteger int			= Seconds (fromInteger int)
 	
+instance Pretty Seconds where
+	ppr (Seconds f)	= ppr f <> text "s"
+
 
 -- | Bytes of data.
 data Bytes	= Bytes	  Integer
@@ -65,6 +68,9 @@ instance Num Bytes where
 	signum (Bytes f1)		= Bytes (signum f1)
 	fromInteger int			= Bytes (fromInteger int)
 
+instance Pretty Bytes where
+	ppr (Bytes b)	= ppr b <> text "B"
+	
 
 -- Singleton collections --------------------------------------------------------------------------
 -- | A single valued piece of data.
@@ -83,6 +89,8 @@ instance Num a => Num (Single a) where
 instance Eq a => Eq (Single a) where
 	(==) (Single f1) (Single f2)	= f1 == f2
 
+instance Pretty a => Pretty (Single a) where
+	ppr (Single x)	= ppr x
 
 -- Type classes -----------------------------------------------------------------------------------
 -- | Refies the units used for some thing.
@@ -118,7 +126,14 @@ data WithUnits t where
 	WithBytes	:: t Bytes	-> WithUnits t
 	
 deriving instance (Show (t Bytes), Show (t Seconds)) => Show (WithUnits t)
+deriving instance (Read (t Bytes), Read (t Seconds)) => Read (WithUnits t)
 
+instance  (Pretty (t Bytes), Pretty (t Seconds))
+	=> Pretty (WithUnits t) where
+ ppr withUnits
+  = case withUnits of
+	WithSeconds secs	-> ppr secs
+	WithBytes   bytes	-> ppr bytes
 
 -- | Helpful wrapper for constructing seconds-valued aspect data. Examples:
 -- 

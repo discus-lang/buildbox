@@ -11,6 +11,7 @@ where
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
 import BuildBox.Aspect.Stats
+import BuildBox.Pretty
 import Data.List
 import Text.Read
 import qualified Data.Map	as Map
@@ -55,6 +56,17 @@ instance (  HasUnits (carrier units) units
 		return aspect
 		
 	 _ -> pfail
+
+
+instance ( Pretty (carrier Seconds)
+	 , Pretty (carrier Bytes))
+ 	 => Pretty (Aspect carrier units) where
+ ppr aa
+  = case aa of
+	Time timed dat	-> padL 30 (ppr timed) <+> text ":" <+> ppr dat
+	Size sized dat	-> padL 30 (ppr sized) <+> text ":" <+> ppr dat
+	Used used  dat	-> padL 30 (ppr used)  <+> text ":" <+> ppr dat
+
 	
 
 -- | Split an aspect into its named detail and value.
