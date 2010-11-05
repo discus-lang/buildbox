@@ -5,20 +5,15 @@ module BuildBox.Aspect.Aspect
 	, makeAspect
 	, splitAspect
 	, transformAspect
-	
-	, collateWithUnits)
+	, collateWithUnits
+	, makeAspectStats)
 where
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
+import BuildBox.Aspect.Stats
 import qualified Data.Map	as Map
 
 
--- | An aspect of a benchmark that we can measure.
---   Aspects are parameterised over a carrier constructor, which is the
---   collection type used to store the data. 
---   For single valued data use the `Single`.
---   If you have many readings, like different runtimes for the same benchmark, then use [].
---
 data Aspect carrier units where
 	Time	:: Timed	-> carrier Seconds	-> Aspect carrier Seconds
 	Size	:: Sized	-> carrier Bytes	-> Aspect carrier Bytes
@@ -97,5 +92,13 @@ gather	xx
 		xx
 
 
+-- Stats ------------------------------------------------------------------------------------------
+-- | Compute statistics for many-valued aspects.
+makeAspectStats :: Aspect [] units -> Aspect Stats units
+makeAspectStats aspect
+ = case aspect of
+	Time timed dat	-> Time timed (makeStats dat)
+	Size sized dat	-> Size sized (makeStats dat)
+	Used used  dat	-> Used used  (makeStats dat)
 
 

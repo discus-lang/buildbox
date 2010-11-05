@@ -163,14 +163,14 @@ class Collatable t where
 		=> [t Single a] -> [t [] a]
 
 
--- | Collate several values for the same aspect.
+-- | Collate some data.
 --
 --  @
---     collateWithUnits  [ Time KernelCpu \`secs\` 5
---                       , Time KernelCpu \`secs\` 10
---                       , Time TotalWall \`secs\` 55
+--     collateWithUnits  [ Time KernelCpu \`secs\`  5
+--                       , Time KernelCpu \`secs\`  10
+--                       , Time TotalWall \`secs\`  55
 --                       , Size ExeSize   \`bytes\` 100884
---                       , Time TotalWall \`secs\` 52 ]
+--                       , Time TotalWall \`secs\`  52 ]
 --     =>
 --                       [ WithSeconds (Time KernelCpu [Seconds 5.0,  Seconds 10.0])
 --                       , WithSeconds (Time TotalWall [Seconds 55.0, Seconds 52.0])

@@ -1,4 +1,5 @@
 
+-- | The details of benchmark programs that we're interested in.
 module BuildBox.Aspect.Detail
 	( Detail (..)
 	, Timed	 (..)
@@ -20,7 +21,7 @@ data Timed
 	| TotalCpu
 	| TotalSys
 	| KernelWall
-	| KernelCpu
+	| KernelCpu 
 	| KernelSys
 	deriving (Eq, Ord, Show, Read, Enum)
 	
