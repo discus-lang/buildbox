@@ -7,6 +7,7 @@ import BuildBox.Time
 import BuildBox.Benchmark
 import BuildBox.Command.Environment
 import BuildBox.Pretty
+import BuildBox.Aspect
 import Data.List
 
 
@@ -15,7 +16,7 @@ data BuildResults
 	= BuildResults
 	{ buildResultTime		:: UTCTime
 	, buildResultEnvironment	:: Environment
-	, buildResultBench		:: [BenchResult] }
+	, buildResultBench		:: [BenchResult Single] }
 	deriving (Show, Read)
 
 instance Pretty BuildResults where
