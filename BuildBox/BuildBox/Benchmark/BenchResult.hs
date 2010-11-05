@@ -3,7 +3,9 @@ module BuildBox.Benchmark.BenchResult
 	( BenchResult (..)
 	, BenchRunResult (..))
 where
-import BuildBox.Benchmark.Aspect
+import BuildBox.Aspect
+import BuildBox.Pretty
+import Control.Monad
 
 
 -- | The result of running a benchmark several times.
@@ -18,11 +20,11 @@ data BenchResult
 -- | The result of running a benchmark once.
 data BenchRunResult
 	= BenchRunResult
-	{ -- | What number run this was.
+	{ -- | What iteration this run was.
 	  benchRunResultIndex	:: Float
 
-	  -- | Benchmarking aspects.
-	, benchRunResultAspect	:: [Aspect] }
+	  -- | Aspects of the benchmark run.
+	, benchRunResultAspects	:: [WithUnits (Aspect Single)] }
 	deriving (Show, Read)
 
 
@@ -35,10 +37,16 @@ instance Pretty BenchResult where
 	, vcat $ map ppr $ benchResultRuns result ]
 
 
+
 instance Pretty BenchRunResult where
  ppr result
-	= hang (ppr "BenchRunResult") 2 $ vcat
-	[ ppr "elapsed:        " <> (ppr $ benchRunResultElapsed result) 
+	= hang (ppr "BenchRunResult") 2 
+	$ vcat $ map ppr $ benchRunResultAspects result
+	
+	
+	
+	
+{-	ppr "elapsed:        " <> (ppr $ benchRunResultElapsed result) 
 	, maybe empty (\r -> ppr "k.elapsed: " <> ppr r) 
 		$ join $ liftM timingElapsed $ benchRunResultKernel result
 
@@ -47,3 +55,4 @@ instance Pretty BenchRunResult where
 
 	, maybe empty (\r -> ppr "k.system:  " <> ppr r)
 		$ join $ liftM timingSys     $ benchRunResultKernel result ]
+-}

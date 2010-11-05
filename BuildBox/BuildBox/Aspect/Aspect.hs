@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, GADTs, FlexibleContexts, RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, GADTs, FlexibleContexts, RankNTypes, UndecidableInstances #-}
 {-# OPTIONS_HADDOCK hide #-}
 module BuildBox.Aspect.Aspect
 	( Aspect	(..)
@@ -11,7 +11,10 @@ where
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
 import BuildBox.Aspect.Stats
+import Data.List
+import Text.Read
 import qualified Data.Map	as Map
+import Debug.Trace
 
 
 data Aspect carrier units where
@@ -20,8 +23,39 @@ data Aspect carrier units where
 	Used	:: Used		-> carrier Bytes	-> Aspect carrier Bytes
 
 deriving instance Show (carrier units) => Show (Aspect carrier units)	
--- TODO: read instance
 
+-- We need to write the read instance manually because it requires makeAspect
+instance (  HasUnits (carrier units) units
+	 ,  Read  (carrier units)) 
+	 => Read (Aspect carrier units) where
+ readPrec 
+  = do	tok <- lexP
+	case tok of
+	 Punc  "("
+	  -> do	aspect		<- readPrec
+		Punc ")"	<- lexP
+		return aspect
+		
+	 Ident "Time" 
+	  -> do	timed		<- readPrec
+		dat		<- readPrec
+		let Just aspect	= makeAspect (DetailTimed timed) dat
+		return aspect
+	
+	 Ident "Size"
+	  -> do	sized		<- readPrec
+		dat		<- readPrec
+		let Just aspect	= makeAspect (DetailSized sized) dat
+		return aspect
+
+	 Ident "Used"
+	  -> do	used		<- readPrec
+		dat		<- readPrec
+		let Just aspect	= makeAspect (DetailUsed used) dat
+		return aspect
+		
+	 _ -> pfail
+	
 
 -- | Split an aspect into its named detail and value.
 splitAspect :: Aspect carrier units -> (Detail, carrier units)
