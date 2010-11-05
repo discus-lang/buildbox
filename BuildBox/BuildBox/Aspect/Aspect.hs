@@ -4,9 +4,9 @@ module BuildBox.Aspect.Aspect
 	( Aspect	(..)
 	, makeAspect
 	, splitAspect
-	, transformAspect
 	, collateWithUnits
-	, makeAspectStats)
+	, makeAspectStats
+	, liftToCarrier)
 where
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
@@ -99,12 +99,12 @@ makeAspect detail (val :: carrier units)
 	
 
 -- | Transform the data in an aspect, possibly changing the carrier type.
-transformAspect
+liftToCarrier
 	:: (carrier1 units -> carrier2 units) 
 	-> Aspect carrier1 units 
 	-> Aspect carrier2 units
 
-transformAspect f aspect
+liftToCarrier f aspect
  = case aspect of
 	Time timed dat	-> Time timed (f dat)
 	Size sized dat	-> Size sized (f dat)

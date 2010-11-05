@@ -1,9 +1,14 @@
 {-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances #-}
 module BuildBox.Benchmark.BenchResult
 	( BenchResult (..)
+	, liftToBenchRunResult
+	, liftsToBenchRunResult
+	, statsOfBenchResult
+
 	, BenchRunResult (..)
-	, liftBenchRunResult
-	, liftRunResultAspects)
+	, liftToRunResultAspects
+	, liftsToRunResultAspects
+	, statsOfBenchResultList)
 where
 import BuildBox.Aspect
 import BuildBox.Pretty
@@ -32,12 +37,34 @@ instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 	$ vcat $ map ppr $ benchResultRuns result
 
 
-liftBenchRunResult 
+statsOfBenchResult	:: BenchResult Single -> BenchResult Stats
+statsOfBenchResult	
+ 	= statsOfBenchResultList .  (liftsToBenchRunResult collateWithUnits)
+
+
+statsOfBenchResultList 	:: BenchResult [] -> BenchResult Stats
+statsOfBenchResultList 
+	= (liftToBenchRunResult . liftToRunResultAspects) (liftWithUnits makeAspectStats)
+
+
+liftToBenchRunResult 
 	:: (BenchRunResult carrier1 -> BenchRunResult carrier2)
 	-> BenchResult carrier1 -> BenchResult carrier2
 
-liftBenchRunResult f (BenchResult name runs)
+liftToBenchRunResult f (BenchResult name runs)
 	= BenchResult name (map f runs)
+
+
+liftsToBenchRunResult
+	:: ([WithUnits (Aspect carrier1)] -> [WithUnits (Aspect carrier2)])
+	-> BenchResult carrier1 -> BenchResult carrier2
+	
+liftsToBenchRunResult f (BenchResult name runs)
+	= BenchResult name (map (liftsToRunResultAspects f) runs)
+
+
+
+
 	
 
 -- BenchRunResult ---------------------------------------------------------------------------------
@@ -66,9 +93,18 @@ instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 	$ vcat $ map ppr $ benchRunResultAspects result
 
 
-liftRunResultAspects 
+liftToRunResultAspects 
 	:: (WithUnits (Aspect carrier1) -> WithUnits (Aspect carrier2))
 	-> BenchRunResult carrier1 -> BenchRunResult carrier2
 
-liftRunResultAspects f (BenchRunResult ix aspects)
+liftToRunResultAspects f (BenchRunResult ix aspects)
 	= BenchRunResult ix (map f aspects)
+
+
+liftsToRunResultAspects 
+	:: ([WithUnits (Aspect carrier1)] -> [WithUnits (Aspect carrier2)])
+	-> BenchRunResult carrier1 -> BenchRunResult carrier2
+
+liftsToRunResultAspects f (BenchRunResult ix aspects)
+	= BenchRunResult ix (f aspects)
+	

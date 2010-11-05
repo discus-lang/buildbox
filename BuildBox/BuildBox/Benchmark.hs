@@ -2,7 +2,15 @@
 module BuildBox.Benchmark
 	( Benchmark	(..)
 	, BenchResult	(..)
+	, liftToBenchRunResult
+	, liftsToBenchRunResult
+	, statsOfBenchResult
+	, statsOfBenchResultList
+	
 	, BenchRunResult(..)
+	, liftToRunResultAspects
+	, liftsToRunResultAspects
+	
 	, runTimedCommand
 	, runBenchmarkOnce
 	, outRunBenchmarkOnce
@@ -12,6 +20,7 @@ where
 import BuildBox.Build	
 import BuildBox.Aspect
 import BuildBox.Benchmark.Benchmark
+import BuildBox.Benchmark.BenchResult
 import Data.Time
 import Data.List
 
@@ -85,6 +94,8 @@ outRunBenchmarkAgainst iterations _mPrior bench
 	let result	= BenchResult
 			{ benchResultName	= benchmarkName bench
 			, benchResultRuns	= runResults }
+
+	outLn runResults
 
 {-
 	outLn pprBenchResultAspectHeader

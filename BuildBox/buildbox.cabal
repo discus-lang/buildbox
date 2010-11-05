@@ -40,6 +40,7 @@ Library
 
   Exposed-modules:
         BuildBox.Data.Log
+        BuildBox.Data.Dividable
         BuildBox.Aspect.Detail
         BuildBox.Aspect.Stats
         BuildBox.Aspect.Units
