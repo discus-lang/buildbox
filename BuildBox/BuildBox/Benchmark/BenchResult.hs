@@ -1,7 +1,9 @@
 {-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances #-}
 module BuildBox.Benchmark.BenchResult
 	( BenchResult (..)
-	, BenchRunResult (..))
+	, BenchRunResult (..)
+	, liftBenchRunResult
+	, liftRunResultAspects)
 where
 import BuildBox.Aspect
 import BuildBox.Pretty
@@ -30,6 +32,14 @@ instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 	$ vcat $ map ppr $ benchResultRuns result
 
 
+liftBenchRunResult 
+	:: (BenchRunResult carrier1 -> BenchRunResult carrier2)
+	-> BenchResult carrier1 -> BenchResult carrier2
+
+liftBenchRunResult f (BenchResult name runs)
+	= BenchResult name (map f runs)
+	
+
 -- BenchRunResult ---------------------------------------------------------------------------------
 -- | The result of running a benchmark once.
 data BenchRunResult carrier
@@ -55,3 +65,10 @@ instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 	= hang (ppr "BenchRunResult" <+> ppr (benchRunResultIndex result)) 2 
 	$ vcat $ map ppr $ benchRunResultAspects result
 
+
+liftRunResultAspects 
+	:: (WithUnits (Aspect carrier1) -> WithUnits (Aspect carrier2))
+	-> BenchRunResult carrier1 -> BenchRunResult carrier2
+
+liftRunResultAspects f (BenchRunResult ix aspects)
+	= BenchRunResult ix (map f aspects)

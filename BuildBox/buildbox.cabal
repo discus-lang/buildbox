@@ -40,12 +40,13 @@ Library
 
   Exposed-modules:
         BuildBox.Data.Log
-        BuildBox.Aspect
         BuildBox.Aspect.Detail
         BuildBox.Aspect.Stats
         BuildBox.Aspect.Units
+        BuildBox.Aspect
         BuildBox.Benchmark.BenchResult
         BuildBox.Benchmark.Benchmark
+        BuildBox.Benchmark
         BuildBox.Build.Testable
         BuildBox.Build.BuildError
         BuildBox.Build.BuildState
