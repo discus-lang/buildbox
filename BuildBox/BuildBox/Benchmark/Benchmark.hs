@@ -7,10 +7,7 @@ where
 import BuildBox.Build
 import BuildBox.Pretty
 import BuildBox.Benchmark.BenchResult
-import BuildBox.Benchmark.Aspect
-import BuildBox.Benchmark.Aspect.Tagged
-import BuildBox.Benchmark.Aspect.Mode
-import Control.Monad
+import BuildBox.Aspect
 
 -- | Describes a benchmark that we can run.
 data Benchmark
@@ -22,11 +19,11 @@ data Benchmark
 	, benchmarkSetup	:: Build ()
 
 	  -- | The benchmark command to run. 
-	  --   Only the time taken to run this part is measured.
-	, benchmarkCommand	:: Build [Tagged (Aspect Single)]
+	  --   The time taken to run this part is automatically measured and added to the overall results.
+	, benchmarkCommand	:: Build [WithUnits (Aspect Single)]
 
 	  -- | Check \/ cleanup command to run after the main benchmark.
-	, benchmarkCheck	:: Build ()
+	, benchmarkCheck	:: Build [WithUnits (Aspect Single)]
 	}
 
 
