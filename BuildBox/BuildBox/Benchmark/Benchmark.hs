@@ -5,7 +5,6 @@ module BuildBox.Benchmark.Benchmark
 	, BenchResult(..))
 where
 import BuildBox.Build
-import BuildBox.Pretty
 import BuildBox.Benchmark.BenchResult
 import BuildBox.Aspect
 
