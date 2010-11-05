@@ -40,10 +40,14 @@ Library
 
   Exposed-modules:
         BuildBox.Data.Log
-        BuildBox.Benchmark.Compare
-        BuildBox.Benchmark.Pretty
-        BuildBox.Benchmark.TimeAspect
-        BuildBox.Benchmark
+        BuildBox.Aspect
+        BuildBox.Aspect.Detail
+        BuildBox.Aspect.Stats
+        BuildBox.Aspect.Units
+--        BuildBox.Benchmark.Compare
+--        BuildBox.Benchmark.Pretty
+--        BuildBox.Benchmark.TimeAspect
+--        BuildBox.Benchmark
         BuildBox.Build.Testable
         BuildBox.Build.BuildError
         BuildBox.Build.BuildState
@@ -56,7 +60,7 @@ Library
         BuildBox.Command.Sleep
         BuildBox.Cron.Schedule
         BuildBox.Cron
-        BuildBox.FileFormat.BuildResults
+--        BuildBox.FileFormat.BuildResults
         BuildBox.IO.Directory
         BuildBox.IO.File
         BuildBox.Pretty
@@ -65,6 +69,7 @@ Library
 
   Other-modules:
         BuildBox.Command.System.Internals
-        BuildBox.Benchmark.Base
+  --      BuildBox.Benchmark.Base
         BuildBox.Build.Base
+        BuildBox.Aspect.Aspect
        

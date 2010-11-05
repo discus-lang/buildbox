@@ -1,27 +1,35 @@
-{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, GADTs, FlexibleContexts #-}
-
+{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, GADTs, FlexibleContexts, RankNTypes #-}
+{-# OPTIONS_HADDOCK hide #-}
 module BuildBox.Aspect.Aspect
-	(Aspect	(..))
+	( Aspect	(..)
+	, makeAspect
+	, splitAspect
+	, transformAspect
+	
+	, collateWithUnits)
 where
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
 import qualified Data.Map	as Map
-import Data.Map			(Map)
+
 
 -- | An aspect of a benchmark that we can measure.
---   Aspects are parameterised over a type constructor 't' that can be a collection
---   used to store multiple readings. For a single reading used the `Single` type.
-data Aspect t units where
-	Time	:: Timed	-> t Seconds	-> Aspect t Seconds
-	Size	:: Sized	-> t Bytes	-> Aspect t Bytes
-	Used	:: Used		-> t Bytes	-> Aspect t Bytes
+--   Aspects are parameterised over a carrier constructor, which is the
+--   collection type used to store the data. 
+--   For single valued data use the `Single`.
+--   If you have many readings, like different runtimes for the same benchmark, then use [].
+--
+data Aspect carrier units where
+	Time	:: Timed	-> carrier Seconds	-> Aspect carrier Seconds
+	Size	:: Sized	-> carrier Bytes	-> Aspect carrier Bytes
+	Used	:: Used		-> carrier Bytes	-> Aspect carrier Bytes
 
-deriving instance Show (t units) => Show (Aspect t units)	
+deriving instance Show (carrier units) => Show (Aspect carrier units)	
 -- TODO: read instance
 
 
 -- | Split an aspect into its named detail and value.
-splitAspect :: Aspect t units -> (Detail, t units)
+splitAspect :: Aspect carrier units -> (Detail, carrier units)
 splitAspect aa
  = case aa of
 	Time timed val		-> (DetailTimed timed, val)
@@ -32,10 +40,10 @@ splitAspect aa
 -- | Make an aspect from named detail and data.
 --   If the detail doesn't match the units of the data then `Nothing`.
 makeAspect
-	:: HasUnits (t units) units 
-	=> Detail -> t units -> Maybe (Aspect t units)
+	:: HasUnits (carrier units) units 
+	=> Detail -> carrier units -> Maybe (Aspect carrier units)
 
-makeAspect detail (val :: c units)
+makeAspect detail (val :: carrier units)
  = case hasUnits val :: Maybe (IsUnits units) of
 	Just IsSeconds
 	 -> case detail of
@@ -48,6 +56,21 @@ makeAspect detail (val :: c units)
 		DetailSized sized	-> Just (Size sized val)
 		_			-> Nothing
 
+	Nothing -> Nothing
+	
+
+-- | Transform the data in an aspect, possibly changing the carrier type.
+transformAspect
+	:: (carrier1 units -> carrier2 units) 
+	-> Aspect carrier1 units 
+	-> Aspect carrier2 units
+
+transformAspect f aspect
+ = case aspect of
+	Time timed dat	-> Time timed (f dat)
+	Size sized dat	-> Size sized (f dat)
+	Used used dat	-> Used used  (f dat)
+
 
 -- Collate ----------------------------------------------------------------------------------------
 instance Collatable Aspect where
@@ -58,14 +81,6 @@ instance Collatable Aspect where
 		 $ gather [(detail, val) | (detail, (Single val)) <- map splitAspect as]
     in	as'
 
-
-collateWithUnits :: Collatable c => [WithUnits (c Single)] -> [WithUnits (c [])]
-collateWithUnits as
-  = let	asSeconds	= [a | WithSeconds a	<- as]
-	asBytes		= [a | WithBytes   a	<- as]
-
-    in	   (map WithSeconds $ collate asSeconds)
-	++ (map WithBytes   $ collate asBytes)
 
 
 -- | Gather a list of pairs on the first element
@@ -80,3 +95,7 @@ gather	xx
 				k [v] m) 
 		Map.empty 
 		xx
+
+
+
+
