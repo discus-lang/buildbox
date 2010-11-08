@@ -55,8 +55,10 @@ module BuildBox.Aspect
 	, Aspect	(..)
 	, makeAspect
 	, splitAspect
-	, liftToCarrier
-	, makeAspectStats)
+	, liftAspect
+	, lift2Aspect
+	, makeAspectStats
+	, compareAspects)
 
 where
 import BuildBox.Aspect.Aspect

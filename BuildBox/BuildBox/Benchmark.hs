@@ -10,6 +10,7 @@ module BuildBox.Benchmark
 	, BenchRunResult(..)
 	, mapRunResultAspects
 	, liftRunResultAspects
+	, lift2RunResultAspects
 	
 	, runTimedCommand
 	, runBenchmarkOnce
@@ -108,6 +109,9 @@ outRunBenchmarkAgainst iterations _mPrior bench
 	outBlank
 -}
 	return	result
+	
+-- compareResults :: BenchResult Stats -> BenchResult Stats -> BenchResult Comparison
+	
 	
 	
 -- | Run a benchmark serveral times, logging activity to the console.

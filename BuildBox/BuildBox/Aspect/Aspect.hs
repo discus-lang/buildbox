@@ -6,7 +6,9 @@ module BuildBox.Aspect.Aspect
 	, splitAspect
 	, collateWithUnits
 	, makeAspectStats
-	, liftToCarrier)
+	, compareAspects
+	, liftAspect
+	, lift2Aspect)
 where
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
@@ -99,16 +101,35 @@ makeAspect detail (val :: carrier units)
 	
 
 -- | Transform the data in an aspect, possibly changing the carrier type.
-liftToCarrier
-	:: (carrier1 units -> carrier2 units) 
-	-> Aspect carrier1 units 
-	-> Aspect carrier2 units
+liftAspect 
+	:: (c1 units -> c2 units)
+	-> Aspect c1 units -> Aspect c2 units
 
-liftToCarrier f aspect
+liftAspect f aspect
  = case aspect of
 	Time timed dat	-> Time timed (f dat)
 	Size sized dat	-> Size sized (f dat)
 	Used used dat	-> Used used  (f dat)
+
+
+-- | Apply a function to the aspect data, producing a new aspect.
+--   If the aspect details don't match then `error`.
+lift2Aspect 
+	:: (c1 units -> c1 units -> c2 units) 
+	-> Aspect c1 units -> Aspect c1 units -> Aspect c2 units
+	
+lift2Aspect f a1 a2
+ = case (a1, a2) of
+	(Time timed1 dat1, Time timed2 dat2)
+	 | timed1 == timed2	-> Time timed1 (f dat1 dat2)
+
+	(Size sized1 dat1, Size sized2 dat2)
+	 | sized1 == sized2	-> Size sized1 (f dat1 dat2)
+
+	(Used used1 dat1,  Used used2 dat2)
+	 | used1  == used2	-> Used used1 (f dat1 dat2)
+
+	_ -> error "lift2Aspect: aspects don't match"
 
 
 -- Collate ----------------------------------------------------------------------------------------
@@ -145,4 +166,11 @@ makeAspectStats aspect
 	Size sized dat	-> Size sized (makeStats dat)
 	Used used  dat	-> Used used  (makeStats dat)
 
+-- Compare ---------------------------------------------------------------------------------------
+data Comparison c
+	= Foo
+
+compareAspects :: Aspect Single units -> Aspect Single units -> Aspect Comparison units
+compareAspects a1 a2
+ = undefined
 

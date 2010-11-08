@@ -22,6 +22,7 @@ module BuildBox.Aspect.Units
 	, bytes
 	, applyWithUnits
 	, liftWithUnits
+	, lift2WithUnits
 
 	  -- * Unit-preserving collation
 	, Collatable	(..)
@@ -159,7 +160,10 @@ bytes mk b = WithBytes   (mk (Single (Bytes b)))
 
 
 -- | Apply a unit-preserving function to unit-wrapped data.
-applyWithUnits :: (forall units. t1 units -> t2 units) -> WithUnits t1 -> WithUnits t2
+applyWithUnits 
+	:: (forall units. t1 units -> t2 units)
+	-> WithUnits t1 -> WithUnits t2
+
 applyWithUnits f withUnits
  = case withUnits of
 	WithSeconds dat	-> WithSeconds (f dat)
@@ -167,7 +171,10 @@ applyWithUnits f withUnits
 
 
 -- | Transform values of each unit type as a group.
-liftWithUnits :: (forall units. [t1 units] -> [t2 units]) -> [WithUnits t1] -> [WithUnits t2]
+liftWithUnits 
+	:: (forall units. [t1 units] -> [t2 units]) 
+	-> [WithUnits t1] -> [WithUnits t2]
+
 liftWithUnits f us
   = let	asSeconds	= [a | WithSeconds a	<- us]
 	asBytes		= [a | WithBytes   a	<- us]
@@ -175,6 +182,20 @@ liftWithUnits f us
     in	   (map WithSeconds $ f asSeconds)
 	++ (map WithBytes   $ f asBytes)
 
+
+lift2WithUnits 
+	:: (forall units. [t1 units] -> [t1 units] -> [t2 units])
+	-> [WithUnits t1] -> [WithUnits t1] -> [WithUnits t2]
+
+lift2WithUnits f as bs
+  = let	asSeconds	= [a | WithSeconds a	<- as]
+	bsSeconds	= [b | WithSeconds b	<- bs]
+	
+	asBytes		= [a | WithBytes   a  	<- as]
+	bsBytes		= [b | WithBytes   b	<- bs]
+    in	   (map WithSeconds $ f asSeconds bsSeconds)
+	++ (map WithBytes   $ f asBytes   bsBytes)
+	
 
 -- Unit-safe collation ----------------------------------------------------------------------------
 -- | Collate some data, while preserving units.

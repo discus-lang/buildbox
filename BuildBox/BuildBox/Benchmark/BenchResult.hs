@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances #-}
+{-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances, RankNTypes #-}
 module BuildBox.Benchmark.BenchResult
 	( BenchResult (..)
 	, mapBenchRunResult
@@ -8,6 +8,7 @@ module BuildBox.Benchmark.BenchResult
 	, BenchRunResult (..)
 	, mapRunResultAspects
 	, liftRunResultAspects
+	, lift2RunResultAspects
 	, statsOfBenchResultList)
 where
 import BuildBox.Aspect
@@ -56,8 +57,9 @@ mapBenchRunResult f (BenchResult name runs)
 	= BenchResult name (map f runs)
 
 
--- | Transform aspects of each unit type as a group.
-liftBenchRunResult
+-- | Apply a function to groups of aspects with the same unit.
+--   TODO: dump this one.
+liftToBenchResult
 	:: ([WithUnits (Aspect carrier1)] -> [WithUnits (Aspect carrier2)])
 	-> BenchResult carrier1 -> BenchResult carrier2
 	
@@ -65,9 +67,29 @@ liftBenchRunResult f (BenchResult name runs)
 	= BenchResult name (map (liftRunResultAspects f) runs)
 
 
-
-
+-- | Apply an arity-2 function to groups of aspects with the same unit.
+--   If the two BenchResults don't have the same name then `error`.
+lift2BenchRunResult 
+	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
+	-> BenchResult c1 -> BenchResult c1 -> BenchResult c2
 	
+lift2BenchRunResult f (BenchResult name1 runs1) (BenchResult name2 runs2)
+	| name1 /= name2	
+	= error $ unlines 
+		[ "lift2BenchRunResult: results don't have same name"
+		, "    name1 = " ++ name1
+		, "    name2 = " ++ name2 ]
+		
+naming 
+
+ALMOST: (zipWith . lift2RunResultAspects . lift2WithUnits) (zipWith compareAspects)
+
+TODO: Just apply regular map and zip functions for these types.
+      We shouldn't be exposing WithUnits here
+      Functions should be just 
+ 	(BenchRunResult -> BenchRunResult) -> BenchResult -> BenchResult
+
+
 
 -- BenchRunResult ---------------------------------------------------------------------------------
 -- | The result of running a benchmark once.
@@ -104,11 +126,20 @@ mapRunResultAspects f (BenchRunResult ix aspects)
 	= BenchRunResult ix (map f aspects)
 
 
--- | Transform aspects of each unit type as a group.
+-- | Apply a function to groups of aspects with the same unit.
 liftRunResultAspects 
 	:: ([WithUnits (Aspect carrier1)] -> [WithUnits (Aspect carrier2)])
 	-> BenchRunResult carrier1 -> BenchRunResult carrier2
 
 liftRunResultAspects f (BenchRunResult ix aspects)
 	= BenchRunResult ix (f aspects)
+
+
+-- | Apply an arity-2 function to groups of aspects with the same unit.
+--   The run result index for the result it taken from the second parameter.
+lift2RunResultAspects 
+	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
+	-> BenchRunResult c1 -> BenchRunResult c1 -> BenchRunResult c2
 	
+lift2RunResultAspects f (BenchRunResult ix1 as1) (BenchRunResult ix2 as2)
+	= BenchRunResult ix1 (f as1 as2)
