@@ -9,9 +9,6 @@ module BuildBox.Aspect.Units
 	  Seconds	(..)
 	, Bytes		(..)
 
-	  -- * Singleton collections
-	, Single	(..)
-
 	  -- * Type classes
 	, IsUnits 	(..)
 	, HasUnits 	(..)
@@ -28,6 +25,7 @@ module BuildBox.Aspect.Units
 	, collateWithUnits)
 	
 where
+import BuildBox.Aspect.Single
 import BuildBox.Data.Dividable
 import BuildBox.Pretty
 
@@ -71,26 +69,6 @@ instance Num Bytes where
 instance Pretty Bytes where
 	ppr (Bytes b)	= ppr b <> text "B"
 	
-
--- Singleton collections --------------------------------------------------------------------------
--- | A single valued piece of data.
-data Single a 
-	= Single a
-	deriving (Read, Show)
-
-instance Num a => Num (Single a) where
-	(+) (Single f1) (Single f2)	= Single (f1 + f2)
-	(-) (Single f1) (Single f2)	= Single (f1 - f2)
-	(*) (Single f1) (Single f2)	= Single (f1 * f2)
-	abs (Single f1) 		= Single (abs f1)
-	signum (Single f1)		= Single (signum f1)
-	fromInteger i			= Single (fromInteger i)
-
-instance Eq a => Eq (Single a) where
-	(==) (Single f1) (Single f2)	= f1 == f2
-
-instance Pretty a => Pretty (Single a) where
-	ppr (Single x)	= ppr x
 
 -- Type classes -----------------------------------------------------------------------------------
 -- | Refies the units used for some thing.

@@ -1,4 +1,3 @@
-{-# LANGUAGE GADTs #-}
 
 -- | Extracting statistics from many-valued data.
 module BuildBox.Aspect.Stats

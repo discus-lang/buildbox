@@ -51,17 +51,21 @@ module BuildBox.Aspect
 	( module BuildBox.Aspect.Units
 	, module BuildBox.Aspect.Detail
 	, module BuildBox.Aspect.Stats
+	, module BuildBox.Aspect.Single
+	, module BuildBox.Aspect.Comparison
 
 	, Aspect	(..)
 	, makeAspect
 	, splitAspect
 	, liftAspect
-	, lift2Aspect
+	, liftAspect2
 	, makeAspectStats
-	, compareAspects)
+	, makeAspectComparison)
 
 where
 import BuildBox.Aspect.Aspect
 import BuildBox.Aspect.Detail
 import BuildBox.Aspect.Stats
 import BuildBox.Aspect.Units
+import BuildBox.Aspect.Single
+import BuildBox.Aspect.Comparison

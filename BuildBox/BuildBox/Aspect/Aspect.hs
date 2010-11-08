@@ -4,15 +4,18 @@ module BuildBox.Aspect.Aspect
 	( Aspect	(..)
 	, makeAspect
 	, splitAspect
+	, liftAspect
+	, liftAspect2
 	, collateWithUnits
 	, makeAspectStats
-	, compareAspects
-	, liftAspect
-	, lift2Aspect)
+	, makeAspectComparison)
 where
+import BuildBox.Aspect.Single
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
 import BuildBox.Aspect.Stats
+import BuildBox.Aspect.Comparison
+import BuildBox.Data.Dividable
 import BuildBox.Pretty
 import Text.Read
 import qualified Data.Map	as Map
@@ -114,11 +117,11 @@ liftAspect f aspect
 
 -- | Apply a function to the aspect data, producing a new aspect.
 --   If the aspect details don't match then `error`.
-lift2Aspect 
+liftAspect2
 	:: (c1 units -> c1 units -> c2 units) 
 	-> Aspect c1 units -> Aspect c1 units -> Aspect c2 units
 	
-lift2Aspect f a1 a2
+liftAspect2 f a1 a2
  = case (a1, a2) of
 	(Time timed1 dat1, Time timed2 dat2)
 	 | timed1 == timed2	-> Time timed1 (f dat1 dat2)
@@ -129,7 +132,7 @@ lift2Aspect f a1 a2
 	(Used used1 dat1,  Used used2 dat2)
 	 | used1  == used2	-> Used used1 (f dat1 dat2)
 
-	_ -> error "lift2Aspect: aspects don't match"
+	_ -> error "liftAspect2: aspects don't match"
 
 
 -- Collate ----------------------------------------------------------------------------------------
@@ -166,11 +169,13 @@ makeAspectStats aspect
 	Size sized dat	-> Size sized (makeStats dat)
 	Used used  dat	-> Used used  (makeStats dat)
 
--- Compare ---------------------------------------------------------------------------------------
-data Comparison c
-	= Foo
 
-compareAspects :: Aspect Single units -> Aspect Single units -> Aspect Comparison units
-compareAspects a1 a2
- = undefined
+-- Comparison -------------------------------------------------------------------------------------
+makeAspectComparison  
+	:: (Num units, Dividable units, Ord units)
+	=> Aspect Single units -> Aspect Single units -> Aspect Comparison units
+
+makeAspectComparison 
+	= liftAspect2 makeComparison
+
 

@@ -2,14 +2,17 @@
 module BuildBox.Benchmark.BenchResult
 	( BenchResult (..)
 	, liftBenchRunResult
+	, liftBenchRunResult2
 	, liftToAspectsOfBenchResult
+	, liftToAspectsOfBenchResult2
 	, statBenchResults
 	, statCollatedBenchResults
 	, collateBenchResults
 	, concatBenchResults
 	
 	, BenchRunResult (..)
-	, liftRunResultAspects)
+	, liftRunResultAspects
+	, liftRunResultAspects2)
 where
 import BuildBox.Aspect
 import BuildBox.Pretty
@@ -49,6 +52,16 @@ liftBenchRunResult f (BenchResult name runs)
 	= BenchResult name (f runs)
 
 
+-- | Apply a binary function to the `BenchResults` in a `BenchResult`
+liftBenchRunResult2
+	:: ([BenchRunResult c1] -> [BenchRunResult c2] -> [BenchRunResult c3])
+	->  BenchResult c1      ->  BenchResult c2     ->  BenchResult c3
+
+liftBenchRunResult2 f (BenchResult name1 runs1) (BenchResult name2 runs2)
+	| name1 == name2	= BenchResult name1 (f runs1 runs2)
+	| otherwise		= error "liftBenchRunResult2: names don't match"
+	
+
 -- | Apply a function to the aspects of each run result.
 liftToAspectsOfBenchResult 
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
@@ -56,6 +69,15 @@ liftToAspectsOfBenchResult
 
 liftToAspectsOfBenchResult 
 	= liftBenchRunResult . map . liftRunResultAspects
+
+
+-- | Apply a binary function to the aspects of each run result.
+liftToAspectsOfBenchResult2
+	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)] -> [WithUnits (Aspect c3)])
+	-> BenchResult c1           -> BenchResult c2          -> BenchResult c3
+
+liftToAspectsOfBenchResult2
+	= liftBenchRunResult2 . zipWith . liftRunResultAspects2
 
 
 -- | Compute statistics about some the aspects of each run.
@@ -124,4 +146,14 @@ liftRunResultAspects
 	
 liftRunResultAspects f (BenchRunResult ix as)
 	= BenchRunResult ix (f as)
+
+
+-- | Apply a function to the aspects on a BenchRunResult
+liftRunResultAspects2
+	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)] -> [WithUnits (Aspect c3)])
+	-> BenchRunResult c1        -> BenchRunResult c2       -> BenchRunResult c3
+	
+liftRunResultAspects2 f (BenchRunResult ix1 as) (BenchRunResult ix2 bs)
+	| ix1 == ix2		= BenchRunResult ix1 (f as bs)
+	| otherwise		= error "liftRunResultAspects2: indices don't match"
 
