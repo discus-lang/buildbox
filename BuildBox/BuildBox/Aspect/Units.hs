@@ -20,7 +20,7 @@ module BuildBox.Aspect.Units
 	, WithUnits	(..)
 	, secs
 	, bytes
-	, liftsWithUnits
+	, applyWithUnits
 	, liftWithUnits
 
 	  -- * Unit-preserving collation
@@ -98,6 +98,15 @@ data IsUnits a where
 	IsSeconds 	:: IsUnits Seconds
 	IsBytes		:: IsUnits Bytes	
 
+class HasUnits a a => Units a where
+	isUnits :: a -> Maybe (IsUnits a)
+
+instance Units Seconds where
+	isUnits s		= hasUnits s
+
+instance Units Bytes where
+	isUnits s		= hasUnits s
+
 
 -- | Determine the units of the elements of some collection, 
 --   by inspecting the elements directly.
@@ -149,21 +158,17 @@ bytes 	:: (Single Bytes -> c Single Bytes)
 bytes mk b = WithBytes   (mk (Single (Bytes b)))
 
 
-liftWithUnits 
-	:: (forall units. HasUnits units units => t1 units -> t2 units) 
-	-> WithUnits t1 -> WithUnits t2
-
-liftWithUnits f withUnits
+-- | Apply a unit-preserving function to unit-wrapped data.
+applyWithUnits :: (forall units. t1 units -> t2 units) -> WithUnits t1 -> WithUnits t2
+applyWithUnits f withUnits
  = case withUnits of
 	WithSeconds dat	-> WithSeconds (f dat)
 	WithBytes   dat -> WithBytes   (f dat)
 
 
-liftsWithUnits 
-	:: (forall units. HasUnits units units => [t1 units] -> [t2 units]) 
-	-> [WithUnits t1] -> [WithUnits t2]
-
-liftsWithUnits f us
+-- | Transform values of each unit type as a group.
+liftWithUnits :: (forall units. [t1 units] -> [t2 units]) -> [WithUnits t1] -> [WithUnits t2]
+liftWithUnits f us
   = let	asSeconds	= [a | WithSeconds a	<- us]
 	asBytes		= [a | WithBytes   a	<- us]
 

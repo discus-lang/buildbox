@@ -1,13 +1,13 @@
 {-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances #-}
 module BuildBox.Benchmark.BenchResult
 	( BenchResult (..)
-	, liftToBenchRunResult
-	, liftsToBenchRunResult
+	, mapBenchRunResult
+	, liftBenchRunResult
 	, statsOfBenchResult
 
 	, BenchRunResult (..)
-	, liftToRunResultAspects
-	, liftsToRunResultAspects
+	, mapRunResultAspects
+	, liftRunResultAspects
 	, statsOfBenchResultList)
 where
 import BuildBox.Aspect
@@ -39,28 +39,30 @@ instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 
 statsOfBenchResult	:: BenchResult Single -> BenchResult Stats
 statsOfBenchResult	
- 	= statsOfBenchResultList .  (liftsToBenchRunResult collateWithUnits)
+ 	= statsOfBenchResultList .  (liftBenchRunResult collateWithUnits)
 
 
 statsOfBenchResultList 	:: BenchResult [] -> BenchResult Stats
 statsOfBenchResultList 
-	= (liftToBenchRunResult . liftToRunResultAspects) (liftWithUnits makeAspectStats)
+	= (mapBenchRunResult . mapRunResultAspects) (applyWithUnits makeAspectStats)
 
 
-liftToBenchRunResult 
-	:: (BenchRunResult carrier1 -> BenchRunResult carrier2)
+-- | Transform all the `BenchRunResult`s in a `BenchResult`, perhaps changing the carrier type.
+mapBenchRunResult
+	:: (BenchRunResult carrier1 -> BenchRunResult carrier2) 
 	-> BenchResult carrier1 -> BenchResult carrier2
 
-liftToBenchRunResult f (BenchResult name runs)
+mapBenchRunResult f (BenchResult name runs)
 	= BenchResult name (map f runs)
 
 
-liftsToBenchRunResult
+-- | Transform aspects of each unit type as a group.
+liftBenchRunResult
 	:: ([WithUnits (Aspect carrier1)] -> [WithUnits (Aspect carrier2)])
 	-> BenchResult carrier1 -> BenchResult carrier2
 	
-liftsToBenchRunResult f (BenchResult name runs)
-	= BenchResult name (map (liftsToRunResultAspects f) runs)
+liftBenchRunResult f (BenchResult name runs)
+	= BenchResult name (map (liftRunResultAspects f) runs)
 
 
 
@@ -93,18 +95,20 @@ instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 	$ vcat $ map ppr $ benchRunResultAspects result
 
 
-liftToRunResultAspects 
+-- | Transfrom all the aspects in `BenchRunResult`, perhaps changing the carrier type.
+mapRunResultAspects 
 	:: (WithUnits (Aspect carrier1) -> WithUnits (Aspect carrier2))
 	-> BenchRunResult carrier1 -> BenchRunResult carrier2
 
-liftToRunResultAspects f (BenchRunResult ix aspects)
+mapRunResultAspects f (BenchRunResult ix aspects)
 	= BenchRunResult ix (map f aspects)
 
 
-liftsToRunResultAspects 
+-- | Transform aspects of each unit type as a group.
+liftRunResultAspects 
 	:: ([WithUnits (Aspect carrier1)] -> [WithUnits (Aspect carrier2)])
 	-> BenchRunResult carrier1 -> BenchRunResult carrier2
 
-liftsToRunResultAspects f (BenchRunResult ix aspects)
+liftRunResultAspects f (BenchRunResult ix aspects)
 	= BenchRunResult ix (f aspects)
 	
