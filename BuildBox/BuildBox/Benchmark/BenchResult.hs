@@ -1,16 +1,20 @@
 {-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances, RankNTypes #-}
 module BuildBox.Benchmark.BenchResult
-	( BenchResult (..)
-	, liftBenchRunResult
-	, liftBenchRunResult2
-	, liftToAspectsOfBenchResult
-	, liftToAspectsOfBenchResult2
+	( 
+	-- * Benchmark results	
+	  BenchResult (..)
 	, statBenchResults
 	, statCollatedBenchResults
 	, collateBenchResults
 	, concatBenchResults
 	
 	, BenchRunResult (..)
+
+	-- * Lifting functions
+	, liftBenchRunResult
+	, liftBenchRunResult2
+	, liftToAspectsOfBenchResult
+	, liftToAspectsOfBenchResult2
 	, liftRunResultAspects
 	, liftRunResultAspects2)
 where
@@ -91,7 +95,6 @@ statBenchResults
 statCollatedBenchResults :: BenchResult [] -> BenchResult Stats
 statCollatedBenchResults
 	= liftToAspectsOfBenchResult (map (applyWithUnits makeAspectStats))
-	. concatBenchResults
 
 
 -- | Collate the aspects of each run.
