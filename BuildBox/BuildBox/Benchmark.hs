@@ -1,17 +1,7 @@
 
 module BuildBox.Benchmark
-	( Benchmark	(..)
-	, BenchResult	(..)
-	, mapBenchRunResult
-	, liftBenchRunResult
-	, statsOfBenchResult
-	, statsOfBenchResultList
-	
-	, BenchRunResult(..)
-	, mapRunResultAspects
-	, liftRunResultAspects
-	, lift2RunResultAspects
-	
+	( module BuildBox.Benchmark.BenchResult
+	, module BuildBox.Benchmark.Benchmark
 	, runTimedCommand
 	, runBenchmarkOnce
 	, outRunBenchmarkOnce

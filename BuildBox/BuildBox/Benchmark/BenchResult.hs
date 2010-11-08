@@ -4,6 +4,7 @@ module BuildBox.Benchmark.BenchResult
 	, liftBenchRunResult
 	, liftToAspectsOfBenchResult
 	, statBenchResults
+	, statCollatedBenchResults
 	, collateBenchResults
 	, concatBenchResults
 	
@@ -57,9 +58,16 @@ liftToAspectsOfBenchResult
 	= liftBenchRunResult . map . liftRunResultAspects
 
 
+-- | Compute statistics about some the aspects of each run.
+statBenchResults :: BenchResult Single -> BenchResult Stats
+statBenchResults 
+	= statCollatedBenchResults . collateBenchResults . concatBenchResults
+
+
 -- | Compute statistics about each the aspects of each run.
-statBenchResults :: BenchResult [] -> BenchResult Stats
-statBenchResults
+--   The results need to be in collated form.
+statCollatedBenchResults :: BenchResult [] -> BenchResult Stats
+statCollatedBenchResults
 	= liftToAspectsOfBenchResult (map (applyWithUnits makeAspectStats))
 	. concatBenchResults
 

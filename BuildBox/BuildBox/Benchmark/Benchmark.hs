@@ -1,8 +1,6 @@
 
 module BuildBox.Benchmark.Benchmark
-	( Benchmark(..)
-	, BenchRunResult(..)
-	, BenchResult(..))
+	(Benchmark(..))
 where
 import BuildBox.Build
 import BuildBox.Benchmark.BenchResult
