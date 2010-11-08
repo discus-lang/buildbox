@@ -22,7 +22,6 @@ module BuildBox.Aspect.Units
 	, bytes
 	, applyWithUnits
 	, liftWithUnits
-	, lift2WithUnits
 
 	  -- * Unit-preserving collation
 	, Collatable	(..)
@@ -181,20 +180,6 @@ liftWithUnits f us
 
     in	   (map WithSeconds $ f asSeconds)
 	++ (map WithBytes   $ f asBytes)
-
-
-lift2WithUnits 
-	:: (forall units. [t1 units] -> [t1 units] -> [t2 units])
-	-> [WithUnits t1] -> [WithUnits t1] -> [WithUnits t2]
-
-lift2WithUnits f as bs
-  = let	asSeconds	= [a | WithSeconds a	<- as]
-	bsSeconds	= [b | WithSeconds b	<- bs]
-	
-	asBytes		= [a | WithBytes   a  	<- as]
-	bsBytes		= [b | WithBytes   b	<- bs]
-    in	   (map WithSeconds $ f asSeconds bsSeconds)
-	++ (map WithBytes   $ f asBytes   bsBytes)
 	
 
 -- Unit-safe collation ----------------------------------------------------------------------------

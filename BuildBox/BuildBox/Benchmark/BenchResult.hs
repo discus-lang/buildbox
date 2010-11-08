@@ -1,15 +1,14 @@
 {-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances, RankNTypes #-}
 module BuildBox.Benchmark.BenchResult
 	( BenchResult (..)
-	, mapBenchRunResult
 	, liftBenchRunResult
-	, statsOfBenchResult
-
+	, liftToAspectsOfBenchResult
+	, statBenchResults
+	, collateBenchResults
+	, concatBenchResults
+	
 	, BenchRunResult (..)
-	, mapRunResultAspects
-	, liftRunResultAspects
-	, lift2RunResultAspects
-	, statsOfBenchResultList)
+	, liftRunResultAspects)
 where
 import BuildBox.Aspect
 import BuildBox.Pretty
@@ -22,14 +21,16 @@ data BenchResult carrier
 	{ benchResultName	:: String
 	, benchResultRuns	:: [BenchRunResult carrier] }
 
-deriving instance ( Show (carrier Seconds), Show (carrier Bytes)) 
-	         => Show (BenchResult carrier)
+deriving instance 
+	(  Show (carrier Seconds), Show (carrier Bytes)) 
+	=> Show (BenchResult carrier)
 
-deriving instance ( HasUnits (carrier Bytes) Bytes
-		  , Read (carrier Bytes)
-                  , HasUnits (carrier Seconds) Seconds
-		  , Read (carrier Seconds))
-		 => Read (BenchResult carrier)
+deriving instance
+	(  HasUnits (carrier Bytes) Bytes
+	,  Read (carrier Bytes)
+	,  HasUnits (carrier Seconds) Seconds
+	,  Read (carrier Seconds))
+	=> Read (BenchResult carrier)
 
 instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 	 => Pretty (BenchResult carrier) where
@@ -38,57 +39,44 @@ instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 	$ vcat $ map ppr $ benchResultRuns result
 
 
-statsOfBenchResult	:: BenchResult Single -> BenchResult Stats
-statsOfBenchResult	
- 	= statsOfBenchResultList .  (liftBenchRunResult collateWithUnits)
+-- | Apply a function to the `BenchRunResult` in a `BenchResult`
+liftBenchRunResult 
+	:: ([BenchRunResult c1] -> [BenchRunResult  c2])
+	-> (BenchResult     c1  -> BenchResult      c2)
+
+liftBenchRunResult f (BenchResult name runs)	
+	= BenchResult name (f runs)
 
 
-statsOfBenchResultList 	:: BenchResult [] -> BenchResult Stats
-statsOfBenchResultList 
-	= (mapBenchRunResult . mapRunResultAspects) (applyWithUnits makeAspectStats)
+-- | Apply a function to the aspects of each run result.
+liftToAspectsOfBenchResult 
+	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
+	-> BenchResult c1           -> BenchResult c2
+
+liftToAspectsOfBenchResult 
+	= liftBenchRunResult . map . liftRunResultAspects
 
 
--- | Transform all the `BenchRunResult`s in a `BenchResult`, perhaps changing the carrier type.
-mapBenchRunResult
-	:: (BenchRunResult carrier1 -> BenchRunResult carrier2) 
-	-> BenchResult carrier1 -> BenchResult carrier2
-
-mapBenchRunResult f (BenchResult name runs)
-	= BenchResult name (map f runs)
+-- | Compute statistics about each the aspects of each run.
+statBenchResults :: BenchResult [] -> BenchResult Stats
+statBenchResults
+	= liftToAspectsOfBenchResult (map (applyWithUnits makeAspectStats))
+	. concatBenchResults
 
 
--- | Apply a function to groups of aspects with the same unit.
---   TODO: dump this one.
-liftToBenchResult
-	:: ([WithUnits (Aspect carrier1)] -> [WithUnits (Aspect carrier2)])
-	-> BenchResult carrier1 -> BenchResult carrier2
+-- | Collate the aspects of each run.
+collateBenchResults :: BenchResult Single -> BenchResult []
+collateBenchResults
+	= liftToAspectsOfBenchResult collateWithUnits
 	
-liftBenchRunResult f (BenchResult name runs)
-	= BenchResult name (map (liftRunResultAspects f) runs)
 
-
--- | Apply an arity-2 function to groups of aspects with the same unit.
---   If the two BenchResults don't have the same name then `error`.
-lift2BenchRunResult 
-	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
-	-> BenchResult c1 -> BenchResult c1 -> BenchResult c2
-	
-lift2BenchRunResult f (BenchResult name1 runs1) (BenchResult name2 runs2)
-	| name1 /= name2	
-	= error $ unlines 
-		[ "lift2BenchRunResult: results don't have same name"
-		, "    name1 = " ++ name1
-		, "    name2 = " ++ name2 ]
-		
-naming 
-
-ALMOST: (zipWith . lift2RunResultAspects . lift2WithUnits) (zipWith compareAspects)
-
-TODO: Just apply regular map and zip functions for these types.
-      We shouldn't be exposing WithUnits here
-      Functions should be just 
- 	(BenchRunResult -> BenchRunResult) -> BenchResult -> BenchResult
-
+-- | Concatenate the results of all runs.
+--   In the resulting `BenchResult` has a single `BenchRunResult` with an index of 0.
+--   In effect we have merged the data from all runs.
+concatBenchResults :: BenchResult c1 -> BenchResult c1
+concatBenchResults 
+	= liftBenchRunResult 
+	$ \bsResults -> [BenchRunResult 0 (concatMap benchRunResultAspects bsResults)]
 
 
 -- BenchRunResult ---------------------------------------------------------------------------------
@@ -101,14 +89,18 @@ data BenchRunResult carrier
 	  -- | Aspects of the benchmark run.
 	, benchRunResultAspects	:: [WithUnits (Aspect carrier)] }
 
-deriving instance ( Show (carrier Seconds), Show (carrier Bytes)) 
-		 => Show (BenchRunResult carrier)
 
-deriving instance ( HasUnits (carrier Bytes) Bytes
-		  , Read (carrier Bytes)
-		  , HasUnits (carrier Seconds) Seconds
-		  , Read (carrier Seconds))
-		 => Read (BenchRunResult carrier)
+deriving instance 
+	(  Show (carrier Seconds), Show (carrier Bytes)) 
+	=> Show (BenchRunResult carrier)
+
+deriving instance
+	(  HasUnits (carrier Bytes) Bytes
+	,  Read (carrier Bytes)
+	,  HasUnits (carrier Seconds) Seconds
+	,  Read (carrier Seconds))
+	=> Read (BenchRunResult carrier)
+
 
 instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes)) 
 	 => Pretty (BenchRunResult carrier) where
@@ -116,30 +108,12 @@ instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
 	= hang (ppr "BenchRunResult" <+> ppr (benchRunResultIndex result)) 2 
 	$ vcat $ map ppr $ benchRunResultAspects result
 
-
--- | Transfrom all the aspects in `BenchRunResult`, perhaps changing the carrier type.
-mapRunResultAspects 
-	:: (WithUnits (Aspect carrier1) -> WithUnits (Aspect carrier2))
-	-> BenchRunResult carrier1 -> BenchRunResult carrier2
-
-mapRunResultAspects f (BenchRunResult ix aspects)
-	= BenchRunResult ix (map f aspects)
-
-
--- | Apply a function to groups of aspects with the same unit.
-liftRunResultAspects 
-	:: ([WithUnits (Aspect carrier1)] -> [WithUnits (Aspect carrier2)])
-	-> BenchRunResult carrier1 -> BenchRunResult carrier2
-
-liftRunResultAspects f (BenchRunResult ix aspects)
-	= BenchRunResult ix (f aspects)
-
-
--- | Apply an arity-2 function to groups of aspects with the same unit.
---   The run result index for the result it taken from the second parameter.
-lift2RunResultAspects 
-	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
-	-> BenchRunResult c1 -> BenchRunResult c1 -> BenchRunResult c2
 	
-lift2RunResultAspects f (BenchRunResult ix1 as1) (BenchRunResult ix2 as2)
-	= BenchRunResult ix1 (f as1 as2)
+-- | Apply a function to the aspects on a BenchRunResult
+liftRunResultAspects
+	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
+	-> BenchRunResult c1        -> BenchRunResult c2
+	
+liftRunResultAspects f (BenchRunResult ix as)
+	= BenchRunResult ix (f as)
+
