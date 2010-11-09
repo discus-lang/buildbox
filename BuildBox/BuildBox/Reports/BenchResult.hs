@@ -23,20 +23,19 @@ reportBenchResults Nothing comparisons
 	
 reportBenchResults (Just swing) comparisons
  = let	resultLosers
-	 = filter	(predBenchResult (predSwingStatsComparison (\x -> x < (- swing))))
+	 = filter	(predBenchResult (predSwingStatsComparison (\x -> x > swing)))
 			comparisons
 
-
-
 	resultWinners_
-	 = filter 	(predBenchResult (predSwingStatsComparison (\x -> x > swing))) 
+	 = filter 	(predBenchResult (predSwingStatsComparison (\x -> x < (- swing)))) 
 			comparisons
 
 	-- losers can't be winners
 	resultWinners 	= deleteFirstsBy (\r1 r2 -> benchResultName r1 == benchResultName r2)
 				resultWinners_  resultLosers
 
-   in	reportBenchResults' swing resultWinners resultLosers
+   in	vcat $	[ text "Total tests = " <> int (length comparisons)
+		, blank] ++ [reportBenchResults' swing resultWinners resultLosers]
 
 reportBenchResults' swing resultWinners resultLosers
  	| []	<- resultWinners
@@ -46,23 +45,23 @@ reportBenchResults' swing resultWinners resultLosers
 	| otherwise
 	= let	docWinners 
 			| []	<- resultWinners
-			= blank
+			= []
 				
 			| otherwise
-			= text "-- WINNERS (had a swing of > "
-					<> text (printf "%+2.0f" (swing * 100)) <> text "%)"
+			= [text "-- WINNERS (had a swing of < "
+					<> text (printf "%+2.0f" (negate (swing * 100))) <> text "%)"
 			$$ (vcat $ punctuate (text "\n") $ map ppr resultWinners) 
-			<> text "\n"
+			<> text "\n"]
 				
 		docLosers
 			| []	<- resultLosers
-			= blank
+			= []
 				
 			| otherwise
-			= text "-- LOSERS  (had a swing of < " 
-					<> text (printf "%+2.0f" (negate (swing * 100))) <> text "%)"
+			= [text "-- LOSERS  (had a swing of > " 
+					<> text (printf "%+2.0f" (swing * 100)) <> text "%)"
 			$$ (vcat $ punctuate (text "\n") $ map ppr resultLosers) 
-			<> text "\n"
+			<> text "\n"]
 		
-	  in	vcat [docWinners, docLosers]
+	  in	vcat $ docWinners ++ docLosers
 		

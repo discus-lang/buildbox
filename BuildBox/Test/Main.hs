@@ -20,7 +20,6 @@ run5 =	[ Time TotalWall `secs`  9
 run6 =	[ Time TotalWall `secs`  8
 	, Used HeapMax   `bytes` 5000]
 
-
 benchResult1
 	= BenchResult
 	{ benchResultName	= "test1"
@@ -62,3 +61,4 @@ statResults1	= map statBenchResult results1
 statResults2	= map statBenchResult results2
 
 comp1		= compareManyBenchResults statResults1 statResults2
+
