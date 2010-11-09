@@ -3,6 +3,7 @@ module BuildBox
 	( module BuildBox.Aspect
 	, module BuildBox.Build
 	, module BuildBox.Benchmark
+	, module BuildBox.Reports.BenchResult
 	, module BuildBox.Pretty
 	, module BuildBox.Command.Sleep
 	, module BuildBox.Command.System
@@ -16,6 +17,7 @@ where
 import BuildBox.Aspect
 import BuildBox.Build
 import BuildBox.Benchmark
+import BuildBox.Reports.BenchResult
 import BuildBox.Pretty
 import BuildBox.Command.Sleep
 import BuildBox.Command.System

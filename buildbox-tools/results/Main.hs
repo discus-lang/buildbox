@@ -61,8 +61,7 @@ mainWithArgs args
 		let [baseline, current] 
 			= map buildResultBench results
 
-		putStrLn 
-			$ render $ vcat $ punctuate (text "\n") $ map ppr
+		putStr	$ render $ vcat $ punctuate (text "\n") $ map ppr
 			$ compareManyBenchResults 
 				(map statBenchResult baseline)
 				(map statBenchResult current)
@@ -72,20 +71,14 @@ mainWithArgs args
 	= do	let fileNames	= argsRest args
 		contentss	<- mapM readFile fileNames
 
-		let (results :: [BuildResults])
-			= map read contentss
-		
-		let [baseline, current] 
-			= map buildResultBench results
+		let (results :: [BuildResults])	= map read contentss
+		let [baseline, current]		= map buildResultBench results
 
-		putStrLn 
-			$ render $ vcat $ punctuate (text "\n") $ map ppr
-			$ filter (swungBenchResult swing)
+		putStr	$ render $ reportBenchResults (Just swing) 
 			$ compareManyBenchResults 
 				(map statBenchResult baseline)
 				(map statBenchResult current)
-
-
+			 
 	| otherwise
 	= usageError args "Nothing to do...\n"
 

@@ -1,20 +1,24 @@
+{-# LANGUAGE PatternGuards #-}
+{-# OPTIONS -fno-warn-missing-signatures #-}
 
 module BuildBox.Reports.BenchResult
 	(reportBenchResults)
 where
 import BuildBox.Pretty
-import BuildBox.BenchMark
+import BuildBox.Aspect
+import BuildBox.Benchmark.BenchResult
+import Text.Printf
 
 -- Total number of tests	
 --	let totalTests	= length benchResults
 
 
 -- | Produce a report of benchmark results.
-reportBenchResults :: Maybe Double -> [BenchResult StatComparison] -> Doc
+reportBenchResults :: Maybe Double -> [BenchResult StatsComparison] -> Doc
 
 -- no swing specified, just report all the results.
-reportBenchResults Nothing _
-	= vcat $ punctuate (text "\n") $ map ppr resultComparisons
+reportBenchResults Nothing comparisons
+	= vcat $ punctuate (text "\n") $ map ppr comparisons
 	
 reportBenchResults (Just swing) comparisons
  = let	resultWinners
@@ -25,12 +29,12 @@ reportBenchResults (Just swing) comparisons
 	 = filter	(predBenchResult (predSwingStatsComparison (\x -> x < (- swing))))
 			comparisons
 
-   in	reportBenchResults' (Just swing) comparisons resultWinners resultLosers
+   in	reportBenchResults' swing resultWinners resultLosers
 
-reportBenchResults' (Just swing) comparisons resultWinners resultLosers
- 	| []	<- resultsWinners
+reportBenchResults' swing resultWinners resultLosers
+ 	| []	<- resultWinners
 	, []	<- resultLosers
-	= text "ALL GOOD"
+	= text "ALL GOOD\n"
 	
 	| otherwise
 	= let	docWinners 
@@ -38,14 +42,20 @@ reportBenchResults' (Just swing) comparisons resultWinners resultLosers
 			= blank
 				
 			| otherwise
-			= text "WINNERS:" $$ (vcat $ punctuate (text "\n") $ map ppr resultWinners)
+			= text "-- WINNERS (had a swing of > "
+					<> text (printf "%+2.0f" (swing * 100)) <> text "%)"
+			$$ (vcat $ punctuate (text "\n") $ map ppr resultWinners) 
+			<> text "\n"
 				
 		docLosers
 			| []	<- resultLosers
 			= blank
 				
 			| otherwise
-			= text "LOSERS:"  $$ (vcat $ punctuate (text "\n") $ map ppr resultLosers)
+			= text "-- LOSERS  (had a swing of < " 
+					<> text (printf "%+2.0f" (negate (swing * 100))) <> text "%)"
+			$$ (vcat $ punctuate (text "\n") $ map ppr resultLosers) 
+			<> text "\n"
 		
 	  in	vcat [docWinners, docLosers]
 		
