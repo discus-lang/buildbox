@@ -1,7 +1,7 @@
 
-module BuildBox.Benchmark
-	( module BuildBox.Benchmark.BenchResult
-	, module BuildBox.Benchmark.Benchmark
+module BuildBox.BenchMark
+	( module BuildBox.BenchMark.BenchResult
+	, module BuildBox.BenchMark.Benchmark
 	, runTimedCommand
 	, runBenchmarkOnce
 	, outRunBenchmarkOnce

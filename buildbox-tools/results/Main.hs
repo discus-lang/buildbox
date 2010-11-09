@@ -35,6 +35,20 @@ mainWithArgs args
 			$ vcat
 			$ map (text . benchResultName)
 			$ buildResultBench results
+
+
+	-- Merge two results files, prefering benchmark results on the left.
+	-- The time and environment fields are taken from the file on the right.
+	| gotArg args ArgMerge
+	= do	
+		-- Read all the files.
+		let fileNames	= argsRest args
+		contentss <- mapM readFile fileNames
+		let (results :: [BuildResults])
+			  = map read contentss
+			
+		print $ mergeResults results
+
 		
 	-- Compare two results files.
 	| gotArg args ArgCompare
@@ -53,17 +67,24 @@ mainWithArgs args
 				(map statBenchResult baseline)
 				(map statBenchResult current)
 
-	-- Merge two results files, prefering benchmark results on the left.
-	-- The time and environment fields are taken from the file on the right.
-	| gotArg args ArgMerge
-	= do	
-		-- Read all the files.
-		let fileNames	= argsRest args
-		contentss <- mapM readFile fileNames
+	-- Compare two results files.
+	| Just swing	<- getArg args ArgSummarise
+	= do	let fileNames	= argsRest args
+		contentss	<- mapM readFile fileNames
+
 		let (results :: [BuildResults])
-			  = map read contentss
-			
-		print $ mergeResults results
+			= map read contentss
+		
+		let [baseline, current] 
+			= map buildResultBench results
+
+		putStrLn 
+			$ render $ vcat $ punctuate (text "\n") $ map ppr
+			$ filter (swungBenchResult swing)
+			$ compareManyBenchResults 
+				(map statBenchResult baseline)
+				(map statBenchResult current)
+
 
 	| otherwise
 	= usageError args "Nothing to do...\n"

@@ -50,6 +50,7 @@ Library
         BuildBox.Benchmark.BenchResult
         BuildBox.Benchmark.Benchmark
         BuildBox.Benchmark
+        BuildBox.Reports.BenchResult
         BuildBox.Build.Testable
         BuildBox.Build.BuildError
         BuildBox.Build.BuildState

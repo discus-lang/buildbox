@@ -10,8 +10,9 @@ data ResultsArg
 	= ArgHelp
 	| ArgDump
 	| ArgNames
-	| ArgCompare
 	| ArgMerge
+	| ArgCompare
+	| ArgSummarise
 	deriving (Eq, Ord, Show)
 
 
@@ -35,6 +36,12 @@ resultsArgs
 		, argName	= Just "names"
 		, argData	= argDataOptional "file" ArgtypeString
 		, argDesc	= "Print the names of all the benchmarks in a file." }
+
+	, Arg	{ argIndex	= ArgMerge
+		, argAbbr	= Nothing
+		, argName	= Just "merge"
+		, argData	= Nothing
+		, argDesc	= "Merge several test results files." }
 		
 	, Arg	{ argIndex	= ArgCompare 
 		, argAbbr	= Nothing
@@ -42,10 +49,9 @@ resultsArgs
 		, argData	= Nothing
 		, argDesc	= "Compare two test results files." }
 
-	, Arg	{ argIndex	= ArgMerge
+	, Arg	{ argIndex	= ArgSummarise
 		, argAbbr	= Nothing
-		, argName	= Just "merge"
-		, argData	= Nothing
-		, argDesc	= "Merge several test results files." }
-
+		, argName	= Just "summarise"
+		, argData	= argDataOptional "swing" ArgtypeDouble
+		, argDesc	= " ... but only return results that have swung by at least this fraction." }
 	]	
