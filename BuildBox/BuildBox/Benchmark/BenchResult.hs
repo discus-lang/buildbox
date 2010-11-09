@@ -46,11 +46,13 @@ deriving instance
 	,  Read (c Seconds))
 	=> Read (BenchResult c)
 
+
 instance  ( Pretty (c Seconds), Pretty (c Bytes))
 	 => Pretty (BenchResult c) where
  ppr result
-	= hang (ppr "BenchResult" <+> text (benchResultName result)) 2
-	$ vcat $ map ppr $ benchResultRuns result
+	= text (benchResultName result)
+	$+$ nest 4 (vcat $ map ppr $ benchResultRuns result)
+
 
 -- | Concatenate the results of all runs.
 --   In the resulting `BenchResult` has a single `BenchRunResult` with an index of 0.
@@ -175,8 +177,12 @@ deriving instance
 instance  ( Pretty (c Seconds), Pretty (c Bytes)) 
 	 => Pretty (BenchRunResult c) where
  ppr result
-	= hang (ppr "BenchRunResult" <+> ppr (benchRunResultIndex result)) 2 
-	$ vcat $ map ppr $ benchRunResultAspects result
+	| benchRunResultIndex result == 0
+	=  (nest 2 $ vcat $ map ppr $ benchRunResultAspects result)
+
+	| otherwise
+	= ppr (benchRunResultIndex result) 
+	$$ (nest 2 $ vcat $ map ppr $ benchRunResultAspects result)
 
 	
 -- | Apply a function to the aspects on a BenchRunResult
