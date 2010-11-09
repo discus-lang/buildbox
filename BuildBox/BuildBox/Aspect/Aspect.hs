@@ -6,12 +6,13 @@ module BuildBox.Aspect.Aspect
 	( Aspect	(..)
 	, makeAspect
 	, splitAspect
-	, appAspect
-	, appAspectWithUnits
-	, collateWithUnits
 	, makeAspectStats
 	, makeAspectComparison
 	, makeAspectComparisons
+
+	-- * Application functions
+	, appAspect
+	, appAspectWithUnits
 
 	-- * Lifting functions
 	, liftAspect
@@ -30,7 +31,7 @@ import qualified Data.Map	as Map
 
 -- | Holds a detail about a benchmark.
 --
---   The @c@ is the type constructor of the container that holds the data.
+--   The @c@ is the type constructor of the carrier that holds the data.
 --
 --   Useful instances for @c@ include `Single`, `[ ]`, `Stats`, `Comparison` and `StatsComparison`.
 --
@@ -85,8 +86,8 @@ instance ( Pretty (c Seconds)
 
 	
 
--- | Split an aspect into its named detail and value.
-splitAspect :: Aspect carrier units -> (Detail, carrier units)
+-- | Split an aspect into its named detail and data.
+splitAspect :: Aspect c units -> (Detail, c units)
 splitAspect aa
  = case aa of
 	Time timed val		-> (DetailTimed timed, val)
@@ -94,7 +95,7 @@ splitAspect aa
 	Used used  val		-> (DetailUsed  used,  val)
 
 
--- | Make an aspect from named detail and data.
+-- | Make an aspect from a named detail and data.
 --   If the detail doesn't match the units of the data then `Nothing`.
 makeAspect
 	:: HasUnits (c units) units 
@@ -115,53 +116,6 @@ makeAspect detail (val :: c units)
 
 	Nothing -> Nothing
 
-
--- | Apply a function to the data in an aspect
-appAspect 
-	:: Real units 
-	=> (c units -> b) -> Aspect c units -> b
-
-appAspect f aa = f (snd $ splitAspect aa)
-	
-
--- | Apply a function to the data in a wrapped aspect.
-appAspectWithUnits 
-	:: (forall units. Real units => c units -> b) 
-	-> WithUnits (Aspect c) -> b
-
-appAspectWithUnits f
-	= appWithUnits (appAspect f)
-
--- | Transform the data in an aspect, possibly changing the carrier type.
-liftAspect 
-	:: (c1 units -> c2 units)
-	-> Aspect c1 units -> Aspect c2 units
-
-liftAspect f aspect
- = case aspect of
-	Time timed dat	-> Time timed (f dat)
-	Size sized dat	-> Size sized (f dat)
-	Used used dat	-> Used used  (f dat)
-
-
--- | Apply a function to the aspect data, producing a new aspect.
---   If the aspect details don't match then `error`.
-liftAspect2
-	:: (c1 units -> c1 units -> c2 units) 
-	-> Aspect c1 units -> Aspect c1 units -> Aspect c2 units
-	
-liftAspect2 f a1 a2
- = case (a1, a2) of
-	(Time timed1 dat1, Time timed2 dat2)
-	 | timed1 == timed2	-> Time timed1 (f dat1 dat2)
-
-	(Size sized1 dat1, Size sized2 dat2)
-	 | sized1 == sized2	-> Size sized1 (f dat1 dat2)
-
-	(Used used1 dat1,  Used used2 dat2)
-	 | used1  == used2	-> Used used1 (f dat1 dat2)
-
-	_ -> error "liftAspect2: aspects don't match"
 
 
 -- Collate ----------------------------------------------------------------------------------------
@@ -224,3 +178,53 @@ lookupAspect base aspect
  = let	detail	= fst $ splitAspect aspect
    in	find (\a -> (fst $ splitAspect a) == detail) base
 
+
+
+-- Application ------------------------------------------------------------------------------------
+-- | Apply a function to the data in an aspect
+appAspect 
+	:: Real units 
+	=> (c units -> b) -> Aspect c units -> b
+
+appAspect f aa = f (snd $ splitAspect aa)
+	
+
+-- | Apply a function to the data in a wrapped aspect.
+appAspectWithUnits 
+	:: (forall units. Real units => c units -> b) 
+	-> WithUnits (Aspect c) -> b
+
+appAspectWithUnits f
+	= appWithUnits (appAspect f)
+
+-- | Transform the data in an aspect, possibly changing the carrier type.
+liftAspect 
+	:: (c1 units -> c2 units)
+	-> Aspect c1 units -> Aspect c2 units
+
+liftAspect f aspect
+ = case aspect of
+	Time timed dat	-> Time timed (f dat)
+	Size sized dat	-> Size sized (f dat)
+	Used used dat	-> Used used  (f dat)
+
+
+-- Lifting ----------------------------------------------------------------------------------------
+-- | Apply a function to the aspect data, producing a new aspect.
+--   If the aspect details don't match then `error`.
+liftAspect2
+	:: (c1 units -> c1 units -> c2 units) 
+	-> Aspect c1 units -> Aspect c1 units -> Aspect c2 units
+	
+liftAspect2 f a1 a2
+ = case (a1, a2) of
+	(Time timed1 dat1, Time timed2 dat2)
+	 | timed1 == timed2	-> Time timed1 (f dat1 dat2)
+
+	(Size sized1 dat1, Size sized2 dat2)
+	 | sized1 == sized2	-> Size sized1 (f dat1 dat2)
+
+	(Used used1 dat1,  Used used2 dat2)
+	 | used1  == used2	-> Used used1 (f dat1 dat2)
+
+	_ -> error "liftAspect2: aspects don't match"

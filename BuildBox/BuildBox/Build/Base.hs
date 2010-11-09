@@ -63,6 +63,8 @@ throw	= throwError
 
 
 -- | Throw a needs error saying we needs the given file.
+--   A catcher could then usefully create the file, or defer the compuation until it has been 
+--   created.
 needs :: FilePath -> Build ()
 needs filePath
  = do	isFile	<- io $ doesFileExist filePath

@@ -1,17 +1,18 @@
 
--- | An aspect is some some piece of data about a benchmark that we're interested in,
---   like its total runtime, heap usage, or executable size. The aspects have physical
+-- | An aspect is a piece of data obtained from running a benchmark, like its 
+--   total runtime, heap usage, or executable size. Aspects have physical
 --   units, so runtime is in seconds, and executable size is in bytes. The type system
---   ensures you can't mess up the units, like treating executable size as though it was
+--   ensures that you can't mess up the units, such as by treating executable size as though it was
 --   measured in seconds.
 --
 --   Aspects are also parameterised over a carrier constructor, which is the collection type
 --   used to store the data. For single valued data use the `Single` constructor. For multi valued
---   data use the @[]@ (the list constructor). Being able to store multi-valued data is useful
---   when you have several readings for the same benchmark, like runtimes from several iterations.
+--   data use the @[]@ (the list constructor). Use this when you have several readings for
+--   the same benchmark, like runtimes from multiple independent runs. 
+--   Other useful constructors are `Stats`, `Comparison` and `StatsComparison`.
 --
 --   Once you have a many-valued aspect, you can use `makeAspectStats` to compute statistics
---   about the benchmark.  
+--   from the data.
 -- 
 --   Here is a worked example:
 --
@@ -54,22 +55,23 @@ module BuildBox.Aspect
 	, module BuildBox.Aspect.Single
 	, module BuildBox.Aspect.Comparison
 
+	-- * Aspects
 	, Aspect	(..)
 	, makeAspect
 	, splitAspect
-	, appAspect
-	, appAspectWithUnits
-	
+
 	-- * Statistics and comparisons
 	, makeAspectStats
 	, makeAspectComparison
 	, makeAspectComparisons
-	
+
+	-- * Application functions
+	, appAspect
+	, appAspectWithUnits
+
 	-- * Lifting functions
 	, liftAspect
 	, liftAspect2)
-
-
 where
 import BuildBox.Aspect.Aspect
 import BuildBox.Aspect.Detail

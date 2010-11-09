@@ -1,16 +1,17 @@
-
 {-# LANGUAGE StandaloneDeriving, GADTs, MultiParamTypeClasses, FunctionalDependencies, 
 	     FlexibleInstances,  RankNTypes, UndecidableInstances #-}
 
--- | Working with collections of values, where the values are associated with physical units of measure.
+-- | Physical units of measure.
 module BuildBox.Aspect.Units
 	( 
 	  -- * The unit types
 	  Seconds	(..)
 	, Bytes		(..)
 
-	  -- * Type classes
+	  -- * IsUnits
 	, IsUnits 	(..)
+
+	  -- * HasUnits
 	, HasUnits 	(..)
 	
 	  -- * WithUnits wrappers
@@ -18,9 +19,9 @@ module BuildBox.Aspect.Units
 	, secs
 	, bytes
 	, appWithUnits
-	, mapWithUnits
 	, liftWithUnits
-	, liftWithUnits2
+	, liftsWithUnits
+	, liftsWithUnits2
 
 	  -- * Unit-preserving collation
 	, Collatable	(..)
@@ -83,7 +84,7 @@ instance Pretty Bytes where
 	
 
 -- Type classes -----------------------------------------------------------------------------------
--- | Refies the units used for some thing.
+-- | Represents the units used for some thing.
 data IsUnits a where
 	IsSeconds 	:: IsUnits Seconds
 	IsBytes		:: IsUnits Bytes	
@@ -98,7 +99,7 @@ instance Units Bytes where
 	isUnits s		= hasUnits s
 
 
--- | Determine the units of the elements of some collection, 
+-- | Determine the units used by the elements of some collection, 
 --   by inspecting the elements directly.
 --   Returns `Nothing` when applied to empty collections, as they have no units.
 class HasUnits a b | a -> b where
@@ -143,12 +144,13 @@ secs 	:: (Single Seconds -> c Single Seconds)
 secs mk f  = WithSeconds (mk (Single (Seconds f)))
 
 
+-- | Similar to `secs`.
 bytes 	:: (Single Bytes -> c Single Bytes) 
 	-> Integer -> WithUnits (c Single)
 bytes mk b = WithBytes   (mk (Single (Bytes b)))
 
 
--- | Apply a function to unit wrapped data
+-- | Apply a function to unit-wrapped data
 appWithUnits
 	:: (forall units. Real units => t1 units -> b)
 	-> WithUnits t1 -> b
@@ -159,23 +161,23 @@ appWithUnits f withUnits
 	WithBytes   dat	-> f dat
 
 
--- | Apply a unit-preserving function to unit-wrapped data.
-mapWithUnits 
-	:: (forall units. t1 units -> t2 units)
+-- | Apply a function to unit-wrapped data.
+liftWithUnits 
+	:: (forall units. Real units => t1 units -> t2 units)
 	-> WithUnits t1 -> WithUnits t2
 
-mapWithUnits f withUnits
+liftWithUnits f withUnits
  = case withUnits of
 	WithSeconds dat	-> WithSeconds (f dat)
 	WithBytes   dat -> WithBytes   (f dat)
 
 
 -- | Transform values of each unit type as a group.
-liftWithUnits 
+liftsWithUnits 
 	:: (forall units. Real units => [t1 units] -> [t2 units]) 
 	-> [WithUnits t1] -> [WithUnits t2]
 
-liftWithUnits f us
+liftsWithUnits f us
   = let	asSeconds	= [a | WithSeconds a	<- us]
 	asBytes		= [a | WithBytes   a	<- us]
 
@@ -184,11 +186,11 @@ liftWithUnits f us
 	
 
 -- | Transform values of each unit type as a group
-liftWithUnits2
+liftsWithUnits2
 	:: (forall units. Real units => [t1 units] -> [t2 units] -> [t3 units])
 	-> [WithUnits t1] -> [WithUnits t2] -> [WithUnits t3]
 	
-liftWithUnits2 f as bs
+liftsWithUnits2 f as bs
  = let	asSeconds	= [a | WithSeconds a	<- as]
 	bsSeconds	= [b | WithSeconds b	<- bs]
 
@@ -210,15 +212,15 @@ class Collatable t where
 -- | Collate some data.
 --
 --  @
---     collateWithUnits  [ Time KernelCpu \`secs\`  5
---                       , Time KernelCpu \`secs\`  10
---                       , Time TotalWall \`secs\`  55
---                       , Size ExeSize   \`bytes\` 100884
---                       , Time TotalWall \`secs\`  52 ]
---     =>
---                       [ WithSeconds (Time KernelCpu [Seconds 5.0,  Seconds 10.0])
---                       , WithSeconds (Time TotalWall [Seconds 55.0, Seconds 52.0])
---                       , WithBytes   (Size ExeSize [Bytes 1024])]
+-- collateWithUnits  [ Time KernelCpu \`secs\`  5
+--                   , Time KernelCpu \`secs\`  10
+--                   , Time TotalWall \`secs\`  55
+--                   , Size ExeSize   \`bytes\` 100884
+--                   , Time TotalWall \`secs\`  52 ]
+-- =>
+--                   [ WithSeconds (Time KernelCpu [Seconds 5.0,  Seconds 10.0])
+--                   , WithSeconds (Time TotalWall [Seconds 55.0, Seconds 52.0])
+--                   , WithBytes   (Size ExeSize [Bytes 1024])]
 --  @
 -- 
 collateWithUnits :: Collatable c => [WithUnits (c Single)] -> [WithUnits (c [])]

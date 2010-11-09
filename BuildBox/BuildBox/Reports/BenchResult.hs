@@ -10,11 +10,12 @@ import BuildBox.Benchmark.BenchResult
 import Text.Printf
 import Data.List
 
--- Total number of tests	
---	let totalTests	= length benchResults
-
-
--- | Produce a report of benchmark results.
+-- | Produce a human readable report of benchmark results.
+--
+--   If you only want the results within a fractional swing from the baseline
+--   then pass something like @(Just 0.1)@ as the first parameter for a 10\% swing, 
+--   otherwise all results are printed.
+--      
 reportBenchResults :: Maybe Double -> [BenchResult StatsComparison] -> Doc
 
 -- no swing specified, just report all the results.

@@ -1,4 +1,4 @@
-
+{-# OPTIONS_HADDOCK hide #-}
 module BuildBox.IO.File
 	(atomicWriteFile)
 where

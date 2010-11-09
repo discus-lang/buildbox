@@ -10,10 +10,10 @@ Stability:           experimental
 Category:            Development, Testing
 Homepage:            http://code.haskell.org/~benl/code/buildbox-head
 Description:
-        Includes functions for checking the host platform, running tests, capturing output,
+        Includes utilities for checking the host platform, running tests, capturing output,
         handling errors, comparing runtimes against a baseline, sending mail, running events to a schedule etc.
 
-	Some of these functions are just wrappers around shell commands, so be careful about passing
+	Some of the Command functions are just wrappers around shell commands, so be careful about passing
 	them weirdly formed arguments.
 	
 Synopsis:
@@ -39,8 +39,7 @@ Library
         -Wall
 
   Exposed-modules:
-        BuildBox.Data.Log
-        BuildBox.Data.Dividable
+        BuildBox
         BuildBox.Aspect.Detail
         BuildBox.Aspect.Stats
         BuildBox.Aspect.Units
@@ -48,7 +47,6 @@ Library
         BuildBox.Aspect.Comparison
         BuildBox.Aspect
         BuildBox.Benchmark.BenchResult
-        BuildBox.Benchmark.Benchmark
         BuildBox.Benchmark
         BuildBox.Reports.BenchResult
         BuildBox.Build.Testable
@@ -63,15 +61,16 @@ Library
         BuildBox.Command.Sleep
         BuildBox.Cron.Schedule
         BuildBox.Cron
+        BuildBox.Data.Log
+        BuildBox.Data.Dividable
         BuildBox.FileFormat.BuildResults
         BuildBox.IO.Directory
-        BuildBox.IO.File
         BuildBox.Pretty
         BuildBox.Time
-        BuildBox
 
   Other-modules:
         BuildBox.Command.System.Internals
         BuildBox.Build.Base
         BuildBox.Aspect.Aspect
-       
+        BuildBox.Benchmark.Benchmark
+        BuildBox.IO.File

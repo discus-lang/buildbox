@@ -1,5 +1,5 @@
 
--- | The details of benchmark programs that we're interested in.
+-- | The detail is the name of an `Aspect` seprate from its data.
 module BuildBox.Aspect.Detail
 	( Detail (..)
 	, Timed	 (..)

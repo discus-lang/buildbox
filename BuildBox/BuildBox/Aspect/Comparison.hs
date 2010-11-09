@@ -1,10 +1,12 @@
 
--- | Comparing aspects.
 module BuildBox.Aspect.Comparison
-	( Comparison	(..)
+	( 
+	-- * Comparisons
+	  Comparison	(..)
 	, makeComparison
 	, appSwing
 	
+	-- * Comparisons of Statistics
 	, StatsComparison(..)
 	, makeStatsComparison
 	, makeStatsComparisonNew
@@ -15,13 +17,15 @@ import BuildBox.Pretty
 import Text.Printf
 
 
--- | Minimum, average and maximum values.
+-- | The comparison of two values.
 data Comparison a	
+	-- | Comparison of a recent value with a baseline.
 	= Comparison
 	{ comparisonBaseline	:: a
 	, comparisonRecent	:: a
 	, comparisonSwing	:: Double }
 	
+	-- | A new value that doesn't have a baseline.
 	| ComparisonNew
 	{ comparisonNew		:: a }
 	
@@ -42,7 +46,7 @@ instance Pretty a => Pretty (Comparison a) where
 		= (padL 10 $ ppr new)
 		
 
--- | Make stats from a list of values.
+-- | Make a comparison from two values.
 makeComparison :: Real a => a -> a -> Comparison a
 makeComparison base recent
 	= Comparison base recent swing
@@ -61,6 +65,7 @@ appSwing def f aa
 	
 
 -- StatsComparison --------------------------------------------------------------------------------
+-- | Comparisons of statistics
 data StatsComparison a
 	= StatsComparison (Stats (Comparison a))
 	deriving (Read, Show)
@@ -72,14 +77,14 @@ instance Pretty a => Pretty (StatsComparison a) where
 makeStatsComparison :: Real a => Stats a -> Stats a -> StatsComparison a
 makeStatsComparison x y = StatsComparison (liftStats2 makeComparison x y)
 	
-	
--- | Make a `ComparisonNew`
+
+-- | Make a `ComparisonNew`.
 makeStatsComparisonNew :: Stats a -> StatsComparison a
 makeStatsComparisonNew x
 	= StatsComparison (liftStats ComparisonNew x)
 	
 
--- | Return `True` if any of the comparison swings matches the given function.
+-- | Return `True` if any of the swings in the `StatsComparison` match the given function.
 predSwingStatsComparison :: (Double -> Bool) -> StatsComparison a -> Bool
 predSwingStatsComparison f (StatsComparison ss)
 	= (predStats . (appSwing False)) f ss

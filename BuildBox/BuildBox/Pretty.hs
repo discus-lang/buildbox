@@ -70,6 +70,7 @@ blank = ppr ""
 
 
 -- | Like `pprEngDouble` but don't display fractional part when the value is < 1000.
+--   Good for units where fractional values might not make sense (like bytes).
 pprEngInteger :: String -> Integer -> Maybe Doc
 pprEngInteger unit k
     | k < 0	 = liftM (text "-" <>) $ pprEngInteger unit (-k)
@@ -78,14 +79,14 @@ pprEngInteger unit k
 
 
 -- | Pretty print an engineering value, to 4 significant figures.
---   Valid range is  -10^24 (y\/yocto) to 10^24 (Y\/Yotta).
+--   Valid range is  10^(-24) (y\/yocto) to 10^(+24) (Y\/Yotta).
 --   Out of range values yield Nothing.
 --
 --   examples:
 --
 --   @
---      liftM render $ pprEngDouble \"J\" 102400    ==>   Just \"1.024MJ\"
---      liftM render $ pprEngDouble \"s\" 0.0000123 ==>   Just \"12.30us\"
+--   liftM render $ pprEngDouble \"J\" 102400    ==>   Just \"1.024MJ\"
+--   liftM render $ pprEngDouble \"s\" 0.0000123 ==>   Just \"12.30us\"
 --   @
 --
 pprEngDouble :: String -> Double -> Maybe Doc

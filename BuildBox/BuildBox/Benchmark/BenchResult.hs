@@ -3,10 +3,18 @@ module BuildBox.Benchmark.BenchResult
 	( 
 	-- * Benchmark results	
 	  BenchResult (..)
+
+	-- * Concatenation
 	, concatBenchResult
+	
+	-- * Collation
 	, collateBenchResult
+
+	-- * Statistics
 	, statCollatedBenchResult
 	, statBenchResult
+
+	-- * Comparison
 	, compareBenchResults
 	, compareBenchResultWith
 	, compareManyBenchResults
@@ -35,12 +43,16 @@ import Data.List
 
 
 -- BenchResult ------------------------------------------------------------------------------------
--- | The result of running a benchmark several times.
---   We include the name of the original benchmark to it's easy to lookup the results.
-data BenchResult carrier
+-- | We include the name of the original benchmark to it's easy to lookup the results.
+--   If the `BenchResult` is carrying data derived directly by running a benchmark, 
+--   there will be an element of the `benchResultRuns` for each iteration. On the other hand,
+--   If the `BenchResult` is carrying statistics or comparison data there should
+--   be a single element with an index of 0. This is suggested usage, and  adhered to by
+--   the functions in this module, but not required.
+data BenchResult c
 	= BenchResult
 	{ benchResultName	:: String
-	, benchResultRuns	:: [BenchRunResult carrier] }
+	, benchResultRuns	:: [BenchRunResult c] }
 
 deriving instance 
 	(  Show (c Seconds), Show (c Bytes)) 
@@ -69,32 +81,31 @@ concatBenchResult
 	$ \bsResults -> [BenchRunResult 0 (concatMap benchRunResultAspects bsResults)]
 
 
--- | Collate the aspects of each run.
+-- | Collate the aspects of each run. See `collateWithUnits` for an explanation and example.
 collateBenchResult :: BenchResult Single -> BenchResult []
 collateBenchResult
 	= liftToAspectsOfBenchResult collateWithUnits
 
 
--- | Compute statistics about each the aspects of each run.
---   The results should be in collated form.
+-- | Compute statistics from collated aspects of a run.
 statCollatedBenchResult :: BenchResult [] -> BenchResult Stats
 statCollatedBenchResult
-	= liftToAspectsOfBenchResult (map (mapWithUnits makeAspectStats))
+	= liftToAspectsOfBenchResult (map (liftWithUnits makeAspectStats))
 
 
--- | Compute statistics about some the aspects of each run.
+-- | Collate the aspects, then compute statistics of a run.
 statBenchResult :: BenchResult Single -> BenchResult Stats
 statBenchResult 
 	= statCollatedBenchResult . collateBenchResult . concatBenchResult
 
 
 -- | Compute comparisons of benchmark results.
---	Both results must have the same name else `error`.
+--	Both results must have the same `benchResultName` else `error`.
 compareBenchResults
 	:: BenchResult Stats -> BenchResult Stats -> BenchResult StatsComparison
 
 compareBenchResults 
-	= liftBenchRunResult2 (zipWith (liftRunResultAspects2 (liftWithUnits2 makeAspectComparisons)))
+	= liftBenchRunResult2 (zipWith (liftRunResultAspects2 (liftsWithUnits2 makeAspectComparisons)))
 
 
 -- | Compute comparisons of benchmark result, looking up the baseline results from a given list.
@@ -107,7 +118,7 @@ compareBenchResultWith base result
 	= compareBenchResults baseResult result
 	
 	| otherwise
-	= liftToAspectsOfBenchResult (liftWithUnits (map (liftAspect makeStatsComparisonNew))) result
+	= liftToAspectsOfBenchResult (liftsWithUnits (map (liftAspect makeStatsComparisonNew))) result
 
 
 -- | Compare some baseline results against new results.
@@ -119,7 +130,7 @@ compareManyBenchResults base new
 	= map (compareBenchResultWith base) new
 
 
--- | Return true if any of the aspect data in a bench result matches a given predicate.
+-- | Return true if any of the aspect data in a result matches a given predicate.
 predBenchResult
 	:: (forall units. Real units => c units -> Bool)
 	-> BenchResult c -> Bool
@@ -128,14 +139,15 @@ predBenchResult f
 	= appBenchRunResult $ or . map (appRunResultAspects $ or . map (appAspectWithUnits f))
 
 
--- | Return `True` if any of the aspects have swung by more than a given fraction since last time.
+-- | Return true if any of the aspects have swung by more than a given fraction since last time.
+--   For example, use @0.1@ for 10 percent.
 swungBenchResult :: Double -> BenchResult StatsComparison -> Bool
 swungBenchResult limit
 	= predBenchResult (predSwingStatsComparison (\x -> abs x > limit)) 
 
 
 -- Lifting ----------------------------------------------------------------------------------------
--- | Apply a function to the aspects of a BenchRunResult
+-- | Apply a function to the aspects of a `BenchRunResult`
 appBenchRunResult :: ([BenchRunResult c1] -> b) -> BenchResult c1 -> b
 appBenchRunResult f (BenchResult _ runs) = f runs
 
@@ -159,7 +171,7 @@ liftBenchRunResult2 f (BenchResult name1 runs1) (BenchResult name2 runs2)
 	| otherwise		= error "liftBenchRunResult2: names don't match"
 	
 
--- | Apply a function to the aspects of each run result.
+-- | Lift a function to the aspects of each `BenchRunResult`.
 liftToAspectsOfBenchResult 
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
 	-> BenchResult c1           -> BenchResult c2
@@ -168,7 +180,7 @@ liftToAspectsOfBenchResult
 	= liftBenchRunResult . map . liftRunResultAspects
 
 
--- | Apply a binary function to the aspects of each run result.
+-- | Lift a binary function to the aspects of each `BenchRunResult`.
 liftToAspectsOfBenchResult2
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)] -> [WithUnits (Aspect c3)])
 	-> BenchResult c1           -> BenchResult c2          -> BenchResult c3
@@ -179,14 +191,16 @@ liftToAspectsOfBenchResult2
 
 
 -- BenchRunResult ---------------------------------------------------------------------------------
--- | The result of running a benchmark once.
-data BenchRunResult carrier
+-- | Holds the result of running a benchmark once.
+data BenchRunResult c
 	= BenchRunResult
 	{ -- | What iteration this run was.
+	  --   Use 1 for the first ''real'' iteration derived by running a program.
+	  --   Use 0 for ''fake'' iterations computed by statistics or comparisons.
 	  benchRunResultIndex	:: Integer
 
 	  -- | Aspects of the benchmark run.
-	, benchRunResultAspects	:: [WithUnits (Aspect carrier)] }
+	, benchRunResultAspects	:: [WithUnits (Aspect c)] }
 
 
 deriving instance 
@@ -213,12 +227,12 @@ instance  ( Pretty (c Seconds), Pretty (c Bytes))
 
 
 -- Lifting ----------------------------------------------------------------------------------------
--- | Apply a function to the aspects of a BenchRunResult
+-- | Apply a function to the aspects of a `BenchRunResult`
 appRunResultAspects :: ([WithUnits (Aspect c1)] -> b) -> BenchRunResult c1 -> b
 appRunResultAspects f (BenchRunResult _ aspects) = f aspects
 
 
--- | Lift a function to the aspects on a BenchRunResult
+-- | Lift a function to the aspects of a `BenchRunResult`
 liftRunResultAspects
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
 	-> BenchRunResult c1        -> BenchRunResult c2
@@ -227,7 +241,7 @@ liftRunResultAspects f (BenchRunResult ix as)
 	= BenchRunResult ix (f as)
 
 
--- | Lift a function to the aspects on a BenchRunResult
+-- | Lift a binary function to the aspects of a `BenchRunResult`
 liftRunResultAspects2
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)] -> [WithUnits (Aspect c3)])
 	-> BenchRunResult c1        -> BenchRunResult c2       -> BenchRunResult c3

@@ -1,7 +1,7 @@
 
 module BuildBox.Benchmark
 	( module BuildBox.Benchmark.BenchResult
-	, module BuildBox.Benchmark.Benchmark
+	, Benchmark(..)
 	, runTimedCommand
 	, runBenchmarkOnce
 	, outRunBenchmarkOnce
@@ -68,8 +68,7 @@ outRunBenchmarkOnce iteration bench
 
 	
 -- | Run a benchmark serveral times, logging activity to the console.
---   Also lookup prior results for comparison from the given list.
---   If there is no matching entry then run the benchmark anyway, but don't print the comparison.
+--   Also lookup prior results and print comparisons during the run.
 outRunBenchmarkWith
 	:: Int				-- ^ Number of times to run each benchmark to get averages.
 	-> [BenchResult Stats]		-- ^ List of prior results.
