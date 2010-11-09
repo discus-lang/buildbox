@@ -23,7 +23,7 @@ run6 =	[ Time TotalWall `secs`  8
 
 benchResult1
 	= BenchResult
-	{ benchResultName	= "someTest"
+	{ benchResultName	= "test1"
 	, benchResultRuns	
 	    = 	[ BenchRunResult 1 run1
 		, BenchRunResult 2 run2
@@ -31,10 +31,32 @@ benchResult1
 
 benchResult2
 	= BenchResult
-	{ benchResultName	= "someTest"
+	{ benchResultName	= "test1"
 	, benchResultRuns	
 	    = 	[ BenchRunResult 1 run4
 		, BenchRunResult 2 run5
 		, BenchRunResult 3 run6 ] }
+
+
+benchResult3
+	= BenchResult
+	{ benchResultName	= "test2"
+	, benchResultRuns	
+	    = 	[ BenchRunResult 1 run4
+		, BenchRunResult 2 run2
+		, BenchRunResult 3 run6 ] }
+
+benchResult4
+	= BenchResult
+	{ benchResultName	= "test2"
+	, benchResultRuns	
+	    = 	[ BenchRunResult 1 run4
+		, BenchRunResult 3 run1 ] }
 		
 	
+
+results1	= [benchResult1, benchResult3]
+results2	= [benchResult2, benchResult4]
+
+statResults1	= map statBenchResult results1
+statResults2	= map statBenchResult results2

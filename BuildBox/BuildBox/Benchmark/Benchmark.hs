@@ -3,7 +3,6 @@ module BuildBox.Benchmark.Benchmark
 	(Benchmark(..))
 where
 import BuildBox.Build
-import BuildBox.Benchmark.BenchResult
 import BuildBox.Aspect
 
 -- | Describes a benchmark that we can run.

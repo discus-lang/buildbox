@@ -5,7 +5,6 @@ module BuildBox.Benchmark
 	, runTimedCommand
 	, runBenchmarkOnce
 	, outRunBenchmarkOnce
-	, outRunBenchmarkAgainst
 	, outRunBenchmarkWith)
 where
 import BuildBox.Build	
@@ -13,7 +12,6 @@ import BuildBox.Aspect
 import BuildBox.Benchmark.Benchmark
 import BuildBox.Benchmark.BenchResult
 import Data.Time
-import Data.List
 
 -- Running Commands -------------------------------------------------------------------------------
 -- | Run a command, returning its elapsed time.
@@ -68,35 +66,6 @@ outRunBenchmarkOnce iteration bench
 	outBlank	
 	return result
 
-
--- | Run a benchmark several times, logging activity to the console.
---   Optionally print a comparison with a prior results.
-outRunBenchmarkAgainst
-	:: Int				-- ^ Number of iterations.
-	-> Maybe (BenchResult Stats)	-- ^ Optional previous result for comparison.
-	-> Benchmark			-- ^ Benchmark to run.
-	-> Build (BenchResult Single)
-	
-outRunBenchmarkAgainst iterations mPrior bench  
- = do	out $ "Running " ++ benchmarkName bench ++ " " ++ show iterations ++ " times..."
-	runResults	<- mapM ((flip runBenchmarkOnce) bench) $ take iterations [1..]
-	outLn "ok"
-
-	let result	= BenchResult
-			{ benchResultName	= benchmarkName bench
-			, benchResultRuns	= runResults }
-
-
---	outLn pprBenchResultAspectHeader
-
-	case mPrior of
-	 Nothing	-> outLn runResults
-	 Just prior	-> outLn $ compareBenchResults prior (statBenchResult result)
-
-	outBlank
-
-	return	result
-		
 	
 -- | Run a benchmark serveral times, logging activity to the console.
 --   Also lookup prior results for comparison from the given list.
@@ -108,6 +77,17 @@ outRunBenchmarkWith
 	-> Build (BenchResult Single)
 
 outRunBenchmarkWith iterations priors bench
- = let	mPrior	= find (\b -> benchResultName b == benchmarkName bench) priors
-   in	outRunBenchmarkAgainst iterations mPrior bench
+ = do	out $ "Running " ++ benchmarkName bench ++ " " ++ show iterations ++ " times..."
+	runResults	<- mapM ((flip runBenchmarkOnce) bench) $ take iterations [1..]
+	outLn "ok"
 
+	let result	= BenchResult
+			{ benchResultName	= benchmarkName bench
+			, benchResultRuns	= runResults }
+
+	outLn 	$ compareBenchResultWith priors 
+		$ statBenchResult result
+	
+	outBlank
+	return result
+	

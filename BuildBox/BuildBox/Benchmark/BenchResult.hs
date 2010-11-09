@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances, RankNTypes #-}
+{-# LANGUAGE PatternGuards, StandaloneDeriving, FlexibleContexts, UndecidableInstances, RankNTypes #-}
 module BuildBox.Benchmark.BenchResult
 	( 
 	-- * Benchmark results	
@@ -8,7 +8,10 @@ module BuildBox.Benchmark.BenchResult
 	, statCollatedBenchResult
 	, statBenchResult
 	, compareBenchResults
+	, compareBenchResultWith
+	, compareManyBenchResults
 	
+	-- * Benchmark run results
 	, BenchRunResult (..)
 
 	-- * Lifting functions
@@ -21,6 +24,8 @@ module BuildBox.Benchmark.BenchResult
 where
 import BuildBox.Aspect
 import BuildBox.Pretty
+import Data.List
+
 
 -- BenchResult ------------------------------------------------------------------------------------
 -- | The result of running a benchmark several times.
@@ -31,21 +36,79 @@ data BenchResult carrier
 	, benchResultRuns	:: [BenchRunResult carrier] }
 
 deriving instance 
-	(  Show (carrier Seconds), Show (carrier Bytes)) 
-	=> Show (BenchResult carrier)
+	(  Show (c Seconds), Show (c Bytes)) 
+	=> Show (BenchResult c)
 
 deriving instance
-	(  HasUnits (carrier Bytes) Bytes
-	,  Read (carrier Bytes)
-	,  HasUnits (carrier Seconds) Seconds
-	,  Read (carrier Seconds))
-	=> Read (BenchResult carrier)
+	(  HasUnits (c Bytes) Bytes
+	,  Read (c Bytes)
+	,  HasUnits (c Seconds) Seconds
+	,  Read (c Seconds))
+	=> Read (BenchResult c)
 
-instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes))
-	 => Pretty (BenchResult carrier) where
+instance  ( Pretty (c Seconds), Pretty (c Bytes))
+	 => Pretty (BenchResult c) where
  ppr result
 	= hang (ppr "BenchResult" <+> text (benchResultName result)) 2
 	$ vcat $ map ppr $ benchResultRuns result
+
+-- | Concatenate the results of all runs.
+--   In the resulting `BenchResult` has a single `BenchRunResult` with an index of 0.
+--   In effect we have merged the data from all runs.
+concatBenchResult :: BenchResult c1 -> BenchResult c1
+concatBenchResult 
+	= liftBenchRunResult 
+	$ \bsResults -> [BenchRunResult 0 (concatMap benchRunResultAspects bsResults)]
+
+
+-- | Collate the aspects of each run.
+collateBenchResult :: BenchResult Single -> BenchResult []
+collateBenchResult
+	= liftToAspectsOfBenchResult collateWithUnits
+
+
+-- | Compute statistics about each the aspects of each run.
+--   The results need to be in collated form.
+statCollatedBenchResult :: BenchResult [] -> BenchResult Stats
+statCollatedBenchResult
+	= liftToAspectsOfBenchResult (map (applyWithUnits makeAspectStats))
+
+
+-- | Compute statistics about some the aspects of each run.
+statBenchResult :: BenchResult Single -> BenchResult Stats
+statBenchResult 
+	= statCollatedBenchResult . collateBenchResult . concatBenchResult
+
+
+-- | Compute comparisons of benchmark results.
+--	Both results must have the same name else `error`
+compareBenchResults
+	:: BenchResult Stats -> BenchResult Stats -> BenchResult StatsComparison
+
+compareBenchResults 
+	= liftBenchRunResult2 (zipWith (liftRunResultAspects2 (liftWithUnits2 makeAspectComparisons)))
+
+
+-- | Compute comparisons of benchmark result, looking up the baseline results from a given list.
+--	If there are no matching baseline results then this creates a `ComparisonNew` in the output.
+compareBenchResultWith 
+	:: [BenchResult Stats] -> BenchResult Stats -> BenchResult StatsComparison
+
+compareBenchResultWith base result
+	| Just baseResult	<- find (\baseResult -> benchResultName baseResult == benchResultName result) base
+	= compareBenchResults baseResult result
+	
+	| otherwise
+	= liftToAspectsOfBenchResult (liftWithUnits (map (liftAspect makeStatsComparisonNew))) result
+
+
+-- | Compare some baseline results against new results.
+--	If there are no matching baseline results then this creates a `ComparisonNew` in the output.
+compareManyBenchResults 
+	:: [BenchResult Stats] -> [BenchResult Stats] -> [BenchResult StatsComparison]
+	
+compareManyBenchResults base new
+	= map (compareBenchResultWith base) new
 
 
 -- | Apply a function to the `BenchRunResult` in a `BenchResult`
@@ -85,41 +148,6 @@ liftToAspectsOfBenchResult2
 	= liftBenchRunResult2 . zipWith . liftRunResultAspects2
 
 
--- | Concatenate the results of all runs.
---   In the resulting `BenchResult` has a single `BenchRunResult` with an index of 0.
---   In effect we have merged the data from all runs.
-concatBenchResult :: BenchResult c1 -> BenchResult c1
-concatBenchResult 
-	= liftBenchRunResult 
-	$ \bsResults -> [BenchRunResult 0 (concatMap benchRunResultAspects bsResults)]
-
-
--- | Collate the aspects of each run.
-collateBenchResult :: BenchResult Single -> BenchResult []
-collateBenchResult
-	= liftToAspectsOfBenchResult collateWithUnits
-
-
--- | Compute statistics about each the aspects of each run.
---   The results need to be in collated form.
-statCollatedBenchResult :: BenchResult [] -> BenchResult Stats
-statCollatedBenchResult
-	= liftToAspectsOfBenchResult (map (applyWithUnits makeAspectStats))
-
-
--- | Compute statistics about some the aspects of each run.
-statBenchResult :: BenchResult Single -> BenchResult Stats
-statBenchResult 
-	= statCollatedBenchResult . collateBenchResult . concatBenchResult
-
-
--- | Compute comparisons of benchmark results.
---	Both results must have the same name else `error`
-compareBenchResults :: BenchResult Stats -> BenchResult Stats -> BenchResult StatsComparison
-compareBenchResults 
-	= liftBenchRunResult2 (zipWith (liftRunResultAspects2 (liftWithUnits2 makeAspectComparisons)))
-
-
 
 -- BenchRunResult ---------------------------------------------------------------------------------
 -- | The result of running a benchmark once.
@@ -133,19 +161,19 @@ data BenchRunResult carrier
 
 
 deriving instance 
-	(  Show (carrier Seconds), Show (carrier Bytes)) 
-	=> Show (BenchRunResult carrier)
+	(  Show (c Seconds), Show (c Bytes)) 
+	=> Show (BenchRunResult c)
 
 deriving instance
-	(  HasUnits (carrier Bytes) Bytes
-	,  Read (carrier Bytes)
-	,  HasUnits (carrier Seconds) Seconds
-	,  Read (carrier Seconds))
-	=> Read (BenchRunResult carrier)
+	(  HasUnits (c Bytes) Bytes
+	,  Read (c Bytes)
+	,  HasUnits (c Seconds) Seconds
+	,  Read (c Seconds))
+	=> Read (BenchRunResult c)
 
 
-instance  ( Pretty (carrier Seconds), Pretty (carrier Bytes)) 
-	 => Pretty (BenchRunResult carrier) where
+instance  ( Pretty (c Seconds), Pretty (c Bytes)) 
+	 => Pretty (BenchRunResult c) where
  ppr result
 	= hang (ppr "BenchRunResult" <+> ppr (benchRunResultIndex result)) 2 
 	$ vcat $ map ppr $ benchRunResultAspects result

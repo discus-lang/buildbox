@@ -27,9 +27,14 @@ data Comparison a
 
 instance Pretty a => Pretty (Comparison a) where
 	ppr (Comparison _ recent ratio)
-		= text $ printf "%s (%+4.0g)"
+		| abs ratio < 0.01	
+		= text $ printf "%s (----)"
 				(render $ ppr recent)
-				ratio
+
+		| otherwise		
+		= text $ printf "%s (%+4.0f)"
+				(render $ ppr recent)
+				(ratio * 100)
 
 	ppr (ComparisonNew new)
 		= (padL 10 $ ppr new)
@@ -42,7 +47,7 @@ makeComparison base recent
 	
 	where	dBase	= fromRational $ toRational base
 		dRecent	= fromRational $ toRational recent
-		swing = ((dRecent - dBase) / dBase) * 100
+		swing = ((dRecent - dBase) / dBase)
 
 
 data StatsComparison a

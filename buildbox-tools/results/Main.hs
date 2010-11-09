@@ -47,7 +47,11 @@ mainWithArgs args
 		let [baseline, current] 
 			= map buildResultBench results
 
-		putStrLn $ render $ pprComparisons baseline current
+		putStrLn 
+			$ render $ vcat $ map ppr
+			$ compareManyBenchResults 
+				(map statBenchResult baseline)
+				(map statBenchResult current)
 
 	-- Merge two results files, prefering benchmark results on the left.
 	-- The time and environment fields are taken from the file on the right.
