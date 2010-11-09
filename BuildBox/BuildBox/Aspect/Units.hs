@@ -55,7 +55,7 @@ instance Num Seconds where
 instance Pretty Seconds where
 	ppr (Seconds f)			
 		= fromMaybe (text (show f))
-		$ liftM text $ pprEngDouble "s" f
+		$ pprEngDouble "s" f
 
 
 -- | Bytes of data.
@@ -79,7 +79,7 @@ instance Num Bytes where
 instance Pretty Bytes where
 	ppr (Bytes b)			
 		= fromMaybe (text (show b))
-		$ liftM text $ pprEngInteger "B" b
+		$ pprEngInteger "B" b
 	
 
 -- Type classes -----------------------------------------------------------------------------------

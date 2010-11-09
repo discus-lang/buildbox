@@ -4,10 +4,6 @@
 module BuildBox.Pretty
 	( module Text.PrettyPrint
 	, Pretty(..)
-	, pprPSecTime
-	, pprFloatTime
-	, pprFloatSR
-	, pprFloatRef
 	, padRc, padR
 	, padLc, padL
 	, blank
@@ -46,52 +42,6 @@ instance Pretty a => Pretty [a] where
 instance Pretty String where
 	ppr = text
 
--- To handle type defaulting
-ten12i :: Integer
-ten12i = 10^(12 :: Integer)
-
-
--- | Print a number of picoseconds as a time.
-pprPSecTime :: Integer -> Doc
-pprPSecTime psecs
-  	=  text (show (psecs `quot` ten12i))
-	<> text "." 
- 	<> (text $ (take 3 $ render $ padRc 12 '0' $ text $ show $ psecs `rem` ten12i))
-
-
--- | Print a float number of seconds as a time.
-pprFloatTime :: Float -> Doc
-pprFloatTime stime
-  = let (secs :: Integer, frac :: Float)	
-			= properFraction stime
-
-	msecs		= frac * 1000
-    in	text (show secs) 
-	 <> text "."
-	 <> (padRc 3 '0' $ text $ show $ ((round $ msecs) :: Integer) )
-
-
--- | Pretty print a signed float, with a percentage change relative to a reference figure.
---   Comes out like @0.235( +5)@ for a +5 percent swing.
-pprFloatRef :: Float -> Float -> Doc
-pprFloatRef stime stimeRef 
- = let	diff		= ((stime - stimeRef) / stimeRef )*100
-   in	pprFloatTime stime
-	 <> parens (padR 4 $ pprFloatSR diff)
-
-
--- | Print a float number of seconds, rounding it and, prefixing with @+@ or @-@ appropriately.
-pprFloatSR :: Float -> Doc
-pprFloatSR p
-	| p == 0
-	= text "----"
-
- 	| p > 0
-	= text "+" <> (ppr $ (round p :: Integer))
-	
-	| otherwise
-	= text "-" <> (ppr $ (round (negate p) :: Integer))
-
 
 -- | Right justify a doc, padding with a given character.
 padRc :: Int -> Char -> Doc -> Doc
@@ -120,19 +70,27 @@ blank = ppr ""
 
 
 -- | Like `pprEngDouble` but don't display fractional part when the value is < 1000.
-pprEngInteger :: String -> Integer -> Maybe String
+pprEngInteger :: String -> Integer -> Maybe Doc
 pprEngInteger unit k
-    | k < 0	 = liftM ("-" ++) $ pprEngInteger unit (-k)
+    | k < 0	 = liftM (text "-" <>) $ pprEngInteger unit (-k)
     | k > 1000	 = pprEngDouble unit (fromRational $ toRational k)
-    | otherwise  = Just $ printf "%5d%s " k unit
+    | otherwise  = Just $ text $ printf "%5d%s " k unit
 
 
 -- | Pretty print an engineering value, to 4 significant figures.
---   Valid range is  -10^24 (y/yocto) to 10^24 (Y/Yotta)
+--   Valid range is  -10^24 (y\/yocto) to 10^24 (Y\/Yotta).
 --   Out of range values yield Nothing.
-pprEngDouble :: String -> Double -> Maybe String
+--
+--   examples:
+--
+--   @
+--      liftM render $ pprEngDouble \"J\" 102400    ==>   Just \"1.024MJ\"
+--      liftM render $ pprEngDouble \"s\" 0.0000123 ==>   Just \"12.30us\"
+--   @
+--
+pprEngDouble :: String -> Double -> Maybe Doc
 pprEngDouble unit k
-    | k < 0      = liftM ("-" ++) $ pprEngDouble unit (-k)
+    | k < 0      = liftM (text "-" <>) $ pprEngDouble unit (-k)
     | k >= 1e+27 = Nothing
     | k >= 1e+24 = Just $ (k*1e-24) `with` ("Y" ++ unit)
     | k >= 1e+21 = Just $ (k*1e-21) `with` ("Z" ++ unit)
@@ -152,9 +110,9 @@ pprEngDouble unit k
     | k >= 1e-21 = Just $ (k*1e+21) `with` ("z" ++ unit)
     | k >= 1e-24 = Just $ (k*1e+24) `with` ("y" ++ unit)
     | k >= 1e-27 = Nothing
-    | otherwise  = Just $ printf "%5.0f%s " k unit
+    | otherwise  = Just $ text $ printf "%5.0f%s " k unit
      where with (t :: Double) (u :: String)
-		| t >= 1e3  = printf "%.0f%s" t u
-		| t >= 1e2  = printf "%.1f%s" t u
-		| t >= 1e1  = printf "%.2f%s" t u
-		| otherwise = printf "%.3f%s" t u
+		| t >= 1e3  = text $ printf "%.0f%s" t u
+		| t >= 1e2  = text $ printf "%.1f%s" t u
+		| t >= 1e1  = text $ printf "%.2f%s" t u
+		| otherwise = text $ printf "%.3f%s" t u

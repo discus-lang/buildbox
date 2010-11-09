@@ -1,16 +1,19 @@
-{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, GADTs, FlexibleContexts, RankNTypes, UndecidableInstances #-}
+{-# LANGUAGE 	ScopedTypeVariables, StandaloneDeriving,
+		GADTs, FlexibleContexts, RankNTypes,
+		UndecidableInstances, KindSignatures #-}
 {-# OPTIONS_HADDOCK hide #-}
 module BuildBox.Aspect.Aspect
 	( Aspect	(..)
 	, makeAspect
 	, splitAspect
-	, liftAspect
-	, liftAspect2
 	, collateWithUnits
 	, makeAspectStats
 	, makeAspectComparison
 	, makeAspectComparisons
-	, StatsComparison)
+
+	-- * Lifting functions
+	, liftAspect
+	, liftAspect2)
 where
 import BuildBox.Aspect.Single
 import BuildBox.Aspect.Units
@@ -23,17 +26,23 @@ import Data.List
 import qualified Data.Map	as Map
 
 
-data Aspect carrier units where
-	Time	:: Timed	-> carrier Seconds	-> Aspect carrier Seconds
-	Size	:: Sized	-> carrier Bytes	-> Aspect carrier Bytes
-	Used	:: Used		-> carrier Bytes	-> Aspect carrier Bytes
+-- | Holds a detail about a benchmark.
+--
+--   The @c@ is the type constructor of the container that holds the data.
+--
+--   Useful instances for @c@ include `Single`, `[ ]`, `Stats`, `Comparison` and `StatsComparison`.
+--
+data Aspect (c :: * -> *) units where
+	Time	:: Timed	-> c Seconds	-> Aspect c Seconds
+	Size	:: Sized	-> c Bytes	-> Aspect c Bytes
+	Used	:: Used		-> c Bytes	-> Aspect c Bytes
 
-deriving instance Show (carrier units) => Show (Aspect carrier units)	
+deriving instance Show (c units) => Show (Aspect c units)	
 
 -- We need to write the read instance manually because it requires makeAspect
-instance (  HasUnits (carrier units) units
-	 ,  Read  (carrier units)) 
-	 => Read (Aspect carrier units) where
+instance (  HasUnits (c units) units
+	 ,  Read  (c units)) 
+	 => Read (Aspect c units) where
  readPrec 
   = do	tok <- lexP
 	case tok of
@@ -63,9 +72,9 @@ instance (  HasUnits (carrier units) units
 	 _ -> pfail
 
 
-instance ( Pretty (carrier Seconds)
-	 , Pretty (carrier Bytes))
- 	 => Pretty (Aspect carrier units) where
+instance ( Pretty (c Seconds)
+	 , Pretty (c Bytes))
+ 	 => Pretty (Aspect c units) where
  ppr aa
   = case aa of
 	Time timed dat	-> padL 30 (ppr timed) <+> text ":" <+> ppr dat
@@ -86,10 +95,10 @@ splitAspect aa
 -- | Make an aspect from named detail and data.
 --   If the detail doesn't match the units of the data then `Nothing`.
 makeAspect
-	:: HasUnits (carrier units) units 
-	=> Detail -> carrier units -> Maybe (Aspect carrier units)
+	:: HasUnits (c units) units 
+	=> Detail -> c units -> Maybe (Aspect c units)
 
-makeAspect detail (val :: carrier units)
+makeAspect detail (val :: c units)
  = case hasUnits val :: Maybe (IsUnits units) of
 	Just IsSeconds
 	 -> case detail of

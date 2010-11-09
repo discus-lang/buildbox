@@ -57,11 +57,16 @@ module BuildBox.Aspect
 	, Aspect	(..)
 	, makeAspect
 	, splitAspect
-	, liftAspect
-	, liftAspect2
+	
+	-- * Statistics and comparisons
 	, makeAspectStats
 	, makeAspectComparison
-	, makeAspectComparisons)
+	, makeAspectComparisons
+	
+	-- * Lifting functions
+	, liftAspect
+	, liftAspect2)
+
 
 where
 import BuildBox.Aspect.Aspect
