@@ -61,8 +61,8 @@ mainWithArgs args
 		let [baseline, current] 
 			= map buildResultBench results
 
-		putStr	$ render $ vcat $ punctuate (text "\n") $ map ppr
-			$ compareManyBenchResults 
+		putStrLn $ render $ vcat $ punctuate (text "\n") $ map ppr
+			 $ compareManyBenchResults 
 				(map statBenchResult baseline)
 				(map statBenchResult current)
 

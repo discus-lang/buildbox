@@ -8,6 +8,7 @@ import BuildBox.Pretty
 import BuildBox.Aspect
 import BuildBox.Benchmark.BenchResult
 import Text.Printf
+import Data.List
 
 -- Total number of tests	
 --	let totalTests	= length benchResults
@@ -21,13 +22,19 @@ reportBenchResults Nothing comparisons
 	= vcat $ punctuate (text "\n") $ map ppr comparisons
 	
 reportBenchResults (Just swing) comparisons
- = let	resultWinners
+ = let	resultLosers
+	 = filter	(predBenchResult (predSwingStatsComparison (\x -> x < (- swing))))
+			comparisons
+
+
+
+	resultWinners_
 	 = filter 	(predBenchResult (predSwingStatsComparison (\x -> x > swing))) 
 			comparisons
 
-	resultLosers
-	 = filter	(predBenchResult (predSwingStatsComparison (\x -> x < (- swing))))
-			comparisons
+	-- losers can't be winners
+	resultWinners 	= deleteFirstsBy (\r1 r2 -> benchResultName r1 == benchResultName r2)
+				resultWinners_  resultLosers
 
    in	reportBenchResults' swing resultWinners resultLosers
 
