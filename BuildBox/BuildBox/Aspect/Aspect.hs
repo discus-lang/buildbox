@@ -8,16 +8,18 @@ module BuildBox.Aspect.Aspect
 	, liftAspect2
 	, collateWithUnits
 	, makeAspectStats
-	, makeAspectComparison)
+	, makeAspectComparison
+	, makeAspectComparisons
+	, StatsComparison)
 where
 import BuildBox.Aspect.Single
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Detail
 import BuildBox.Aspect.Stats
 import BuildBox.Aspect.Comparison
-import BuildBox.Data.Dividable
 import BuildBox.Pretty
 import Text.Read
+import Data.List
 import qualified Data.Map	as Map
 
 
@@ -171,11 +173,27 @@ makeAspectStats aspect
 
 
 -- Comparison -------------------------------------------------------------------------------------
-makeAspectComparison  
-	:: (Num units, Dividable units, Ord units)
-	=> Aspect Single units -> Aspect Single units -> Aspect Comparison units
+makeAspectComparisons 
+	:: Real units 
+	=> [Aspect Stats units] -> [Aspect Stats units] -> [Aspect StatsComparison units]
+	
+makeAspectComparisons base new
+	= map (makeAspectComparison base) new
 
-makeAspectComparison 
-	= liftAspect2 makeComparison
 
+-- | Lookup the baseline result for some aspect and produce a comparison.
+makeAspectComparison
+	:: Real units
+	=> [Aspect Stats units] -> Aspect Stats units -> Aspect StatsComparison units
+
+makeAspectComparison base aspect
+ = case lookupAspect base aspect of
+	Just aspectBase	-> liftAspect2 makeStatsComparison    aspectBase aspect
+	Nothing		-> liftAspect  makeStatsComparisonNew aspect
+
+
+lookupAspect :: [Aspect Stats units] -> Aspect Stats units -> Maybe (Aspect Stats units)
+lookupAspect base aspect
+ = let	detail	= fst $ splitAspect aspect
+   in	find (\a -> (fst $ splitAspect a) == detail) base
 

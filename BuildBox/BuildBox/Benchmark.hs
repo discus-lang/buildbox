@@ -77,7 +77,7 @@ outRunBenchmarkAgainst
 	-> Benchmark			-- ^ Benchmark to run.
 	-> Build (BenchResult Single)
 	
-outRunBenchmarkAgainst iterations _mPrior bench  
+outRunBenchmarkAgainst iterations mPrior bench  
  = do	out $ "Running " ++ benchmarkName bench ++ " " ++ show iterations ++ " times..."
 	runResults	<- mapM ((flip runBenchmarkOnce) bench) $ take iterations [1..]
 	outLn "ok"
@@ -86,23 +86,17 @@ outRunBenchmarkAgainst iterations _mPrior bench
 			{ benchResultName	= benchmarkName bench
 			, benchResultRuns	= runResults }
 
-	outLn runResults
 
-{-
-	outLn pprBenchResultAspectHeader
-	
-	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectElapsed	mPrior result
-	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectKernelElapsed	mPrior result
-	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectKernelCpu	mPrior result
-	maybe (return ()) outLn	$ pprBenchResultAspect TimeAspectKernelSys	mPrior result
-		
+--	outLn pprBenchResultAspectHeader
+
+	case mPrior of
+	 Nothing	-> outLn runResults
+	 Just prior	-> outLn $ compareBenchResults prior (statBenchResult result)
+
 	outBlank
--}
+
 	return	result
-	
--- compareResults :: BenchResult Stats -> BenchResult Stats -> BenchResult Comparison
-	
-	
+		
 	
 -- | Run a benchmark serveral times, logging activity to the console.
 --   Also lookup prior results for comparison from the given list.
@@ -116,5 +110,4 @@ outRunBenchmarkWith
 outRunBenchmarkWith iterations priors bench
  = let	mPrior	= find (\b -> benchResultName b == benchmarkName bench) priors
    in	outRunBenchmarkAgainst iterations mPrior bench
-
 

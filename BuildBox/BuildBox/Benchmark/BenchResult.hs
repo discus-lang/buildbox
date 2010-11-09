@@ -3,10 +3,11 @@ module BuildBox.Benchmark.BenchResult
 	( 
 	-- * Benchmark results	
 	  BenchResult (..)
-	, statBenchResults
-	, statCollatedBenchResults
-	, collateBenchResults
-	, concatBenchResults
+	, concatBenchResult
+	, collateBenchResult
+	, statCollatedBenchResult
+	, statBenchResult
+	, compareBenchResults
 	
 	, BenchRunResult (..)
 
@@ -84,32 +85,40 @@ liftToAspectsOfBenchResult2
 	= liftBenchRunResult2 . zipWith . liftRunResultAspects2
 
 
--- | Compute statistics about some the aspects of each run.
-statBenchResults :: BenchResult Single -> BenchResult Stats
-statBenchResults 
-	= statCollatedBenchResults . collateBenchResults . concatBenchResults
+-- | Concatenate the results of all runs.
+--   In the resulting `BenchResult` has a single `BenchRunResult` with an index of 0.
+--   In effect we have merged the data from all runs.
+concatBenchResult :: BenchResult c1 -> BenchResult c1
+concatBenchResult 
+	= liftBenchRunResult 
+	$ \bsResults -> [BenchRunResult 0 (concatMap benchRunResultAspects bsResults)]
+
+
+-- | Collate the aspects of each run.
+collateBenchResult :: BenchResult Single -> BenchResult []
+collateBenchResult
+	= liftToAspectsOfBenchResult collateWithUnits
 
 
 -- | Compute statistics about each the aspects of each run.
 --   The results need to be in collated form.
-statCollatedBenchResults :: BenchResult [] -> BenchResult Stats
-statCollatedBenchResults
+statCollatedBenchResult :: BenchResult [] -> BenchResult Stats
+statCollatedBenchResult
 	= liftToAspectsOfBenchResult (map (applyWithUnits makeAspectStats))
 
 
--- | Collate the aspects of each run.
-collateBenchResults :: BenchResult Single -> BenchResult []
-collateBenchResults
-	= liftToAspectsOfBenchResult collateWithUnits
-	
+-- | Compute statistics about some the aspects of each run.
+statBenchResult :: BenchResult Single -> BenchResult Stats
+statBenchResult 
+	= statCollatedBenchResult . collateBenchResult . concatBenchResult
 
--- | Concatenate the results of all runs.
---   In the resulting `BenchResult` has a single `BenchRunResult` with an index of 0.
---   In effect we have merged the data from all runs.
-concatBenchResults :: BenchResult c1 -> BenchResult c1
-concatBenchResults 
-	= liftBenchRunResult 
-	$ \bsResults -> [BenchRunResult 0 (concatMap benchRunResultAspects bsResults)]
+
+-- | Compute comparisons of benchmark results.
+--	Both results must have the same name else `error`
+compareBenchResults :: BenchResult Stats -> BenchResult Stats -> BenchResult StatsComparison
+compareBenchResults 
+	= liftBenchRunResult2 (zipWith (liftRunResultAspects2 (liftWithUnits2 makeAspectComparisons)))
+
 
 
 -- BenchRunResult ---------------------------------------------------------------------------------

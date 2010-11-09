@@ -60,7 +60,8 @@ module BuildBox.Aspect
 	, liftAspect
 	, liftAspect2
 	, makeAspectStats
-	, makeAspectComparison)
+	, makeAspectComparison
+	, makeAspectComparisons)
 
 where
 import BuildBox.Aspect.Aspect

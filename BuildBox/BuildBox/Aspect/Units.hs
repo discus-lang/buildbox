@@ -19,6 +19,7 @@ module BuildBox.Aspect.Units
 	, bytes
 	, applyWithUnits
 	, liftWithUnits
+	, liftWithUnits2
 
 	  -- * Unit-preserving collation
 	, Collatable	(..)
@@ -28,16 +29,21 @@ where
 import BuildBox.Aspect.Single
 import BuildBox.Data.Dividable
 import BuildBox.Pretty
+import Data.Maybe
+import Control.Monad
+
 
 -- Unit types -------------------------------------------------------------------------------------
 -- | Seconds of time.
-data Seconds	= Seconds Float	
+data Seconds	= Seconds Double
 		deriving (Read, Show, Ord, Eq)
 
+instance Real Seconds where
+	toRational (Seconds s1) 	= toRational s1
+
 instance Dividable Seconds where
-	divide (Seconds s1) (Seconds s2)
-		= Seconds (s1 / s2)
-	
+	divide (Seconds s1) (Seconds s2) = Seconds (s1 / s2)	
+
 instance Num Seconds where
 	(+) (Seconds f1) (Seconds f2)	= Seconds (f1 + f2)
 	(-) (Seconds f1) (Seconds f2)	= Seconds (f1 - f2)
@@ -47,16 +53,20 @@ instance Num Seconds where
 	fromInteger i			= Seconds (fromInteger i)
 	
 instance Pretty Seconds where
-	ppr (Seconds f)	= ppr f <> text "s"
+	ppr (Seconds f)			
+		= fromMaybe (text (show f))
+		$ liftM text $ pprEngDouble "s" f
 
 
 -- | Bytes of data.
 data Bytes	= Bytes	  Integer
 		deriving (Read, Show, Ord, Eq)
 
+instance Real Bytes where
+	toRational (Bytes b1)		= toRational b1
+
 instance Dividable Bytes where
-	divide (Bytes b1) (Bytes b2)
-		= Bytes (b1 `div` b2)
+	divide (Bytes s1) (Bytes s2)	= Bytes (s1 `div` s2)
 
 instance Num Bytes where
 	(+) (Bytes f1) (Bytes f2)	= Bytes (f1 + f2)
@@ -67,7 +77,9 @@ instance Num Bytes where
 	fromInteger i			= Bytes (fromInteger i)
 
 instance Pretty Bytes where
-	ppr (Bytes b)	= ppr b <> text "B"
+	ppr (Bytes b)			
+		= fromMaybe (text (show b))
+		$ liftM text $ pprEngInteger "B" b
 	
 
 -- Type classes -----------------------------------------------------------------------------------
@@ -127,7 +139,7 @@ instance  (Pretty (t Bytes), Pretty (t Seconds))
 --   @Time TotalWall \`secs\` 10  ::  WithUnits (Aspect Single)@
 -- 
 secs 	:: (Single Seconds -> c Single Seconds) 
-	-> Float -> WithUnits (c Single)
+	-> Double -> WithUnits (c Single)
 secs mk f  = WithSeconds (mk (Single (Seconds f)))
 
 
@@ -149,7 +161,7 @@ applyWithUnits f withUnits
 
 -- | Transform values of each unit type as a group.
 liftWithUnits 
-	:: (forall units. [t1 units] -> [t2 units]) 
+	:: (forall units. Real units => [t1 units] -> [t2 units]) 
 	-> [WithUnits t1] -> [WithUnits t2]
 
 liftWithUnits f us
@@ -159,6 +171,23 @@ liftWithUnits f us
     in	   (map WithSeconds $ f asSeconds)
 	++ (map WithBytes   $ f asBytes)
 	
+
+-- | Transform values of each unit type as a group
+liftWithUnits2
+	:: (forall units. Real units => [t1 units] -> [t2 units] -> [t3 units])
+	-> [WithUnits t1] -> [WithUnits t2] -> [WithUnits t3]
+	
+liftWithUnits2 f as bs
+ = let	asSeconds	= [a | WithSeconds a	<- as]
+	bsSeconds	= [b | WithSeconds b	<- bs]
+
+	asBytes		= [a | WithBytes   a	<- as]
+	bsBytes		= [b | WithBytes   b	<- bs]
+	
+   in	(map WithSeconds $ f asSeconds bsSeconds)
+    ++	(map WithBytes   $ f asBytes   bsBytes)
+
+
 
 -- Unit-safe collation ----------------------------------------------------------------------------
 -- | Collate some data, while preserving units.

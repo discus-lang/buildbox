@@ -1,8 +1,6 @@
 
 module BuildBox.Aspect.Single
-	( Single (..)
-	, Twin   (..)
-	, twin)
+	( Single (..))
 where 
 import BuildBox.Pretty
 
@@ -25,10 +23,4 @@ instance Eq a => Eq (Single a) where
 instance Pretty a => Pretty (Single a) where
 	ppr (Single x)	= ppr x
 
-
-data Twin a
-	= Twin (Single a) (Single a)
-	deriving (Read, Show)
-	
-twin f (Twin x y) = f x y
 

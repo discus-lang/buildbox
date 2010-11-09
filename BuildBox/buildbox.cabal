@@ -44,6 +44,8 @@ Library
         BuildBox.Aspect.Detail
         BuildBox.Aspect.Stats
         BuildBox.Aspect.Units
+        BuildBox.Aspect.Single
+        BuildBox.Aspect.Comparison
         BuildBox.Aspect
         BuildBox.Benchmark.BenchResult
         BuildBox.Benchmark.Benchmark

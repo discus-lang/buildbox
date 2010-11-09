@@ -2,27 +2,62 @@
 -- | Comparing aspects.
 module BuildBox.Aspect.Comparison
 	( Comparison	(..)
-	, makeComparison)
+	, makeComparison
+	
+	, StatsComparison(..)
+	, makeStatsComparison
+	, makeStatsComparisonNew)
 where
-import BuildBox.Aspect.Single
-import BuildBox.Data.Dividable
+import BuildBox.Aspect.Stats
 import BuildBox.Pretty
+import Text.Printf
+
 
 -- | Minimum, average and maximum values.
 data Comparison a	
 	= Comparison
 	{ comparisonBaseline	:: a
 	, comparisonRecent	:: a
-	, comparisonRatio	:: a }
+	, comparisonSwing	:: Double }
+	
+	| ComparisonNew
+	{ comparisonNew		:: a }
+	
 	deriving (Read, Show)
 
 instance Pretty a => Pretty (Comparison a) where
-	ppr (Comparison base recent ratio)
-		=  ppr base   <> text "/" 
-		<> ppr recent <> parens (ppr ratio)
+	ppr (Comparison _ recent ratio)
+		= text $ printf "%s (%+4.0g)"
+				(render $ ppr recent)
+				ratio
 
+	ppr (ComparisonNew new)
+		= (padL 10 $ ppr new)
+		
 
 -- | Make stats from a list of values.
-makeComparison :: (Num a, Dividable a, Ord a) => Single a -> Single a -> Comparison a
-makeComparison (Single base) (Single recent)
-	= Comparison base recent (recent `divide` base)
+makeComparison :: Real a => a -> a -> Comparison a
+makeComparison base recent
+	= Comparison base recent swing
+	
+	where	dBase	= fromRational $ toRational base
+		dRecent	= fromRational $ toRational recent
+		swing = ((dRecent - dBase) / dBase) * 100
+
+
+data StatsComparison a
+	= StatsComparison (Stats (Comparison a))
+	deriving (Read, Show)
+
+instance Pretty a => Pretty (StatsComparison a) where
+	ppr (StatsComparison stats) = ppr stats
+
+makeStatsComparison :: Real a => Stats a -> Stats a -> StatsComparison a
+
+makeStatsComparison x y
+	= StatsComparison (liftStats2 makeComparison x y)
+	
+
+makeStatsComparisonNew :: Stats a -> StatsComparison a
+makeStatsComparisonNew x
+	= StatsComparison (liftStats ComparisonNew x)
