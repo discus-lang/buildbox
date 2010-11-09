@@ -17,7 +17,8 @@ module BuildBox.Aspect.Units
 	, WithUnits	(..)
 	, secs
 	, bytes
-	, applyWithUnits
+	, appWithUnits
+	, mapWithUnits
 	, liftWithUnits
 	, liftWithUnits2
 
@@ -30,7 +31,6 @@ import BuildBox.Aspect.Single
 import BuildBox.Data.Dividable
 import BuildBox.Pretty
 import Data.Maybe
-import Control.Monad
 
 
 -- Unit types -------------------------------------------------------------------------------------
@@ -148,12 +148,23 @@ bytes 	:: (Single Bytes -> c Single Bytes)
 bytes mk b = WithBytes   (mk (Single (Bytes b)))
 
 
+-- | Apply a function to unit wrapped data
+appWithUnits
+	:: (forall units. Real units => t1 units -> b)
+	-> WithUnits t1 -> b
+	
+appWithUnits f withUnits
+ = case withUnits of
+	WithSeconds dat	-> f dat
+	WithBytes   dat	-> f dat
+
+
 -- | Apply a unit-preserving function to unit-wrapped data.
-applyWithUnits 
+mapWithUnits 
 	:: (forall units. t1 units -> t2 units)
 	-> WithUnits t1 -> WithUnits t2
 
-applyWithUnits f withUnits
+mapWithUnits f withUnits
  = case withUnits of
 	WithSeconds dat	-> WithSeconds (f dat)
 	WithBytes   dat -> WithBytes   (f dat)

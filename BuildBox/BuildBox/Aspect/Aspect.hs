@@ -6,6 +6,8 @@ module BuildBox.Aspect.Aspect
 	( Aspect	(..)
 	, makeAspect
 	, splitAspect
+	, appAspect
+	, appAspectWithUnits
 	, collateWithUnits
 	, makeAspectStats
 	, makeAspectComparison
@@ -112,7 +114,23 @@ makeAspect detail (val :: c units)
 		_			-> Nothing
 
 	Nothing -> Nothing
+
+
+-- | Apply a function to the data in an aspect
+appAspect 
+	:: Real units 
+	=> (c units -> b) -> Aspect c units -> b
+
+appAspect f aa = f (snd $ splitAspect aa)
 	
+
+-- | Apply a function to the data in a wrapped aspect.
+appAspectWithUnits 
+	:: (forall units. Real units => c units -> b) 
+	-> WithUnits (Aspect c) -> b
+
+appAspectWithUnits f
+	= appWithUnits (appAspect f)
 
 -- | Transform the data in an aspect, possibly changing the carrier type.
 liftAspect 

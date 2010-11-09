@@ -3,6 +3,7 @@
 module BuildBox.Aspect.Stats
 	( Stats	(..)
 	, makeStats
+	, predStats
 	, liftStats
 	, liftStats2)
 where
@@ -32,11 +33,16 @@ makeStats xs
 		(maximum xs)
 
 
+-- | Return `True` if the predicate matches any of the stat values.
+predStats :: (a -> Bool) -> Stats a -> Bool
+predStats f (Stats mi av mx) 
+	= or [f mi, f av, f mx]
+
+
 -- | Lift a function to each component of a `Stats`
 liftStats :: (a -> b) -> Stats a -> Stats b
 liftStats f (Stats mi av mx)
 	= Stats (f mi) (f av) (f mx)
-
 
 
 -- | Lift a function to each component of a `Stats`

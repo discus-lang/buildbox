@@ -57,6 +57,8 @@ module BuildBox.Aspect
 	, Aspect	(..)
 	, makeAspect
 	, splitAspect
+	, appAspect
+	, appAspectWithUnits
 	
 	-- * Statistics and comparisons
 	, makeAspectStats
@@ -75,3 +77,8 @@ import BuildBox.Aspect.Stats
 import BuildBox.Aspect.Units
 import BuildBox.Aspect.Single
 import BuildBox.Aspect.Comparison
+
+
+
+
+

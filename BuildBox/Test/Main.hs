@@ -60,3 +60,5 @@ results2	= [benchResult2, benchResult4]
 
 statResults1	= map statBenchResult results1
 statResults2	= map statBenchResult results2
+
+comp1		= compareManyBenchResults statResults1 statResults2

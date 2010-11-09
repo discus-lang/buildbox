@@ -28,9 +28,9 @@ data Timed
 instance Pretty Timed where
  ppr timed
   = case timed of
-	TotalWall	-> text "runtime (wall clock)"
-	TotalCpu	-> text "runtime (cpu usage)"
-	TotalSys	-> text "runtime (sys usage)"
+	TotalWall	-> text "runtime        (wall clock)"
+	TotalCpu	-> text "runtime        (cpu usage)"
+	TotalSys	-> text "runtime        (sys usage)"
 
 	KernelWall	-> text "kernel runtime (wall clock)"
 	KernelCpu	-> text "kernel runtime (cpu usage)"

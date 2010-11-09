@@ -3,10 +3,12 @@
 module BuildBox.Aspect.Comparison
 	( Comparison	(..)
 	, makeComparison
+	, appSwing
 	
 	, StatsComparison(..)
 	, makeStatsComparison
-	, makeStatsComparisonNew)
+	, makeStatsComparisonNew
+	, predSwingStatsComparison)
 where
 import BuildBox.Aspect.Stats
 import BuildBox.Pretty
@@ -50,6 +52,15 @@ makeComparison base recent
 		swing = ((dRecent - dBase) / dBase)
 
 
+-- | Apply a function to the swing of a comparison.
+appSwing :: a -> (Double -> a) -> Comparison b -> a
+appSwing def f aa
+ = case aa of
+	Comparison _ _ swing	-> f swing
+	ComparisonNew{}		-> def
+	
+
+-- StatsComparison --------------------------------------------------------------------------------
 data StatsComparison a
 	= StatsComparison (Stats (Comparison a))
 	deriving (Read, Show)
@@ -57,12 +68,19 @@ data StatsComparison a
 instance Pretty a => Pretty (StatsComparison a) where
 	ppr (StatsComparison stats) = ppr stats
 
+-- | Make a comparison of two `Stats`.
 makeStatsComparison :: Real a => Stats a -> Stats a -> StatsComparison a
-
-makeStatsComparison x y
-	= StatsComparison (liftStats2 makeComparison x y)
+makeStatsComparison x y = StatsComparison (liftStats2 makeComparison x y)
 	
-
+	
+-- | Make a `ComparisonNew`
 makeStatsComparisonNew :: Stats a -> StatsComparison a
 makeStatsComparisonNew x
 	= StatsComparison (liftStats ComparisonNew x)
+	
+
+-- | Return `True` if any of the comparison swings matches the given function.
+predSwingStatsComparison :: (Double -> Bool) -> StatsComparison a -> Bool
+predSwingStatsComparison f (StatsComparison ss)
+	= (predStats . (appSwing False)) f ss
+	

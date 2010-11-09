@@ -10,9 +10,16 @@ module BuildBox.Benchmark.BenchResult
 	, compareBenchResults
 	, compareBenchResultWith
 	, compareManyBenchResults
+	, predBenchResult
+	, swungBenchResult
 	
 	-- * Benchmark run results
 	, BenchRunResult (..)
+
+	-- * Application functions
+	, appBenchRunResult
+	, appRunResultAspects
+
 
 	-- * Lifting functions
 	, liftBenchRunResult
@@ -55,8 +62,7 @@ instance  ( Pretty (c Seconds), Pretty (c Bytes))
 
 
 -- | Concatenate the results of all runs.
---   In the resulting `BenchResult` has a single `BenchRunResult` with an index of 0.
---   In effect we have merged the data from all runs.
+--   The the resulting `BenchResult` has a single `BenchRunResult` with an index of 0, containing all aspects.
 concatBenchResult :: BenchResult c1 -> BenchResult c1
 concatBenchResult 
 	= liftBenchRunResult 
@@ -70,10 +76,10 @@ collateBenchResult
 
 
 -- | Compute statistics about each the aspects of each run.
---   The results need to be in collated form.
+--   The results should be in collated form.
 statCollatedBenchResult :: BenchResult [] -> BenchResult Stats
 statCollatedBenchResult
-	= liftToAspectsOfBenchResult (map (applyWithUnits makeAspectStats))
+	= liftToAspectsOfBenchResult (map (mapWithUnits makeAspectStats))
 
 
 -- | Compute statistics about some the aspects of each run.
@@ -83,7 +89,7 @@ statBenchResult
 
 
 -- | Compute comparisons of benchmark results.
---	Both results must have the same name else `error`
+--	Both results must have the same name else `error`.
 compareBenchResults
 	:: BenchResult Stats -> BenchResult Stats -> BenchResult StatsComparison
 
@@ -113,7 +119,28 @@ compareManyBenchResults base new
 	= map (compareBenchResultWith base) new
 
 
--- | Apply a function to the `BenchRunResult` in a `BenchResult`
+-- | Return true if any of the aspect data in a bench result matches a given predicate.
+predBenchResult
+	:: (forall units. Real units => c units -> Bool)
+	-> BenchResult c -> Bool
+
+predBenchResult f
+	= appBenchRunResult $ or . map (appRunResultAspects $ or . map (appAspectWithUnits f))
+
+
+-- | Return `True` if any of the aspects have swung by more than a given fraction since last time.
+swungBenchResult :: Double -> BenchResult StatsComparison -> Bool
+swungBenchResult limit
+	= predBenchResult (predSwingStatsComparison (\x -> abs x > limit)) 
+
+
+-- Lifting ----------------------------------------------------------------------------------------
+-- | Apply a function to the aspects of a BenchRunResult
+appBenchRunResult :: ([BenchRunResult c1] -> b) -> BenchResult c1 -> b
+appBenchRunResult f (BenchResult _ runs) = f runs
+
+
+-- | Lift a function to the `BenchRunResult` in a `BenchResult`
 liftBenchRunResult 
 	:: ([BenchRunResult c1] -> [BenchRunResult  c2])
 	-> (BenchResult     c1  -> BenchResult      c2)
@@ -122,7 +149,7 @@ liftBenchRunResult f (BenchResult name runs)
 	= BenchResult name (f runs)
 
 
--- | Apply a binary function to the `BenchResults` in a `BenchResult`
+-- | Lift a binary function to the `BenchResults` in a `BenchResult`
 liftBenchRunResult2
 	:: ([BenchRunResult c1] -> [BenchRunResult c2] -> [BenchRunResult c3])
 	->  BenchResult c1      ->  BenchResult c2     ->  BenchResult c3
@@ -184,8 +211,14 @@ instance  ( Pretty (c Seconds), Pretty (c Bytes))
 	= ppr (benchRunResultIndex result) 
 	$$ (nest 2 $ vcat $ map ppr $ benchRunResultAspects result)
 
-	
--- | Apply a function to the aspects on a BenchRunResult
+
+-- Lifting ----------------------------------------------------------------------------------------
+-- | Apply a function to the aspects of a BenchRunResult
+appRunResultAspects :: ([WithUnits (Aspect c1)] -> b) -> BenchRunResult c1 -> b
+appRunResultAspects f (BenchRunResult _ aspects) = f aspects
+
+
+-- | Lift a function to the aspects on a BenchRunResult
 liftRunResultAspects
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
 	-> BenchRunResult c1        -> BenchRunResult c2
@@ -194,7 +227,7 @@ liftRunResultAspects f (BenchRunResult ix as)
 	= BenchRunResult ix (f as)
 
 
--- | Apply a function to the aspects on a BenchRunResult
+-- | Lift a function to the aspects on a BenchRunResult
 liftRunResultAspects2
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)] -> [WithUnits (Aspect c3)])
 	-> BenchRunResult c1        -> BenchRunResult c2       -> BenchRunResult c3

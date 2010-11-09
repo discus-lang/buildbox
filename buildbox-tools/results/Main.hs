@@ -48,7 +48,7 @@ mainWithArgs args
 			= map buildResultBench results
 
 		putStrLn 
-			$ render $ vcat $ map ppr
+			$ render $ vcat $ punctuate (text "\n") $ map ppr
 			$ compareManyBenchResults 
 				(map statBenchResult baseline)
 				(map statBenchResult current)
