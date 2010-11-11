@@ -154,6 +154,7 @@ makeAspectStats aspect
 
 
 -- Comparison -------------------------------------------------------------------------------------
+-- | Compare lists of aspects. The first argument is the baseline.
 makeAspectComparisons 
 	:: Real units 
 	=> [Aspect Stats units] -> [Aspect Stats units] -> [Aspect StatsComparison units]
