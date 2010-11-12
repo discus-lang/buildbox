@@ -17,7 +17,7 @@ type Build a 	= ErrorT BuildError (StateT BuildState IO) a
 
 
 -- Build ------------------------------------------------------------------------------------------
--- | Run a build command.
+-- | Run a build command. The first argument is a directory that can be used for temporary files (like "/tmp")
 runBuild :: FilePath -> Build a -> IO (Either BuildError a)
 runBuild scratchDir build
  = do	uid		<- getUniqueId
@@ -25,7 +25,7 @@ runBuild scratchDir build
 	evalStateT (runErrorT build) state
 
 
--- | Run a build command, reporting whether it succeeded to the console.
+-- | Like 'runBuild`, but Run a build command, reporting whether it succeeded to the console.
 --   If it succeeded then return Just the result, else Nothing.
 runBuildPrint :: FilePath -> Build a -> IO (Maybe a)
 runBuildPrint scratchDir build
@@ -48,6 +48,12 @@ runBuildPrintWithState state build
 	 Right x
 	  -> do	putStrLn "Build succeeded."
 		return $ Just x
+
+
+-- | Discard the resulting value of a compuation.
+--   Used like @successfully . runBuild ...@
+successfully :: IO a -> IO ()
+successfully f 	= f >> return ()
 
 
 -- | Get a unique(ish) id for this process.

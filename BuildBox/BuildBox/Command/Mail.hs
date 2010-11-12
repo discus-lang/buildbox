@@ -34,9 +34,18 @@ data Mail
 
 -- | An external mailer that can send messages.
 --   	Also contains mail server info if needed.
---	We only support msmtp at the moment.
 data Mailer
-	= MailerMSMTP
+	-- | Send the mail by writing to the stdin of this command.
+	--   On many systems the command 'sendmail' will be aliased to an appropriate
+	--   wrapper for whatever Mail Transfer Agent (MTA) you have installed.
+	= MailerSendmail
+	{ mailerPath		:: FilePath
+	, mailerExtraFlags	:: [String] }
+
+	-- | Send mail via MSMTP, which is a stand-alone SMTP sender.
+	--   This might be be easier to set up if you don't have a real MTA installed.
+	--   Get it from http://msmtp.sourceforge.net/
+	| MailerMSMTP
 	{ mailerPath		:: FilePath
 	, mailerPort		:: Maybe Int }
 	deriving Show
@@ -96,14 +105,19 @@ renderMail mail
 sendMailWithMailer :: Mail -> Mailer -> Build ()
 sendMailWithMailer mail mailer
  = case mailer of
-	MailerMSMTP{}	-> sendMailWithMSMTP mail mailer
+	MailerSendmail{}	
+	 -> ssystemTee False
+		(mailerPath mailer
+			++ " -t ") -- read recipients from the mail
+		(render $ renderMail mail)
 
-sendMailWithMSMTP :: Mail -> Mailer -> Build ()
-sendMailWithMSMTP mail mailer@MailerMSMTP{}
- 	= ssystemTee False
+	MailerMSMTP{}	
+	 -> ssystemTee False
 		(mailerPath mailer 
 			++ " -t " -- read recipients from the mail
 			++ (maybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer))
 		(render $ renderMail mail)
-
 		
+
+
+

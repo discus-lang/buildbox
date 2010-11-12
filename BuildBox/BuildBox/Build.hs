@@ -10,6 +10,7 @@ module BuildBox.Build
 	, runBuild
 	, runBuildPrint
 	, runBuildPrintWithState
+	, successfully
 
 	-- * Errors
 	, throw
