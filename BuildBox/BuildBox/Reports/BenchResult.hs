@@ -8,7 +8,6 @@ import BuildBox.Pretty
 import BuildBox.Aspect
 import BuildBox.Benchmark.BenchResult
 import Text.Printf
-import Data.List
 
 -- | Produce a human readable report of benchmark results.
 --
@@ -23,18 +22,9 @@ reportBenchResults Nothing comparisons
 	= vcat $ punctuate (text "\n") $ map ppr comparisons
 	
 reportBenchResults (Just swing) comparisons
- = let	resultLosers
-	 = filter	(predBenchResult (predSwingStatsComparison (\x -> x > swing)))
-			comparisons
-
-	resultWinners_
-	 = filter 	(predBenchResult (predSwingStatsComparison (\x -> x < (- swing)))) 
-			comparisons
-
-	-- losers can't be winners
-	resultWinners 	= deleteFirstsBy (\r1 r2 -> benchResultName r1 == benchResultName r2)
-				resultWinners_  resultLosers
-
+ = let	(resultWinners, resultLosers, _)
+		= splitBenchResults swing comparisons
+		
    in	vcat $	[ text "Total tests = " <> int (length comparisons)
 		, blank] ++ [reportBenchResults' swing resultWinners resultLosers]
 

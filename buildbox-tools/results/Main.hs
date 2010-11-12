@@ -48,8 +48,7 @@ mainWithArgs args
 			  = map read contentss
 			
 		print $ mergeResults results
-
-		
+			
 	-- Compare two results files.
 	| gotArg args ArgCompare
 	= do	let fileNames	= argsRest args
@@ -66,7 +65,7 @@ mainWithArgs args
 				(map statBenchResult baseline)
 				(map statBenchResult current)
 
-	-- Compare two results files.
+	-- Compare two results files and summarise them.
 	| Just swing	<- getArg args ArgSummarise
 	= do	let fileNames	= argsRest args
 		contentss	<- mapM readFile fileNames
@@ -78,7 +77,17 @@ mainWithArgs args
 			$ compareManyBenchResults 
 				(map statBenchResult baseline)
 				(map statBenchResult current)
-			 
+	
+	-- Advance winning results to form a new baseline.
+	| Just swing	<- getArg args ArgAdvance
+	= do	let fileNames	= argsRest args
+		contentss <- mapM readFile fileNames
+
+		let ([baseline, recent] :: [BuildResults])
+			= map read contentss
+
+		print 	$ advanceResults swing baseline recent
+		
 	| otherwise
 	= usageError args "Nothing to do...\n"
 

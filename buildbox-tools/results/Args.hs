@@ -13,6 +13,7 @@ data ResultsArg
 	| ArgMerge
 	| ArgCompare
 	| ArgSummarise
+	| ArgAdvance
 	deriving (Eq, Ord, Show)
 
 
@@ -53,5 +54,11 @@ resultsArgs
 		, argAbbr	= Nothing
 		, argName	= Just "summarise"
 		, argData	= argDataOptional "swing" ArgtypeDouble
-		, argDesc	= " ... but only return results that have swung by at least this fraction." }
+		, argDesc	= " ... but only return results that have swung by at least this fraction (eg 0.1)" }
+		
+	, Arg	{ argIndex	= ArgAdvance
+		, argAbbr	= Nothing
+		, argName	= Just "advance"
+		, argData	= argDataOptional "swing" ArgtypeDouble
+		, argDesc	= " ... advance winners who have an aspect that reduced by this fraction (eg 0.1)" }
 	]	

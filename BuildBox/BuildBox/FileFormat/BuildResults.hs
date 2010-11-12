@@ -1,7 +1,8 @@
 
 module BuildBox.FileFormat.BuildResults
 	( BuildResults(..)
-	, mergeResults)
+	, mergeResults
+	, advanceResults)
 where
 import BuildBox.Time
 import BuildBox.Benchmark
@@ -61,3 +62,24 @@ mergeResults results
 		{ buildResultTime	 = buildResultTime lastResults
 		, buildResultEnvironment = buildResultEnvironment lastResults
 		, buildResultBench	 = newBenchResults }
+
+
+-- | Advance benchmark results as per `advanceBenchResults`.
+--   The resultTime and environment is taken from the second `BuildResults`.
+advanceResults :: Double -> BuildResults -> BuildResults -> BuildResults
+advanceResults swing baseline recent
+ = let	comparisons = compareManyBenchResults 
+			(map statBenchResult $ buildResultBench baseline)
+			(map statBenchResult $ buildResultBench recent)
+			
+	results	    = advanceBenchResults swing 
+			comparisons 
+			(buildResultBench baseline)
+			(buildResultBench recent)
+	
+   in	BuildResults
+		{ buildResultTime		= buildResultTime recent
+		, buildResultEnvironment	= buildResultEnvironment recent
+		, buildResultBench		= results }
+
+

@@ -3,6 +3,7 @@ module BuildBox.Benchmark.BenchResult
 	( 
 	-- * Benchmark results	
 	  BenchResult (..)
+	, BenchRunResult (..)
 
 	-- * Concatenation
 	, concatBenchResult
@@ -20,14 +21,17 @@ module BuildBox.Benchmark.BenchResult
 	, compareManyBenchResults
 	, predBenchResult
 	, swungBenchResult
-	
-	-- * Benchmark run results
-	, BenchRunResult (..)
 
+	-- * Merging
+	, mergeBenchResults
+
+	-- * Advancement
+	, splitBenchResults
+	, advanceBenchResults
+	
 	-- * Application functions
 	, appBenchRunResult
 	, appRunResultAspects
-
 
 	-- * Lifting functions
 	, liftBenchRunResult
@@ -40,7 +44,8 @@ where
 import BuildBox.Aspect
 import BuildBox.Pretty
 import Data.List
-
+import qualified Data.Set	as Set
+import qualified Data.Map	as Map
 
 -- BenchResult ------------------------------------------------------------------------------------
 -- | We include the name of the original benchmark to it's easy to lookup the results.
@@ -73,6 +78,43 @@ instance  ( Pretty (c Seconds), Pretty (c Bytes))
 	$+$ nest 4 (vcat $ map ppr $ benchResultRuns result)
 
 
+-- BenchRunResult ---------------------------------------------------------------------------------
+-- | Holds the result of running a benchmark once.
+data BenchRunResult c
+	= BenchRunResult
+	{ -- | What iteration this run was.
+	  --   Use 1 for the first ''real'' iteration derived by running a program.
+	  --   Use 0 for ''fake'' iterations computed by statistics or comparisons.
+	  benchRunResultIndex	:: Integer
+
+	  -- | Aspects of the benchmark run.
+	, benchRunResultAspects	:: [WithUnits (Aspect c)] }
+
+
+deriving instance 
+	(  Show (c Seconds), Show (c Bytes)) 
+	=> Show (BenchRunResult c)
+
+deriving instance
+	(  HasUnits (c Bytes) Bytes
+	,  Read (c Bytes)
+	,  HasUnits (c Seconds) Seconds
+	,  Read (c Seconds))
+	=> Read (BenchRunResult c)
+
+
+instance  ( Pretty (c Seconds), Pretty (c Bytes)) 
+	 => Pretty (BenchRunResult c) where
+ ppr result
+	| benchRunResultIndex result == 0
+	=  (nest 2 $ vcat $ map ppr $ benchRunResultAspects result)
+
+	| otherwise
+	= ppr (benchRunResultIndex result) 
+	$$ (nest 2 $ vcat $ map ppr $ benchRunResultAspects result)
+
+
+-- Concat -----------------------------------------------------------------------------------------
 -- | Concatenate the results of all runs.
 --   The the resulting `BenchResult` has a single `BenchRunResult` with an index of 0, containing all aspects.
 concatBenchResult :: BenchResult c1 -> BenchResult c1
@@ -146,6 +188,107 @@ swungBenchResult limit
 	= predBenchResult (predSwingStatsComparison (\x -> abs x > limit)) 
 
 
+-- Merging ----------------------------------------------------------------------------------------
+-- | Merge lists of `BenchResult`s, preferring results from earlier lists.
+--   In the output list there is one result for every named benchmark in the input.
+mergeBenchResults :: [[BenchResult c]] -> [BenchResult c]
+mergeBenchResults resultss
+ = let	
+	-- All the available benchResults from all files.
+	results	= concat resultss
+
+	-- Get a the names of all the available benchmarks.
+	names	= sort $ nub
+		$ map benchResultName results
+
+	-- Merge all the results
+	Just newBenchResults
+		= sequence 
+		$ [ find (\br -> benchResultName br == name) results
+				| name <- names]
+				
+   in	newBenchResults
+
+
+-- Advancement -----------------------------------------------------------------------------------
+-- | Given a fraction (like 0.1 for 10 percent), split some results into three
+--	groups: ''winners'', ''losers'' and ''others''.
+--   The losers are benchmarks had any aspect increase by more than the fraction.
+--   Winners    are non-losers, where any aspect decreased by the fraction.
+--   Others     are not winners or losers.
+--
+splitBenchResults 
+	:: Double 
+	-> [BenchResult StatsComparison]	
+	-> ([BenchResult StatsComparison], [BenchResult StatsComparison], [BenchResult StatsComparison])
+
+splitBenchResults swing comparisons
+ = let
+	resultLosers
+	 = filter	(predBenchResult (predSwingStatsComparison (\x -> x > swing)))
+			comparisons
+
+	resultWinners_
+	 = filter 	(predBenchResult (predSwingStatsComparison (\x -> x < (- swing)))) 
+			comparisons
+
+	-- losers can't be winners
+	sameName r1 r2	= benchResultName r1 == benchResultName r2
+	resultWinners 	= deleteFirstsBy sameName resultWinners_  resultLosers
+
+	-- others aren't either winners or losers
+	resultOthers	= deleteFirstsBy sameName
+	 			(deleteFirstsBy sameName comparisons resultLosers)
+				resultWinners
+	
+  in	(resultWinners, resultLosers, resultOthers)
+
+
+-- | Create a new baseline from original baseline, and recent results.
+--   If any of the recent results are winners then use them, otherwise use results
+--   from the old baseline.
+advanceBenchResults 
+	:: Double
+	-> [BenchResult StatsComparison]	-- ^ Comparisons to guide the advancement.
+	-> [BenchResult Single]			-- ^ Baseline results.
+	-> [BenchResult Single] 		-- ^ Recent results.
+	-> [BenchResult Single]			-- ^ New baseline.
+
+advanceBenchResults swing comparisons baselines recents
+ = let	allNames	= map benchResultName (baselines ++ recents)
+
+	rsBaseline	= Map.fromList [ (benchResultName r, r) | r <- baselines]
+	rsRecent	= Map.fromList [ (benchResultName r, r) | r <- recents]
+	rsAll		= Map.union rsBaseline rsRecent
+
+	-- Do the comparison, note that we only get a comparison back
+	-- if the benchmark was in both the original lists.
+	(winners, losers, others)
+			= splitBenchResults swing comparisons
+
+	nsWinners	= Set.fromList $ map benchResultName winners
+	nsLosers	= Set.fromList $ map benchResultName losers
+	nsOthers	= Set.fromList $ map benchResultName others
+
+	getResult name
+	 | Set.member name nsWinners
+	 = let Just r	= Map.lookup name rsRecent
+	   in  r
+	
+	 | Set.member name nsLosers || Set.member name nsOthers
+	 = let Just r	= Map.lookup name rsBaseline
+	   in  r
+	
+	 -- benchmark wasn't in both input lists, so we have no comparison.
+	 -- just find the data and pass it through
+	 | otherwise
+  	 = let Just r	= Map.lookup name rsAll
+           in  r
+
+   in	map getResult allNames
+
+
+
 -- Lifting ----------------------------------------------------------------------------------------
 -- | Apply a function to the aspects of a `BenchRunResult`
 appBenchRunResult :: ([BenchRunResult c1] -> b) -> BenchResult c1 -> b
@@ -187,43 +330,6 @@ liftToAspectsOfBenchResult2
 
 liftToAspectsOfBenchResult2
 	= liftBenchRunResult2 . zipWith . liftRunResultAspects2
-
-
-
--- BenchRunResult ---------------------------------------------------------------------------------
--- | Holds the result of running a benchmark once.
-data BenchRunResult c
-	= BenchRunResult
-	{ -- | What iteration this run was.
-	  --   Use 1 for the first ''real'' iteration derived by running a program.
-	  --   Use 0 for ''fake'' iterations computed by statistics or comparisons.
-	  benchRunResultIndex	:: Integer
-
-	  -- | Aspects of the benchmark run.
-	, benchRunResultAspects	:: [WithUnits (Aspect c)] }
-
-
-deriving instance 
-	(  Show (c Seconds), Show (c Bytes)) 
-	=> Show (BenchRunResult c)
-
-deriving instance
-	(  HasUnits (c Bytes) Bytes
-	,  Read (c Bytes)
-	,  HasUnits (c Seconds) Seconds
-	,  Read (c Seconds))
-	=> Read (BenchRunResult c)
-
-
-instance  ( Pretty (c Seconds), Pretty (c Bytes)) 
-	 => Pretty (BenchRunResult c) where
- ppr result
-	| benchRunResultIndex result == 0
-	=  (nest 2 $ vcat $ map ppr $ benchRunResultAspects result)
-
-	| otherwise
-	= ppr (benchRunResultIndex result) 
-	$$ (nest 2 $ vcat $ map ppr $ benchRunResultAspects result)
 
 
 -- Lifting ----------------------------------------------------------------------------------------
