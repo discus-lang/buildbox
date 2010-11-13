@@ -34,7 +34,7 @@ readLocalTimeOfDayAsUTC str
 getStampyTime :: IO String
 getStampyTime
  = do	time	<- getZonedTime
-	return	$  formatTime defaultTimeLocale "%Y%m%d_%k%M%S" time
+	return	$  formatTime defaultTimeLocale "%0Y%0m%0d_%0k%0M%0S" time
 
 
 -- | Get the local midnight we've just had as a `LocalTime`.
