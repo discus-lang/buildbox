@@ -88,11 +88,14 @@ data BenchRunResult c
 	  --   Use 0 for ''fake'' iterations computed by statistics or comparisons.
 	  benchRunResultIndex	:: Integer
 
-	  -- | Aspects of the benchmark run.
-	, benchRunResultAspects	:: [WithUnits (Aspect c)] 
+	  -- | Information about the run that doesn't carry units, 
+	  --   eg whether it timed out or segfaulted.
+	, benchRunResultQuirks	:: [Quirk] 
+
+	  -- | Aspects of the benchmark run that carry units and can have statistics
+	  --   extracted from them.
+	, benchRunResultAspects	:: [WithUnits (Aspect c)] }
 	
-	  -- | Other things we know about the benchmark that aren't aspects and don't carry units.
-	, benchRunResultQuirks	:: [Quirk] }
 
 
 deriving instance 
