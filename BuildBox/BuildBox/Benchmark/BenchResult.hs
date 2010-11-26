@@ -128,8 +128,8 @@ concatBenchResult :: BenchResult c1 -> BenchResult c1
 concatBenchResult 
 	= liftBenchRunResult 
 	$ \bsResults -> [BenchRunResult 0 
-				(concatMap benchRunResultAspects bsResults)
-				(concatMap benchRunResultQuirks  bsResults)]
+				(concatMap benchRunResultQuirks  bsResults) 
+				(concatMap benchRunResultAspects bsResults) ]
 
 
 -- | Collate the aspects of each run. See `collateWithUnits` for an explanation and example.
@@ -344,7 +344,7 @@ liftToAspectsOfBenchResult2
 -- Lifting ----------------------------------------------------------------------------------------
 -- | Apply a function to the aspects of a `BenchRunResult`
 appRunResultAspects :: ([WithUnits (Aspect c1)] -> b) -> BenchRunResult c1 -> b
-appRunResultAspects f (BenchRunResult _ aspects _) 
+appRunResultAspects f (BenchRunResult _ _ aspects) 
 	= f aspects
 
 
@@ -353,8 +353,8 @@ liftRunResultAspects
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
 	-> BenchRunResult c1        -> BenchRunResult c2
 	
-liftRunResultAspects f (BenchRunResult ix as quirks)
-	= BenchRunResult ix (f as) quirks
+liftRunResultAspects f (BenchRunResult ix quirks as)
+	= BenchRunResult ix quirks (f as) 
 
 
 -- | Lift a binary function to the aspects of two `BenchRunResult`s.
@@ -363,7 +363,7 @@ liftRunResultAspects2
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)] -> [WithUnits (Aspect c3)])
 	-> BenchRunResult c1        -> BenchRunResult c2       -> BenchRunResult c3
 	
-liftRunResultAspects2 f (BenchRunResult ix1 as quirks1) (BenchRunResult ix2 bs quirks2)
-	| ix1 == ix2		= BenchRunResult ix1 (f as bs) (quirks1 ++ quirks2)
+liftRunResultAspects2 f (BenchRunResult ix1 quirks1 as) (BenchRunResult ix2 quirks2 bs)
+	| ix1 == ix2		= BenchRunResult ix1 (quirks1 ++ quirks2) (f as bs) 
 	| otherwise		= error "liftRunResultAspects2: indices don't match"
 
