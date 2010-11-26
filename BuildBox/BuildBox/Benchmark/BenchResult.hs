@@ -42,6 +42,7 @@ module BuildBox.Benchmark.BenchResult
 	, liftRunResultAspects2)
 where
 import BuildBox.Aspect
+import BuildBox.Quirk
 import BuildBox.Pretty
 import Data.List
 import qualified Data.Set	as Set
@@ -88,7 +89,10 @@ data BenchRunResult c
 	  benchRunResultIndex	:: Integer
 
 	  -- | Aspects of the benchmark run.
-	, benchRunResultAspects	:: [WithUnits (Aspect c)] }
+	, benchRunResultAspects	:: [WithUnits (Aspect c)] 
+	
+	  -- | Other things we know about the benchmark that aren't aspects and don't carry units.
+	, benchRunResultQuirks	:: [Quirk] }
 
 
 deriving instance 
@@ -120,7 +124,9 @@ instance  ( Pretty (c Seconds), Pretty (c Bytes))
 concatBenchResult :: BenchResult c1 -> BenchResult c1
 concatBenchResult 
 	= liftBenchRunResult 
-	$ \bsResults -> [BenchRunResult 0 (concatMap benchRunResultAspects bsResults)]
+	$ \bsResults -> [BenchRunResult 0 
+				(concatMap benchRunResultAspects bsResults)
+				(concatMap benchRunResultQuirks  bsResults)]
 
 
 -- | Collate the aspects of each run. See `collateWithUnits` for an explanation and example.
@@ -335,7 +341,8 @@ liftToAspectsOfBenchResult2
 -- Lifting ----------------------------------------------------------------------------------------
 -- | Apply a function to the aspects of a `BenchRunResult`
 appRunResultAspects :: ([WithUnits (Aspect c1)] -> b) -> BenchRunResult c1 -> b
-appRunResultAspects f (BenchRunResult _ aspects) = f aspects
+appRunResultAspects f (BenchRunResult _ aspects _) 
+	= f aspects
 
 
 -- | Lift a function to the aspects of a `BenchRunResult`
@@ -343,16 +350,17 @@ liftRunResultAspects
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)])
 	-> BenchRunResult c1        -> BenchRunResult c2
 	
-liftRunResultAspects f (BenchRunResult ix as)
-	= BenchRunResult ix (f as)
+liftRunResultAspects f (BenchRunResult ix as quirks)
+	= BenchRunResult ix (f as) quirks
 
 
--- | Lift a binary function to the aspects of a `BenchRunResult`
+-- | Lift a binary function to the aspects of two `BenchRunResult`s.
+--   The resulting `BenchRunResult` gets all the quirks from both.
 liftRunResultAspects2
 	:: ([WithUnits (Aspect c1)] -> [WithUnits (Aspect c2)] -> [WithUnits (Aspect c3)])
 	-> BenchRunResult c1        -> BenchRunResult c2       -> BenchRunResult c3
 	
-liftRunResultAspects2 f (BenchRunResult ix1 as) (BenchRunResult ix2 bs)
-	| ix1 == ix2		= BenchRunResult ix1 (f as bs)
+liftRunResultAspects2 f (BenchRunResult ix1 as quirks1) (BenchRunResult ix2 bs quirks2)
+	| ix1 == ix2		= BenchRunResult ix1 (f as bs) (quirks1 ++ quirks2)
 	| otherwise		= error "liftRunResultAspects2: indices don't match"
 

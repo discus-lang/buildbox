@@ -49,7 +49,9 @@ runBenchmarkOnce iteration bench
 		-- also include our total runtime.
 		, benchRunResultAspects		
 			= Time TotalWall `secs` (fromRational $ toRational diffTime)
-			: asRun ++ asCheck }
+			: asRun ++ asCheck
+			
+		, benchRunResultQuirks		= [] }
 			
 			
 -- | Run a benchmark once, logging activity and timings to the console.

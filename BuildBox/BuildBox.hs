@@ -13,6 +13,7 @@ module BuildBox
 	, module BuildBox.FileFormat.BuildResults
 	, module BuildBox.IO.Directory
 	, module BuildBox.Pretty
+	, module BuildBox.Quirk
 	, module BuildBox.Reports.BenchResult
 	, module BuildBox.Time)
 where
@@ -29,5 +30,6 @@ import BuildBox.Cron
 import BuildBox.FileFormat.BuildResults
 import BuildBox.IO.Directory
 import BuildBox.Pretty
+import BuildBox.Quirk
 import BuildBox.Reports.BenchResult
 import BuildBox.Time
