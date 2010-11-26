@@ -66,6 +66,7 @@ Library
         BuildBox.FileFormat.BuildResults
         BuildBox.IO.Directory
         BuildBox.Pretty
+        BuildBox.Quirk
         BuildBox.Time
 
   Other-modules:
