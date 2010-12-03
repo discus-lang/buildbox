@@ -2,6 +2,7 @@
 module BuildBox.FileFormat.BuildResults
 	( BuildResults(..)
 	, mergeResults
+	, acceptResult
 	, advanceResults)
 where
 import BuildBox.Time
@@ -10,6 +11,7 @@ import BuildBox.Command.Environment
 import BuildBox.Pretty
 import BuildBox.Aspect
 import Data.List
+import Data.Function
 
 
 -- | A simple build results file format.
@@ -40,11 +42,10 @@ mergeResults :: [BuildResults] -> BuildResults
 mergeResults results
  = let	
 	-- All the available benchResults from all files.
-	benchResults
-		= concatMap buildResultBench results
+	benchResults	= concatMap buildResultBench results
 
 	-- Get a the names of all the available benchmarks.
-	benchNames  
+	benchNames 
 		= sort $ nub
 		$ map benchResultName
 		$ concatMap buildResultBench results 
@@ -63,6 +64,31 @@ mergeResults results
 		, buildResultEnvironment = buildResultEnvironment lastResults
 		, buildResultBench	 = newBenchResults }
 
+
+-- | Take test results from the first `BuildResults`, except for the named
+--   one which we take from the second. If the named test is not in the second
+--   then take it from the first. If it's not anywhere then Nothing.
+acceptResult :: String -> BuildResults -> BuildResults -> Maybe BuildResults
+acceptResult nameAccept baseline recent
+
+ | Just resultAccept	
+	<- find (\br -> benchResultName br == nameAccept)
+	$  buildResultBench recent
+	
+ = let	resultsBaseline	
+	  	= filter (\br -> benchResultName br /= nameAccept)
+		$ buildResultBench baseline
+		
+	-- use the timestamp from the last one.	
+   in	Just $ BuildResults
+ 	 { buildResultTime		= buildResultTime recent
+	 , buildResultEnvironment	= buildResultEnvironment recent
+	 , buildResultBench		= sortBy (compare `on` benchResultName) 
+					$ resultAccept : resultsBaseline }
+	
+ | otherwise
+ = Nothing
+		
 
 -- | Advance benchmark results as per `advanceBenchResults`.
 --   The resultTime and environment is taken from the second `BuildResults`.

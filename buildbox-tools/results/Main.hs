@@ -5,6 +5,7 @@ import BuildBox
 import BuildBox.FileFormat.BuildResults
 import System.Console.ParseArgs	hiding (args)
 import Data.List
+import Control.Monad
 
 main :: IO ()
 main 
@@ -35,19 +36,6 @@ mainWithArgs args
 			$ vcat
 			$ map (text . benchResultName)
 			$ buildResultBench results
-
-
-	-- Merge two results files, prefering benchmark results on the left.
-	-- The time and environment fields are taken from the file on the right.
-	| gotArg args ArgMerge
-	= do	
-		-- Read all the files.
-		let fileNames	= argsRest args
-		contentss <- mapM readFile fileNames
-		let (results :: [BuildResults])
-			  = map read contentss
-			
-		print $ mergeResults results
 			
 	-- Compare two results files.
 	| gotArg args ArgCompare
@@ -77,6 +65,26 @@ mainWithArgs args
 			$ compareManyBenchResults 
 				(map statBenchResult baseline)
 				(map statBenchResult current)
+
+	-- Merge two results files, prefering benchmark results on the left.
+	-- The time and environment fields are taken from the file on the right.
+	| gotArg args ArgMerge
+	= do	
+		-- Read all the files.
+		let fileNames	= argsRest args
+		contentss <- mapM readFile fileNames
+		let (results :: [BuildResults])
+			  = map read contentss
+			
+		print $ mergeResults results
+
+	-- Accept the most recent run of a named benchmark.
+	| Just name	<- getArg args ArgAccept
+	, [fileBase, fileRecent] <- argsRest args
+	= do	baseline	<- liftM read $ readFile fileBase
+		recent		<- liftM read $ readFile fileRecent
+		let Just result	= acceptResult name baseline recent
+		print	$ result
 	
 	-- Advance winning results to form a new baseline.
 	| Just swing	<- getArg args ArgAdvance

@@ -10,9 +10,10 @@ data ResultsArg
 	= ArgHelp
 	| ArgDump
 	| ArgNames
-	| ArgMerge
 	| ArgCompare
 	| ArgSummarise
+	| ArgMerge
+	| ArgAccept
 	| ArgAdvance
 	deriving (Eq, Ord, Show)
 
@@ -38,12 +39,6 @@ resultsArgs
 		, argData	= argDataOptional "file" ArgtypeString
 		, argDesc	= "Print the names of all the benchmarks in a file." }
 
-	, Arg	{ argIndex	= ArgMerge
-		, argAbbr	= Nothing
-		, argName	= Just "merge"
-		, argData	= Nothing
-		, argDesc	= "Merge several test results files." }
-		
 	, Arg	{ argIndex	= ArgCompare 
 		, argAbbr	= Nothing
 		, argName	= Just "compare"
@@ -55,10 +50,22 @@ resultsArgs
 		, argName	= Just "summarise"
 		, argData	= argDataOptional "swing" ArgtypeDouble
 		, argDesc	= " ... but only return results that have swung by at least this fraction (eg 0.1)" }
-		
+
+	, Arg	{ argIndex	= ArgMerge
+		, argAbbr	= Nothing
+		, argName	= Just "merge"
+		, argData	= Nothing
+		, argDesc	= "Merge several test results files." }
+
+	, Arg	{ argIndex	= ArgAccept
+		, argAbbr	= Nothing
+		, argName	= Just "accept"
+		, argData	= argDataOptional "name" ArgtypeString
+		, argDesc	= "Accept the most recent run of a benchmark." }
+
 	, Arg	{ argIndex	= ArgAdvance
 		, argAbbr	= Nothing
 		, argName	= Just "advance"
 		, argData	= argDataOptional "swing" ArgtypeDouble
-		, argDesc	= " ... advance winners who have an aspect that reduced by this fraction (eg 0.1)" }
+		, argDesc	= "Advance winners who have an aspect that reduced by this fraction (eg 0.1)" }
 	]	
