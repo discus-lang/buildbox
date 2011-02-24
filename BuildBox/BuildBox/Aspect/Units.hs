@@ -29,6 +29,7 @@ module BuildBox.Aspect.Units
 	
 where
 import BuildBox.Aspect.Single
+import BuildBox.Aspect.Stats
 import BuildBox.Data.Dividable
 import BuildBox.Pretty
 import Data.Maybe
@@ -113,6 +114,9 @@ instance HasUnits Bytes Bytes where
 
 instance HasUnits a a => HasUnits (Single a) a where
 	hasUnits (Single x)	= hasUnits x
+
+instance HasUnits a a => HasUnits (Stats a) a where
+	hasUnits (Stats x _ _)	= hasUnits x
 
 instance HasUnits a a => HasUnits [a] a where
 	hasUnits []		= Nothing
