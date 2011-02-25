@@ -25,9 +25,6 @@ import Prelude				hiding (null)
 type Log 	= Seq Line
 type Line	= ByteString
 
-instance Show Log where
- show	= toString
-	
 
 -- | O(1) No logs here.
 empty :: Log
