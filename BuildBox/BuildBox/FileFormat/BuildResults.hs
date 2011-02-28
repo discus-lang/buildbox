@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 
 module BuildBox.FileFormat.BuildResults
 	( BuildResults(..)
