@@ -38,7 +38,8 @@ instance Show DarcsPatch where
     ++ "\n" ++ Log.toString desc
 
 
--- | List all patches in the given repository
+-- | List all patches in the given repository. If no repository is given, the
+--   current working directory is used.
 --
 changes :: Maybe DarcsPath -> Build [DarcsPatch]
 changes = darcs . ("darcs changes --repo=" ++) . fromMaybe "."
@@ -49,16 +50,14 @@ changes = darcs . ("darcs changes --repo=" ++) . fromMaybe "."
 -- slow network.
 --
 
--- | Retrieve the last N changes from the repository. If no repository is given,
---   the current directory is used.
+-- | Retrieve the last N changes from the repository
 --
 changesN :: Maybe DarcsPath -> Int -> Build [DarcsPatch]
 changesN repo n =
   darcs $ "darcs changes --last=" ++ show n
                     ++ " --repo=" ++ fromMaybe "." repo
 
--- | Retrieve all patches that were submitted to the repository after the given
---   time. If no repository is given, the current working directory is used.
+-- | Retrieve all patches submitted to the repository after the given time
 --
 changesAfter :: Maybe DarcsPath -> LocalTime -> Build [DarcsPatch]
 changesAfter repo time =
@@ -67,7 +66,7 @@ changesAfter repo time =
 
 
 -- Execute the given darcs command string and split the stdout into a series of
--- patches.
+-- patches
 --
 darcs :: String -> Build [DarcsPatch]
 darcs cmd = do
