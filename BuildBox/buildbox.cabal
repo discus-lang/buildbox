@@ -53,6 +53,7 @@ Library
         BuildBox.Build.BuildError
         BuildBox.Build.BuildState
         BuildBox.Build
+        BuildBox.Command.Darcs
         BuildBox.Command.Environment
         BuildBox.Command.File
         BuildBox.Command.Mail

@@ -9,6 +9,7 @@ module BuildBox
 	, module BuildBox.Command.Mail
 	, module BuildBox.Command.Environment
 	, module BuildBox.Command.File
+	, module BuildBox.Command.Darcs
 	, module BuildBox.Cron
 	, module BuildBox.FileFormat.BuildResults
 	, module BuildBox.IO.Directory
@@ -26,6 +27,7 @@ import BuildBox.Command.Network
 import BuildBox.Command.Mail
 import BuildBox.Command.Environment
 import BuildBox.Command.File
+import BuildBox.Command.Darcs
 import BuildBox.Cron
 import BuildBox.FileFormat.BuildResults
 import BuildBox.IO.Directory
