@@ -157,8 +157,10 @@ systemTeeLogIO tee cmd logIn
 			, std_err	= CreatePipe
 			, close_fds	= False }
 
-	-- Push input into in handle
+	-- Push input into in handle. Close the handle afterwards to ensure the
+	-- process gets sent the EOF character.
 	hPutStr hInWrite $ Log.toString logIn
+	hClose  hInWrite
 			
 	-- To implement the tee-like behavior we'll fork some threads that read lines from the
 	-- processes stdout and stderr and write them to these channels. 
