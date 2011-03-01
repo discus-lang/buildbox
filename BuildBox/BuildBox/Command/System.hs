@@ -122,8 +122,7 @@ systemTeeLog tee cmd logIn
 -- | Like `systemTeeIO`, but in the `Build` monad and throw an error if it returns `ExitFailure`.
 ssystemTee  :: Bool -> String -> String -> Build ()
 ssystemTee tee cmd strIn
- = do	logSystem cmd
-	(code, logOut, logErr)	<- systemTeeLog tee cmd (Log.fromString strIn)
+ = do	(code, logOut, logErr)	<- systemTeeLog tee cmd (Log.fromString strIn)
 	when (code /= ExitSuccess)
 	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
 
