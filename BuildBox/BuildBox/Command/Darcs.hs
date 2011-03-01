@@ -4,7 +4,7 @@
 module BuildBox.Command.Darcs (
 
   EmailAddress, DarcsPath, DarcsPatch(..),
-  patchesAfter, patchesLast
+  changes, changesN, changesAfter
 
 ) where
 
@@ -26,7 +26,7 @@ type EmailAddress = String
 
 data DarcsPatch = DarcsPatch
   {
-    darcsTimestamp :: LocalTime
+    darcsTimestamp :: LocalTime         -- TLM: use UTC instead?
   , darcsAuthor    :: EmailAddress
   , darcsComment   :: Log.Log
   }
@@ -38,19 +38,30 @@ instance Show DarcsPatch where
     ++ "\n" ++ Log.toString desc
 
 
--- | Retrieve the last N patches from the repository. If no repository is given,
+-- | List all patches in the given repository
+--
+changes :: Maybe DarcsPath -> Build [DarcsPatch]
+changes = darcs . ("darcs changes --repo=" ++) . fromMaybe "."
+
+
+-- The following are more specific invocations of the "darcs changes" command,
+-- which may be faster when interacting with very large repositories or over a
+-- slow network.
+--
+
+-- | Retrieve the last N changes from the repository. If no repository is given,
 --   the current directory is used.
 --
-patchesLast :: Maybe DarcsPath -> Int -> Build [DarcsPatch]
-patchesLast repo n =
+changesN :: Maybe DarcsPath -> Int -> Build [DarcsPatch]
+changesN repo n =
   darcs $ "darcs changes --last=" ++ show n
                     ++ " --repo=" ++ fromMaybe "." repo
 
 -- | Retrieve all patches that were submitted to the repository after the given
 --   time. If no repository is given, the current working directory is used.
 --
-patchesAfter :: Maybe DarcsPath -> LocalTime -> Build [DarcsPatch]
-patchesAfter repo time =
+changesAfter :: Maybe DarcsPath -> LocalTime -> Build [DarcsPatch]
+changesAfter repo time =
   darcs $ "darcs changes --matches='date \"after " ++ show time ++ "\"'"
                     ++ " --repo=" ++ fromMaybe "." repo
 
