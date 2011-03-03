@@ -17,7 +17,8 @@ type Build a 	= ErrorT BuildError (StateT BuildState IO) a
 
 
 -- Build ------------------------------------------------------------------------------------------
--- | Run a build command. The first argument is a directory that can be used for temporary files (like "/tmp")
+-- | Run a build command. The first argument is a directory that can be used for
+--   temporary files (like \"/tmp\")
 runBuild :: FilePath -> Build a -> IO (Either BuildError a)
 runBuild scratchDir build
  = do	uid		<- getUniqueId
