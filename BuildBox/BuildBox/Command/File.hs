@@ -31,19 +31,19 @@ data PropFile
 
 
 instance Testable PropFile where
- test prop 
+ test prop
   = case prop of
 	HasExecutable name
 	 -> do	code	<- qsystem $ "which " ++ name
 		return	$ code == ExitSuccess
 
-	HasFile path	
+	HasFile path
 	 -> io $ doesFileExist path
 
 	HasDir  path
 	 -> io $ doesDirectoryExist path
 
-	FileEmpty  path 
+	FileEmpty  path
 	 -> do	contents	<- io $ readFile path
 		return (null contents)
 
@@ -65,14 +65,14 @@ inDir name build
 --   with the given name already exists.
 inScratchDir :: FilePath -> Build a -> Build a
 inScratchDir name build
- = do	
+ = do
 	-- Make sure a dir with this name doesn't already exist.
 	checkFalse $ HasDir name
 
 	ssystem $ "mkdir -p " ++ name
 	x	<- inDir name build
-	
-	ssystem $ "rm -Rf " ++ name 
+
+	ssystem $ "rm -Rf " ++ name
 	return x
 
 
@@ -100,38 +100,40 @@ withTempFile build
 
 	-- run the real command
 	result	<- build fileName
-	
-	-- cleanup 
+
+	-- cleanup
 	io $ removeFile fileName
-	
+
 	return result
-	
+
 
 -- | Allocate a new temporary file name
 newTempFile :: Build FilePath
-newTempFile 
+newTempFile
  = do	buildDir	<- gets buildStateScratchDir
-	buildId		<- gets buildStateId 
-	buildSeq	<- gets buildStateSeq 
-	
+	buildId		<- gets buildStateId
+	buildSeq	<- gets buildStateSeq
+
 	-- Increment the sequence number.
 	modify $ \s -> s { buildStateSeq = buildStateSeq s + 1 }
-	
+
+        -- Ensure the build directory exists, or canonicalizePath will fail
+        ensureDir buildDir
+
 	-- Build the file name we'll try to use.
-	fileName	<- io $ canonicalizePath 
-			$  buildDir ++ "/buildbox-" ++ show buildId ++ "-" ++ show buildSeq
-	
+	let fileName	 = buildDir ++ "/buildbox-" ++ show buildId ++ "-" ++ show buildSeq
+
 	-- If it already exists then something has gone badly wrong.
 	--   Maybe the unique Id for the process wasn't as unique as we thought.
 	exists		<- io $ doesFileExist fileName
 	when exists
 	 $ error "buildbox: panic, supposedly fresh file already exists."
-	
+
 	-- Touch the file for good measure.
 	--   If the unique id wasn't then we want to detect this.
 	io $ writeFile fileName ""
-	
-	return fileName
+
+	io $ canonicalizePath fileName
 
 
 
