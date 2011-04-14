@@ -21,24 +21,24 @@ type Build a 	= ErrorT BuildError (StateT BuildState IO) a
 --   temporary files (like \"/tmp\")
 runBuild :: FilePath -> Build a -> IO (Either BuildError a)
 runBuild scratchDir build
- = do	uid		<- getUniqueId
-	let state	= buildStateDefault uid scratchDir
-	evalStateT (runErrorT build) state
+ = do	uid	<- getUniqueId
+	let s	= buildStateDefault uid scratchDir
+	evalStateT (runErrorT build) s
 
 
 -- | Like 'runBuild`, but Run a build command, reporting whether it succeeded to the console.
 --   If it succeeded then return Just the result, else Nothing.
 runBuildPrint :: FilePath -> Build a -> IO (Maybe a)
 runBuildPrint scratchDir build
- = do	uid		<- getUniqueId
-	let state	= buildStateDefault uid scratchDir
-	runBuildPrintWithState state build
+ = do	uid	<- getUniqueId
+	let s	= buildStateDefault uid scratchDir
+	runBuildPrintWithState s build
 
 
 -- | Like `runBuildPrintWithConfig` but also takes a `BuildConfig`.
 runBuildPrintWithState :: BuildState -> Build a -> IO (Maybe a)
-runBuildPrintWithState state build
- = do	result	<- evalStateT (runErrorT build) state
+runBuildPrintWithState s build
+ = do	result	<- evalStateT (runErrorT build) s
 	case result of
 	 Left err
 	  -> do	putStrLn "\nBuild failed"

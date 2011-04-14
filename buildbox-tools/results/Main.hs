@@ -9,7 +9,7 @@ import Control.Monad
 
 main :: IO ()
 main 
- = do	args	<- parseArgsIO ArgsTrailing resultsArgs
+ = do	args	<- parseArgsIO (ArgsTrailing "files") resultsArgs
 	mainWithArgs args
 
 mainWithArgs :: Args ResultsArg -> IO ()
