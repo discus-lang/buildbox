@@ -28,9 +28,11 @@ where
 import BuildBox.Command.System.Internals
 import BuildBox.Build
 import Control.Concurrent
+import Control.Concurrent.STM.TChan
+import Control.Monad
+import Control.Monad.STM
 import System.Exit
 import System.IO
-import Control.Monad
 import Data.ByteString.Char8		(ByteString)
 import BuildBox.Data.Log		(Log)
 import System.Process			hiding (system)
@@ -165,15 +167,15 @@ systemTeeLogIO tee cmd logIn
 	-- To implement the tee-like behavior we'll fork some threads that read lines from the
 	-- processes stdout and stderr and write them to these channels. 
 	-- 	When they hit EOF they signal this via the semaphores.
-	chanOut		<- newChan
-	chanErr		<- newChan
+	chanOut		<- newTChanIO
+	chanErr		<- newTChanIO
 	semOut		<- newQSem 0
 	semErr		<- newQSem 0
 
 	-- Make duplicates of the above, which will store everything
 	-- written to them. This gives us the copy to return from the fn.
-	chanOutAcc	<- dupChan chanOut
-	chanErrAcc	<- dupChan chanErr
+	chanOutAcc	<- atomically $ dupTChan chanOut
+	chanErrAcc	<- atomically $ dupTChan chanErr
 
 	-- Fork threads to read from the process handles and write to our channels.
 	_tidOut		<- forkIO $ streamIn hOutRead chanOut
@@ -209,9 +211,9 @@ systemTeeLogIO tee cmd logIn
 	code `seq` logOut `seq` logErr `seq` 
 		return	(code, logOut, logErr)
 
-slurpChan :: Chan (Maybe ByteString) -> Log -> IO Log
+slurpChan :: TChan (Maybe ByteString) -> Log -> IO Log
 slurpChan !chan !ll
- = do	mStr	<- readChan chan
+ = do	mStr	<- atomically $ readTChan chan
 	case mStr of
 	 Nothing	-> return ll
 	 Just str	-> slurpChan chan (ll Log.|> str)

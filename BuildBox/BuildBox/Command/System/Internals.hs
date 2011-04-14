@@ -5,30 +5,32 @@ module BuildBox.Command.System.Internals
 where
 import System.IO
 import Control.Concurrent
+import Control.Concurrent.STM.TChan
+import Control.Monad.STM
 import Data.ByteString.Char8		(ByteString)
 import qualified Data.ByteString.Char8	as BS	
 
 
 -- | Continually read lines from a handle and write them to this channel.
 --   When the handle hits EOF then write `Nothing` to the channel.
-streamIn  :: Handle -> Chan (Maybe ByteString) -> IO ()
+streamIn  :: Handle -> TChan (Maybe ByteString) -> IO ()
 streamIn !hRead !chan
  = do	eof	<- hIsEOF hRead
 	if eof
 	 then do
-		writeChan chan Nothing
+		atomically $ writeTChan chan Nothing
 		return ()
 		
 	 else do
 		str	<- BS.hGetLine hRead
-		writeChan chan (Just str)
+		atomically $ writeTChan chan (Just str)
 		streamIn hRead chan
 
 
 -- | Continually read lines from some channels and write them to handles.
 --   When all the channels return `Nothing` then we're done.
 --   When we're done, signal this fact on the semaphore.
-streamOuts :: [(Chan (Maybe ByteString), (Maybe Handle), QSem)] -> IO ()
+streamOuts :: [(TChan (Maybe ByteString), (Maybe Handle), QSem)] -> IO ()
 streamOuts !chans 
  = streamOuts' False [] chans
 
@@ -51,21 +53,31 @@ streamOuts !chans
 
 	-- try to read from the current chan.
 	streamOuts' !active !prev (!x@(!chan, !mHandle, !qsem) : rest)
-	 = isEmptyChan chan >>= \empty -> 
-	   if empty 
-	    then streamOuts' active (prev ++ [x]) rest
-	    else do
-		mStr	<- readChan chan
+	 = do	
+		-- try and read a string from the channel, but don't block
+		-- if there aren't any.
+		mStr	<- atomically
+			$  do	isEmpty	<- isEmptyTChan chan
+				if isEmpty 
+				 then    return (False, Nothing)
+
+				 else do mStr	<- readTChan chan
+					 return (True, mStr)
+				
 		case mStr of
-		 Nothing	
+		 (False, _)
+		  -> streamOuts' active (prev ++ [x]) rest
+
+		 (True, Nothing)
 		  -> do	signalQSem qsem
 			streamOuts' active prev rest
 
-		 Just str 
+		 (True, Just str)
 		  | Just h	<- mHandle
 		  -> do	BS.hPutStr h str
 			hPutChar   h '\n'
 			streamOuts' True (prev ++ [x]) rest
 
 		  | otherwise
-		  -> 	streamOuts' True (prev ++ [x]) rest
+		  -> 	streamOuts' True (prev ++ [x]) rest					
+
