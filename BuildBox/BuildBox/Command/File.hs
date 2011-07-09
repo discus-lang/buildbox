@@ -138,6 +138,7 @@ newTempFile
 
 
 -- | Atomically write a file by first writing it to a tmp file then renaming it.
+--   This prevents concurrent processes from reading half-written files.
 atomicWriteFile :: FilePath -> String -> Build ()
 atomicWriteFile filePath str
  = do	tmp	<- newTempFile
