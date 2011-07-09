@@ -26,7 +26,7 @@ runBuild scratchDir build
 	evalStateT (runErrorT build) s
 
 
--- | Like 'runBuild`, but Run a build command, reporting whether it succeeded to the console.
+-- | Like 'runBuild`, but report whether it succeeded to the console.
 --   If it succeeded then return Just the result, else Nothing.
 runBuildPrint :: FilePath -> Build a -> IO (Maybe a)
 runBuildPrint scratchDir build
@@ -35,7 +35,20 @@ runBuildPrint scratchDir build
 	runBuildPrintWithState s build
 
 
--- | Like `runBuildPrintWithConfig` but also takes a `BuildConfig`.
+-- | Like `runBuild` but also takes a `BuildState`.
+runBuildWithState :: BuildState -> Build a -> IO (Maybe a)
+runBuildWithState s build
+ = do	result	<- evalStateT (runErrorT build) s
+	case result of
+	 Left err
+	  -> do	putStrLn $ render $ ppr err
+		return $ Nothing
+		
+	 Right x
+	  -> do	return $ Just x
+
+
+-- | Like `runBuildPrint` but also takes a `BuildState`.
 runBuildPrintWithState :: BuildState -> Build a -> IO (Maybe a)
 runBuildPrintWithState s build
  = do	result	<- evalStateT (runErrorT build) s

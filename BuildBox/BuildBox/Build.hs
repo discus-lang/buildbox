@@ -8,6 +8,7 @@ module BuildBox.Build
 
 	-- * Building
 	, runBuild
+	, runBuildWithState
 	, runBuildPrint
 	, runBuildPrintWithState
 	, successfully
