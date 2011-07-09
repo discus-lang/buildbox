@@ -6,7 +6,8 @@ module BuildBox.Command.File
 	, inScratchDir
 	, clobberDir
 	, ensureDir
-	, withTempFile)
+	, withTempFile
+	, atomicWriteFile)
 where
 import BuildBox.Build
 import BuildBox.Command.System
@@ -136,6 +137,9 @@ newTempFile
 	io $ canonicalizePath fileName
 
 
-
-
-
+-- | Atomically write a file by first writing it to a tmp file then renaming it.
+atomicWriteFile :: FilePath -> String -> Build ()
+atomicWriteFile filePath str
+ = do	tmp	<- newTempFile
+	io $ writeFile tmp str
+	ssystem $ "mv " ++ tmp ++ " " ++ filePath
