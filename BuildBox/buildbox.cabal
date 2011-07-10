@@ -61,6 +61,7 @@ Library
         BuildBox.Command.Network
         BuildBox.Command.System
         BuildBox.Command.Sleep
+        BuildBox.Control.Gang
         BuildBox.Cron.Schedule
         BuildBox.Cron
         BuildBox.Data.Log
