@@ -111,7 +111,7 @@ forkGangActions threads actions
 		, gangState 		= refState
 		, gangActionsRunning	= refActionsRunning }
 
-	forkIO $ gangLoop gang actions
+	_ <- forkIO $ gangLoop gang actions
 	return gang
 	
 
@@ -127,13 +127,13 @@ gangLoop gang []
 	writeIORef (gangState gang) GangFinished
 
 
-gangLoop gang actions
+gangLoop gang actions@(action:actionsRest)
  = do	state	<- readIORef (gangState gang)
 	case state of
 	 GangRunning 
 	  -> do	-- Wait for a worker thread to become available.
 		waitQSemN (gangThreadsAvailable gang) 1
-		gangLoop_withWorker gang actions
+		gangLoop_withWorker gang action actionsRest
 
 	 GangPaused
 	  -> do	threadDelay 100000
@@ -152,18 +152,23 @@ gangLoop gang actions
 
 
 -- we have an available worker
-gangLoop_withWorker gang actions@(action:actionsRest)
+gangLoop_withWorker :: Gang -> IO () -> [IO ()] -> IO ()
+gangLoop_withWorker gang action actionsRest
  = do	-- See if we're supposed to be starting actions or not.
 	state	<- readIORef (gangState gang)
 	case state of
 	 GangRunning
-	  -> do	forkOS $ do
+	  -> do	-- fork off the first action
+		_ <- forkOS $ do
 			-- run the action (and wait for it to complete)
-			result	<- action
+			action
 
 			-- signal that a new worker is available
 			signalQSemN (gangThreadsAvailable gang) 1
 	
+		-- handle the rest
 		gangLoop gang actionsRest
 
-	 _ -> gangLoop gang actions
+	 -- someone issued flush or pause command while we
+	 -- were waiting for a worker, so don't start next action.
+	 _ -> gangLoop gang (action:actionsRest)
