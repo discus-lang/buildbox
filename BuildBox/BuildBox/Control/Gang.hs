@@ -7,15 +7,18 @@ module BuildBox.Control.Gang
 
 	, forkGangActions
 	, joinGang
-	, flushGang
 	, pauseGang
 	, resumeGang
+	, flushGang
+	, killGang
 	
 	, getGangState
 	, waitForGangState)
 where
 import Control.Concurrent
 import Data.IORef
+import qualified Data.Set	as Set
+import Data.Set			(Set)
 
 -- Gang -----------------------------------------------------------------------
 -- | Abstract gang of threads.
@@ -24,7 +27,9 @@ data Gang
 	{ gangThreads		:: Int
 	, gangThreadsAvailable	:: QSemN
 	, gangState		:: IORef GangState
-	, gangActionsRunning	:: IORef Int }
+	, gangActionsRunning	:: IORef Int 
+	, gangThreadsRunning	:: IORef (Set ThreadId) }
+
 
 data GangState
 	= -- | Gang is running and starting new actions.
@@ -40,6 +45,9 @@ data GangState
 
 	-- | Gang is finished, all the actions have completed.
 	| GangFinished
+	
+	-- | Gang was killed, all the threads are dead (or dying).
+	| GangKilled
 	deriving (Show, Eq)
 
 
@@ -49,10 +57,16 @@ getGangState gang
 	= readIORef (gangState gang)
 
 
--- | Block until all actions have finished executing.
+-- | Block until all actions have finished executing,
+--   or the gang is killed.
 joinGang :: Gang -> IO ()
 joinGang gang
- 	= waitForGangState gang GangFinished 
+ = do	state	<- readIORef (gangState gang)
+	if state == GangFinished || state == GangKilled
+	 then return ()
+	 else do
+		threadDelay 10000
+		joinGang gang
 
 
 -- | Block until already started actions have completed, but don't start any more.
@@ -72,10 +86,19 @@ pauseGang gang
 
 
 -- | Resume a paused gang, which allows it to continue starting new actions.
---   Gang state changes to `GangRunning`
+--   Gang state changes to `GangRunning`.
 resumeGang :: Gang -> IO ()
 resumeGang gang
 	= writeIORef (gangState gang) GangRunning
+
+
+-- | Kill all the threads in a gang.
+--   Gang stage changes to `GangKilled`.
+killGang :: Gang -> IO ()
+killGang gang
+ = do	writeIORef (gangState gang) GangKilled
+	tids	<- readIORef (gangThreadsRunning gang) 
+	mapM_ killThread $ Set.toList tids
 
 
 -- | Block until the gang is in the given state.
@@ -104,12 +127,14 @@ forkGangActions threads actions
  = do	semThreads		<- newQSemN threads
 	refState		<- newIORef GangRunning
 	refActionsRunning	<- newIORef 0
+	refThreadsRunning	<- newIORef (Set.empty)
 	let gang	
 		= Gang
 		{ gangThreads		= threads
 		, gangThreadsAvailable	= semThreads 
 		, gangState 		= refState
-		, gangActionsRunning	= refActionsRunning }
+		, gangActionsRunning	= refActionsRunning 
+		, gangThreadsRunning	= refThreadsRunning }
 
 	_ <- forkIO $ gangLoop gang actions
 	return gang
@@ -136,7 +161,7 @@ gangLoop gang actions@(action:actionsRest)
 		gangLoop_withWorker gang action actionsRest
 
 	 GangPaused
-	  -> do	threadDelay 100000
+	  -> do	threadDelay 10000
 	 	gangLoop gang actions
 			
 	 GangFlushing
@@ -144,12 +169,11 @@ gangLoop gang actions@(action:actionsRest)
 		if actionsRunning == 0
 		 then	writeIORef (gangState gang) GangFinished
 		 else do	
-			threadDelay 100000
+			threadDelay 10000
 			gangLoop gang []
 
-	 GangFinished
-	  -> return ()
-
+	 GangFinished	-> return ()
+	 GangKilled	-> return ()
 
 -- we have an available worker
 gangLoop_withWorker :: Gang -> IO () -> [IO ()] -> IO ()
@@ -159,16 +183,29 @@ gangLoop_withWorker gang action actionsRest
 	case state of
 	 GangRunning
 	  -> do	-- fork off the first action
-		_ <- forkOS $ do
+		tid <- forkOS $ do
 			-- run the action (and wait for it to complete)
 			action
 
 			-- signal that a new worker is available
 			signalQSemN (gangThreadsAvailable gang) 1
+			
+			-- remove our ThreadId from the set of running ThreadIds.
+			tid	<- myThreadId
+			atomicModifyIORef (gangThreadsRunning gang)
+				(\tids -> (Set.delete tid tids, ()))
 	
-		-- handle the rest
+		-- Add the ThreadId of the freshly forked thread to the set
+		-- of running ThreadIds. We'll need this set if we want to kill
+		-- the gang.
+		atomicModifyIORef (gangThreadsRunning gang)
+			(\tids -> (Set.insert tid tids, ()))
+	
+		-- handle the rest of the actions.
 		gangLoop gang actionsRest
 
 	 -- someone issued flush or pause command while we
 	 -- were waiting for a worker, so don't start next action.
-	 _ -> gangLoop gang (action:actionsRest)
+	 _ -> do
+		signalQSemN (gangThreadsAvailable gang) 1
+		gangLoop gang (action:actionsRest)
