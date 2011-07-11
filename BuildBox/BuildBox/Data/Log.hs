@@ -39,9 +39,7 @@ toString :: Log -> String
 toString ll	
 	= BS.unpack 
 	$ BS.intercalate (BS.pack "\n") 
-	$ F.toList (ll Seq.>< Seq.singleton BS.empty) 
-		-- hack to get the last "\n" on the end.
-
+	$ F.toList ll
 
 -- | O(n) Convert a `String` to a `Log`.
 fromString :: String -> Log

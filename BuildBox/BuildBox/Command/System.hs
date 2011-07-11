@@ -208,6 +208,8 @@ systemTeeLogIO tee cmd logIn
 	trace $ "systemTeeIO stderr: " ++ Log.toString logErr
 
 	trace $ "systemTeeIO: All done"
+	hClose hOutRead
+	hClose hErrRead
 	code `seq` logOut `seq` logErr `seq` 
 		return	(code, logOut, logErr)
 
