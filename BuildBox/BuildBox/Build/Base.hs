@@ -6,8 +6,8 @@ import BuildBox.Build.BuildError
 import BuildBox.Build.BuildState
 import Control.Monad.Error
 import Control.Monad.State
+import Control.Exception        (try)
 import System.IO
-import System.IO.Error
 import System.Random
 import System.Directory
 

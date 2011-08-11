@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeSynonymInstances, ScopedTypeVariables, OverlappingInstances, IncoherentInstances #-}
+{-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances,
+             OverlappingInstances, IncoherentInstances #-}
 
 -- | Pretty printing utils.
 module BuildBox.Pretty
