@@ -157,7 +157,8 @@ systemTeeLogIO tee cmd logIn
 			, std_in	= CreatePipe
 			, std_out	= CreatePipe
 			, std_err	= CreatePipe
-			, close_fds	= False }
+			, close_fds	= False 
+                        , create_group  = False }
 
 	-- Push input into in handle. Close the handle afterwards to ensure the
 	-- process gets sent the EOF character.
