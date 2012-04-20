@@ -2,12 +2,12 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 -- | A simple ''cron'' loop. Used for running commands according to a given schedule.
-module BuildBox.Cron
-	( module BuildBox.Cron.Schedule
+module BuildBox.Control.Cron
+	( module BuildBox.Data.Schedule
 	, cronLoop )
 where
 import BuildBox.Build
-import BuildBox.Cron.Schedule
+import BuildBox.Data.Schedule
 import BuildBox.Command.Sleep
 import Data.Time
 

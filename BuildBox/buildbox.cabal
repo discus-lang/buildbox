@@ -52,14 +52,14 @@ Library
         BuildBox.Command.Network
         BuildBox.Command.System
         BuildBox.Command.Sleep
+        BuildBox.Control.Cron
         BuildBox.Control.Gang
-        BuildBox.Cron.Schedule
-        BuildBox.Cron
         BuildBox.Data.Log
         BuildBox.Data.Comparison
         BuildBox.Data.Detail
         BuildBox.Data.Dividable
         BuildBox.Data.Range
+        BuildBox.Data.Schedule
         BuildBox.IO.Directory
         BuildBox.Pretty
         BuildBox.Time

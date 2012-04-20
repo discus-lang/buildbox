@@ -2,8 +2,7 @@
 module BuildBox.Data.Comparison
 	( -- * Comparisons
 	  Comparison	(..)
-	, makeComparison
-	, appSwing)
+	, makeComparison)
 where
 import BuildBox.Pretty
 import Text.Printf
@@ -42,17 +41,6 @@ instance Pretty a => Pretty (Comparison a) where
 makeComparison :: Real a => a -> a -> Comparison a
 makeComparison base recent
 	= Comparison base recent swing
-	
 	where	dBase	= fromRational $ toRational base
 		dRecent	= fromRational $ toRational recent
 		swing = ((dRecent - dBase) / dBase)
-
-
--- | Apply a function to the swing of a comparison.
-appSwing :: a -> (Double -> a) -> Comparison b -> a
-appSwing def f aa
- = case aa of
-	Comparison _ _ swing	-> f swing
-	ComparisonNew{}		-> def
-	
-

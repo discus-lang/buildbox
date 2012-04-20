@@ -2,7 +2,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 -- | A schedule of commands that should be run at a certain time.
-module BuildBox.Cron.Schedule
+module BuildBox.Data.Schedule
 	( 
 	-- * Time Periods
 	  second, minute, hour, day

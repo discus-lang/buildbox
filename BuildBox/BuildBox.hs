@@ -9,7 +9,7 @@ module BuildBox
 	, module BuildBox.Command.File
 	, module BuildBox.Command.Darcs
 	, module BuildBox.Control.Gang
-	, module BuildBox.Cron
+	, module BuildBox.Control.Cron
 	, module BuildBox.IO.Directory
 	, module BuildBox.Pretty
 	, module BuildBox.Time)
@@ -23,7 +23,7 @@ import BuildBox.Command.Environment
 import BuildBox.Command.File
 import BuildBox.Command.Darcs
 import BuildBox.Control.Gang
-import BuildBox.Cron
+import BuildBox.Control.Cron
 import BuildBox.IO.Directory
 import BuildBox.Pretty
 import BuildBox.Time
