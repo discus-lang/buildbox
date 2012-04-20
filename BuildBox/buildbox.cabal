@@ -12,9 +12,6 @@ Homepage:            http://code.ouroborus.net/buildbox
 Description:
         Includes utilities for checking the host platform, running tests, capturing output,
         handling errors, comparing runtimes against a baseline, sending mail, running events to a schedule etc.
-
-	Some of the Command functions are just wrappers around shell commands, so be careful about passing
-	them weirdly formed arguments.
 	
 Synopsis:
         Rehackable components for writing buildbots and test harnesses.
@@ -44,6 +41,7 @@ Library
         BuildBox.Build.Testable
         BuildBox.Build.BuildError
         BuildBox.Build.BuildState
+        BuildBox.Build.Benchmark
         BuildBox.Build
         BuildBox.Command.Darcs
         BuildBox.Command.Environment
@@ -68,3 +66,6 @@ Library
   Other-modules:
         BuildBox.Command.System.Internals
         BuildBox.Build.Base
+
+  Extensions:
+        ExistentialQuantification

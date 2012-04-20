@@ -70,10 +70,10 @@ inScratchDir name build
 	-- Make sure a dir with this name doesn't already exist.
 	checkFalse $ HasDir name
 
-	ssystem $ "mkdir -p " ++ name
+	ssystem $ "mkdir -p " ++ name                                          -- TODO: rewrite without shell options
 	x	<- inDir name build
 
-	ssystem $ "rm -Rf " ++ name
+	ssystem $ "rm -Rf " ++ name                                            -- TODO: rewrite without shell opts
 	return x
 
 
@@ -82,7 +82,7 @@ inScratchDir name build
 --   not follow symlinks, it just deletes them.
 clobberDir :: FilePath -> Build ()
 clobberDir path
- = 	ssystem $ "rm -Rf " ++ path
+ = 	ssystem $ "rm -Rf " ++ path                                         -- TODO: rewrite without shell opts
 
 
 -- | Create a new directory if it isn't already there, or return successfully if it is.
@@ -91,7 +91,7 @@ ensureDir path
  = do	already	<- io $ doesDirectoryExist path
 	if already
 	 then return ()
-	 else ssystem $ "mkdir -p " ++ path
+	 else ssystem $ "mkdir -p " ++ path                                    -- TODO: rewrite without shell opts
 
 
 -- | Create a temp file, pass it to some command, then delete the file after the command finishes.
@@ -122,7 +122,7 @@ newTempFile
         ensureDir buildDir
 
 	-- Build the file name we'll try to use.
-	let fileName	 = buildDir ++ "/buildbox-" ++ show buildId ++ "-" ++ show buildSeq
+	let fileName	 = buildDir ++ "/buildbox-" ++ show buildId ++ "-" ++ show buildSeq       -- TODO: normalise path
 
 	-- If it already exists then something has gone badly wrong.
 	--   Maybe the unique Id for the process wasn't as unique as we thought.
