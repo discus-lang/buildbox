@@ -41,10 +41,6 @@ Library
 
   Exposed-modules:
         BuildBox
-        BuildBox.Aspect.Comparison
-        BuildBox.Aspect.Detail
-        BuildBox.Aspect.Single
-        BuildBox.Aspect.Stats
         BuildBox.Build.Testable
         BuildBox.Build.BuildError
         BuildBox.Build.BuildState
@@ -60,7 +56,10 @@ Library
         BuildBox.Cron.Schedule
         BuildBox.Cron
         BuildBox.Data.Log
+        BuildBox.Data.Comparison
+        BuildBox.Data.Detail
         BuildBox.Data.Dividable
+        BuildBox.Data.Range
         BuildBox.IO.Directory
         BuildBox.Pretty
         BuildBox.Time

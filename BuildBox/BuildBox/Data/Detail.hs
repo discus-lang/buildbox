@@ -1,6 +1,6 @@
 
 -- | The detail is the name of an `Aspect` seprate from its data.
-module BuildBox.Aspect.Detail
+module BuildBox.Data.Detail
 	( Detail (..)
 	, Timed	 (..)
 	, Used	 (..)

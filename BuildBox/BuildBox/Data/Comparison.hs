@@ -1,5 +1,5 @@
 
-module BuildBox.Aspect.Comparison
+module BuildBox.Data.Comparison
 	( -- * Comparisons
 	  Comparison	(..)
 	, makeComparison
