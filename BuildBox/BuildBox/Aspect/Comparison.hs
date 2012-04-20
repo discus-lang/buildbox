@@ -1,18 +1,10 @@
 
 module BuildBox.Aspect.Comparison
-	( 
-	-- * Comparisons
+	( -- * Comparisons
 	  Comparison	(..)
 	, makeComparison
-	, appSwing
-	
-	-- * Comparisons of Statistics
-	, StatsComparison(..)
-	, makeStatsComparison
-	, makeStatsComparisonNew
-	, predSwingStatsComparison)
+	, appSwing)
 where
-import BuildBox.Aspect.Stats
 import BuildBox.Pretty
 import Text.Printf
 
@@ -64,28 +56,3 @@ appSwing def f aa
 	ComparisonNew{}		-> def
 	
 
--- StatsComparison --------------------------------------------------------------------------------
--- | Comparisons of statistics
-data StatsComparison a
-	= StatsComparison (Stats (Comparison a))
-	deriving (Read, Show)
-
-instance Pretty a => Pretty (StatsComparison a) where
-	ppr (StatsComparison stats) = ppr stats
-
--- | Make a comparison of two `Stats`.
-makeStatsComparison :: Real a => Stats a -> Stats a -> StatsComparison a
-makeStatsComparison x y = StatsComparison (liftStats2 makeComparison x y)
-	
-
--- | Make a `ComparisonNew`.
-makeStatsComparisonNew :: Stats a -> StatsComparison a
-makeStatsComparisonNew x
-	= StatsComparison (liftStats ComparisonNew x)
-	
-
--- | Return `True` if any of the swings in the `StatsComparison` match the given function.
-predSwingStatsComparison :: (Double -> Bool) -> StatsComparison a -> Bool
-predSwingStatsComparison f (StatsComparison ss)
-	= (predStats . (appSwing False)) f ss
-	

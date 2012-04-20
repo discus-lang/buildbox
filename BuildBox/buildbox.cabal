@@ -1,5 +1,5 @@
 Name:                buildbox
-Version:             1.5.3.1
+Version:             2.0.0.0
 License:             BSD3
 License-file:        LICENSE
 Author:              Ben Lippmeier
@@ -41,15 +41,10 @@ Library
 
   Exposed-modules:
         BuildBox
-        BuildBox.Aspect.Detail
-        BuildBox.Aspect.Stats
-        BuildBox.Aspect.Units
-        BuildBox.Aspect.Single
         BuildBox.Aspect.Comparison
-        BuildBox.Aspect
-        BuildBox.Benchmark.BenchResult
-        BuildBox.Benchmark
-        BuildBox.Reports.BenchResult
+        BuildBox.Aspect.Detail
+        BuildBox.Aspect.Single
+        BuildBox.Aspect.Stats
         BuildBox.Build.Testable
         BuildBox.Build.BuildError
         BuildBox.Build.BuildState
@@ -66,14 +61,10 @@ Library
         BuildBox.Cron
         BuildBox.Data.Log
         BuildBox.Data.Dividable
-        BuildBox.FileFormat.BuildResults
         BuildBox.IO.Directory
         BuildBox.Pretty
-        BuildBox.Quirk
         BuildBox.Time
 
   Other-modules:
         BuildBox.Command.System.Internals
         BuildBox.Build.Base
-        BuildBox.Aspect.Aspect
-        BuildBox.Benchmark.Benchmark
