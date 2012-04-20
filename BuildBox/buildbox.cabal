@@ -60,6 +60,7 @@ Library
         BuildBox.Data.Dividable
         BuildBox.Data.Range
         BuildBox.Data.Schedule
+        BuildBox.Data.Physical
         BuildBox.IO.Directory
         BuildBox.Pretty
         BuildBox.Time
