@@ -10,7 +10,7 @@ import BuildBox.Build.Base
 import BuildBox.Data.Physical
 import Data.Time
 
-
+-- | Benchmark definition.
 data Benchmark result
         = forall a. Benchmark
         { -- | A unique name for the benchmark
@@ -28,6 +28,7 @@ data Benchmark result
         , benchmarkCheck        :: a -> Build result }
 
 
+-- | Benchmark result.
 data BenchResult result
         = BenchResult
         { benchResultName       :: String

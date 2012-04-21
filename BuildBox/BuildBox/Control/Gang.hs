@@ -65,7 +65,7 @@ joinGang gang
 	if state == GangFinished || state == GangKilled
 	 then return ()
 	 else do
-		threadDelay 10000
+		threadDelay 1000
 		joinGang gang
 
 
@@ -108,7 +108,7 @@ waitForGangState gang waitState
 	if state == waitState
 	 then return ()
 	 else do
-		threadDelay 10000
+		threadDelay 1000
 		waitForGangState gang waitState
 
 
@@ -161,7 +161,7 @@ gangLoop gang actions@(action:actionsRest)
 		gangLoop_withWorker gang action actionsRest
 
 	 GangPaused
-	  -> do	threadDelay 10000
+	  -> do	threadDelay 1000
 	 	gangLoop gang actions
 			
 	 GangFlushing
@@ -169,7 +169,7 @@ gangLoop gang actions@(action:actionsRest)
 		if actionsRunning == 0
 		 then	writeIORef (gangState gang) GangFinished
 		 else do	
-			threadDelay 10000
+			threadDelay 1000
 			gangLoop gang []
 
 	 GangFinished	-> return ()

@@ -100,7 +100,8 @@ streamOuts !chans
 	 = 	streamOuts' False [] prev
 
 	streamOuts' False prev []
-	 = do	threadDelay 100000
+	 = do   threadDelay 1000
+                yield
 		streamOuts' False [] prev
  
 	-- try to read from the current chan.
