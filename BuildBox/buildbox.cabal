@@ -1,5 +1,5 @@
 Name:                buildbox
-Version:             2.0.0.0
+Version:             2.0.0.1
 License:             BSD3
 License-file:        LICENSE
 Author:              Ben Lippmeier
@@ -37,31 +37,31 @@ Library
         -Wall
 
   Exposed-modules:
-        BuildBox
-        BuildBox.Build.Testable
+        BuildBox.Build.Benchmark
         BuildBox.Build.BuildError
         BuildBox.Build.BuildState
-        BuildBox.Build.Benchmark
-        BuildBox.Build
+        BuildBox.Build.Testable
         BuildBox.Command.Darcs
         BuildBox.Command.Environment
         BuildBox.Command.File
         BuildBox.Command.Mail
         BuildBox.Command.Network
-        BuildBox.Command.System
         BuildBox.Command.Sleep
+        BuildBox.Command.System
         BuildBox.Control.Cron
         BuildBox.Control.Gang
-        BuildBox.Data.Log
         BuildBox.Data.Comparison
         BuildBox.Data.Detail
         BuildBox.Data.Dividable
+        BuildBox.Data.Log
+        BuildBox.Data.Physical
         BuildBox.Data.Range
         BuildBox.Data.Schedule
-        BuildBox.Data.Physical
         BuildBox.IO.Directory
+        BuildBox.Build
         BuildBox.Pretty
         BuildBox.Time
+        BuildBox
 
   Other-modules:
         BuildBox.Command.System.Internals
