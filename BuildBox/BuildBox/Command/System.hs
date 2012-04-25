@@ -12,11 +12,11 @@ module BuildBox.Command.System
 
 	-- * Wrappers
 	, system
+	, systemq
 	, ssystem
-	, qsystem
-	, qssystem
-	, ssystemOut
-	, qssystemOut
+	, ssystemq
+	, sesystem
+	, sesystemq
 	, systemTee
 	, systemTeeLog
 	, ssystemTee
@@ -46,46 +46,55 @@ trace s	= when debug $ putStrLn s
 
 
 -- Wrappers ---------------------------------------------------------------------------------------
--- | Run a system command, returning its exit code.
-system :: String -> Build ExitCode
+-- | Run a system command, 
+--   returning its exit code and what it wrote to @stdout@ and @stderr@.
+system :: String -> Build (ExitCode, String, String)
 system cmd
- = do	(code, _, _)		<- systemTeeLog True cmd Log.empty
-	return code
+ = do	(code, logOut, logErr)    <- systemTeeLog True cmd Log.empty
+	return (code, Log.toString logOut, Log.toString logErr)
 
 
--- | Run a successful system command.
+-- | Quietly run a system command,
+--   returning its exit code and what it wrote to @stdout@ and @stderr@.
+systemq :: String -> Build (ExitCode, String, String)
+systemq cmd
+ = do	(code, logOut, logErr)    <- systemTeeLog False cmd Log.empty
+        return (code, Log.toString logOut, Log.toString logErr)
+
+
+
+-- | Run a successful system command, 
+--   returning what it wrote to @stdout@ and @stderr@.
 --   If the exit code is `ExitFailure` then throw an error in the `Build` monad.
-ssystem :: String -> Build ()
+ssystem :: String -> Build (String, String)
 ssystem cmd
- = do	(code, logOut, logErr)	<- systemTeeLog True cmd Log.empty
+ = do	(code, logOut, logErr)    <- systemTeeLog True cmd Log.empty
 
-	when (code /= ExitSuccess)
-	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
+        when (code /= ExitSuccess)
+         $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
 
-
--- | Quietly run a system command, returning its exit code.
-qsystem :: String -> Build ExitCode
-qsystem cmd
- = do	(code, _, _)		<- systemTeeLog False cmd Log.empty
-	return code
+	return (Log.toString logOut, Log.toString logErr)
 
 
--- | Quietly run a successful system command.
+-- | Quietly run a successful system command,
+--   returning what it wrote to @stdout@ and @stderr@.
 --   If the exit code is `ExitFailure` then throw an error in the `Build` monad.
-qssystem :: String -> Build ()
-qssystem cmd
- = do	(code, logOut, logErr)	<- systemTeeLog False cmd Log.empty
+ssystemq :: String -> Build (String, String)
+ssystemq cmd
+ = do   (code, logOut, logErr)    <- systemTeeLog False cmd Log.empty
 
-	when (code /= ExitSuccess)
-	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
-	
+        when (code /= ExitSuccess)
+         $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
+
+        return (Log.toString logOut, Log.toString logErr)
+
 
 -- | Run a successful system command, returning what it wrote to its @stdout@.
 --   If anything was written to @stderr@ then treat that as failure. 
 --   If it fails due to writing to @stderr@ or returning `ExitFailure`
 --   then throw an error in the `Build` monad.
-ssystemOut :: String -> Build String
-ssystemOut cmd
+sesystem :: String -> Build String
+sesystem cmd
  = do	(code, logOut, logErr)	<- systemTeeLog True cmd Log.empty
 	when (code /= ExitSuccess || (not $ Log.null logErr))
 	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr
@@ -96,8 +105,8 @@ ssystemOut cmd
 --   If anything was written to @stderr@ then treat that as failure. 
 --   If it fails due to writing to @stderr@ or returning `ExitFailure`
 --   then throw an error in the `Build` monad.
-qssystemOut :: String -> Build String
-qssystemOut cmd
+sesystemq :: String -> Build String
+sesystemq cmd
  = do	(code, logOut, logErr)	<- systemTeeLog False cmd Log.empty
 	when (code /= ExitSuccess || (not $ Log.null logErr))
 	 $ throw $ ErrorSystemCmdFailed cmd code logOut logErr

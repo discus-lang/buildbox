@@ -1,5 +1,5 @@
 Name:                buildbox
-Version:             2.0.0.1
+Version:             2.1.0.1
 License:             BSD3
 License-file:        LICENSE
 Author:              Ben Lippmeier
@@ -35,6 +35,7 @@ Library
 
   ghc-options:
         -Wall
+        -fno-warn-unused-do-bind
 
   Exposed-modules:
         BuildBox.Build.Benchmark

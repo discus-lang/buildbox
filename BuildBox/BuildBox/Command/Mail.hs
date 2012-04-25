@@ -1,6 +1,8 @@
 
--- | Sending email. We've got baked in support for @msmtp@, which is easy to set up. Adding support for other mailers 
---   should be easy. Get @msmtp@ here: <http://msmtp.sourceforge.net>
+-- | Sending email. 
+--   If you're on a system with a working @sendmail@ then use that.
+--   Otherwise, the stand-alone @msmtp@ server is easy to set up.
+--   Get @msmtp@ here: <http://msmtp.sourceforge.net>
 module BuildBox.Command.Mail
 	( Mail(..)
 	, Mailer(..)
