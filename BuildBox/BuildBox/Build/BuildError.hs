@@ -46,21 +46,25 @@ instance Pretty BuildError where
 
 	ErrorSystemCmdFailed{}
 	 -> vcat 
-		[ text "System command failure."
+	 $ 	[ text "System command failure."
 		, text "    command: " <> (text $ buildErrorCmd err)
 		, text "  exit code: " <> (text $ show $ buildErrorCode err)
-		, blank
-		, if (not $ Log.null $ buildErrorStdout err)
-		   then vcat 	[ text "-- stdout (last 10 lines) ------------------------------------------------------"
-				, text $ Log.toString $ Log.lastLines 10 $ buildErrorStdout err]
-		   else text ""
-		, blank
-		, if (not $ Log.null $ buildErrorStderr err)
-		   then vcat	[ text "-- stderr (last 10 lines) ------------------------------------------------------"
-				, text $ Log.toString $ Log.lastLines 10 $ buildErrorStderr err]
-		   else text ""
-		
-		, 		  text "--------------------------------------------------------------------------------" ]
+		, blank ] 
+
+         ++ (if (not $ Log.null $ buildErrorStdout err)
+	     then [ text "-- stdout (last 10 lines) ------------------------------------------------------"
+		  , text $ Log.toString $ Log.lastLines 10 $ buildErrorStdout err]
+	     else [])
+
+         ++ (if (not $ Log.null $ buildErrorStderr err)
+	     then [ text "-- stderr (last 10 lines) ------------------------------------------------------"
+		  , text $ Log.toString $ Log.lastLines 10 $ buildErrorStderr err ]
+	     else [])
+
+	 ++ (if (  (not $ Log.null $ buildErrorStdout err)
+               || (not $ Log.null $ buildErrorStderr err))
+             then [ text "--------------------------------------------------------------------------------" ]
+             else [])
 	
 	ErrorIOError ioerr
 	 -> text "IO error: " <> (text $ show ioerr)

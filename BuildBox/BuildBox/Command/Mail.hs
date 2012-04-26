@@ -56,7 +56,7 @@ data Mailer
 -- | Create a mail with a given from, to, subject and body.
 --   Fill in the date and message id based on the current time.
 --   Valid dates and message ids are needed to prevent the mail
---   being bounced by spambots.
+--   being bounced by anti-spam systems.
 createMailWithCurrentTime 
 	:: String 	-- ^ ''from'' field. Should be an email address.
 	-> String	-- ^ ''to'' field. Should be an email address.

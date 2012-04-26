@@ -82,6 +82,17 @@ throw :: BuildError -> Build a
 throw	= throwError
 
 
+-- | Run a build command, catching any exceptions it sends.
+catch :: Build a -> (BuildError -> Build a) -> Build a
+catch build handle
+ = do   s            <- get
+        (result, s') <- io $ runStateT (runErrorT build) s
+        case result of
+         Left err -> handle err
+         Right x  
+          -> do put s'
+                return x
+
 -- | Throw a needs error saying we needs the given file.
 --   A catcher could then usefully create the file, or defer the compuation until it has been 
 --   created.

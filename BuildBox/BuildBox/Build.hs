@@ -2,7 +2,6 @@
 -- | Defines the main `Build` monad and common utils.
 module BuildBox.Build 
 	( module BuildBox.Build.Testable
-	, module BuildBox.Build.BuildError
 	, module BuildBox.Build.BuildState
 	, Build
 
@@ -14,7 +13,9 @@ module BuildBox.Build
 	, successfully
 
 	-- * Errors
+        , BuildError    (..)
 	, throw
+        , catch
 	, needs
 
 	-- * Utils
@@ -36,7 +37,7 @@ import BuildBox.Build.BuildState
 import BuildBox.Build.BuildError
 import Control.Monad.State
 import System.IO
-
+import Prelude                  hiding (catch)
 
 -- | Log a system command to the handle in our `BuildConfig`, if any.
 logSystem :: String -> Build ()

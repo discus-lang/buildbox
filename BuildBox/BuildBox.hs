@@ -7,7 +7,9 @@ module BuildBox
         , runBuildWithState
 
         -- * Errors
+        , BuildError    (..)
         , throw
+        , catch
         , needs
 
         -- * Utils
@@ -18,3 +20,4 @@ module BuildBox
         , outLn)
 where
 import BuildBox.Build
+import Prelude          hiding (catch)
