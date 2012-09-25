@@ -20,4 +20,4 @@ module BuildBox
         , outLn)
 where
 import BuildBox.Build
-import Prelude          hiding (catch)
+import Prelude

@@ -1,5 +1,5 @@
 Name:                buildbox
-Version:             2.1.0.1
+Version:             2.1.2.1
 License:             BSD3
 License-file:        LICENSE
 Author:              Ben Lippmeier
@@ -21,17 +21,17 @@ Tested-with:
 
 Library
   Build-Depends: 
-        base           == 4.5.*,
-        containers     >= 0.4    && <  0.5,
-        time           >= 1.1    && <= 1.4,
-        directory      >= 1.0    && <= 1.2,
-        mtl            >= 2.0    && <  3.0,
+        base           == 4.6.*,
+        containers     == 0.5.*,
+        time           == 1.4.*,
+        directory      == 1.2.*,
+        mtl            == 2.1.*,
         old-locale     == 1.0.*,
         process        == 1.1.*,
         random         == 1.0.*,
         pretty         == 1.1.*,
-        bytestring     == 0.9.*,
-        stm            == 2.2.*
+        bytestring     == 0.10.*,
+        stm            == 2.4.*
 
   ghc-options:
         -Wall
