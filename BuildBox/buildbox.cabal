@@ -1,5 +1,5 @@
 Name:                buildbox
-Version:             2.1.2.2
+Version:             2.1.2.3
 License:             BSD3
 License-file:        LICENSE
 Author:              Ben Lippmeier
@@ -31,7 +31,6 @@ Library
         process        == 1.1.*,
         random         == 1.0.*,
         pretty         == 1.1.*,
-        bytestring     == 0.10.*,
         stm            == 2.4.*
 
   ghc-options:

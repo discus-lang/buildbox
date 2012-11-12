@@ -37,7 +37,7 @@ import BuildBox.Build.BuildState
 import BuildBox.Build.BuildError
 import Control.Monad.State
 import System.IO
-import Prelude
+import Prelude          hiding (catch)
 
 
 -- | Log a system command to the handle in our `BuildConfig`, if any.
