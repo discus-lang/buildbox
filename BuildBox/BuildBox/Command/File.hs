@@ -12,6 +12,7 @@ where
 import BuildBox.Build
 import BuildBox.Command.System
 import System.Directory
+import Control.Exception
 import Control.Monad.State
 
 -- | Properties of the file system we can test for.
@@ -35,8 +36,10 @@ instance Testable PropFile where
  test prop
   = case prop of
 	HasExecutable name
-	 -> do	(code, _, _) <- systemq $ "which " ++ name
-		return	$ code == ExitSuccess
+	 -> do	bin <- io $ findExecutable name
+		return $ case bin of
+		 Just _	 	-> True
+		 Nothing 	-> False
 
 	HasFile path
 	 -> io $ doesFileExist path
@@ -70,10 +73,10 @@ inScratchDir name build
 	-- Make sure a dir with this name doesn't already exist.
 	checkFalse $ HasDir name
 
-	ssystem $ "mkdir -p " ++ name               -- TODO: rewrite without shell options
+	ensureDir name
 	x	<- inDir name build
+	clobberDir name
 
-	ssystem $ "rm -Rf " ++ name                 -- TODO: rewrite without shell opts
 	return x
 
 
@@ -82,8 +85,9 @@ inScratchDir name build
 --   not follow symlinks, it just deletes them.
 clobberDir :: FilePath -> Build ()
 clobberDir path
- = do   ssystemq $ "rm -Rf " ++ path                 -- TODO: rewrite without shell opts
-        return ()
+ = do	e <- io $ try $ removeDirectoryRecursive path
+ 	case (e :: Either SomeException ()) of
+ 	 _	-> return ()
 
 -- | Create a new directory if it isn't already there, or return successfully if it is.
 ensureDir :: FilePath -> Build ()
@@ -91,8 +95,9 @@ ensureDir path
  = do	already	<- io $ doesDirectoryExist path
 	if already
 	 then return ()
-	 else do ssystemq $ "mkdir -p " ++ path         -- TODO: rewrite without shell opts
-                 return ()
+	 else do e <- io $ try $ createDirectoryIfMissing True path
+	 	 case (e :: Either SomeException ()) of
+		  _	-> return ()
 
 
 -- | Create a temp file, pass it to some command, then delete the file after the command finishes.
@@ -123,7 +128,10 @@ newTempFile
         ensureDir buildDir
 
 	-- Build the file name we'll try to use.
-	let fileName	 = buildDir ++ "/buildbox-" ++ show buildId ++ "-" ++ show buildSeq       
+	-- We need to account for a blank scratch directory, otherwise there is
+	-- no way to use the CD as a scratch on Windows.
+	let fileName	 = (if (null buildDir) then "" else (buildDir ++ "/"))
+		++ "buildbox-" ++ show buildId ++ "-" ++ show buildSeq
                                                 -- TODO: normalise path
 
 	-- If it already exists then something has gone badly wrong.
@@ -145,5 +153,6 @@ atomicWriteFile :: FilePath -> String -> Build ()
 atomicWriteFile filePath str
  = do	tmp	<- newTempFile
 	io $ writeFile tmp str
-	ssystemq $ "mv " ++ tmp ++ " " ++ filePath
-        return ()
+	e <- io $ try $ renameFile tmp filePath
+	case (e :: Either SomeException ()) of
+	 _	-> return ()
