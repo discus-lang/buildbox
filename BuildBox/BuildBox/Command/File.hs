@@ -10,7 +10,6 @@ module BuildBox.Command.File
 	, atomicWriteFile)
 where
 import BuildBox.Build
-import BuildBox.Command.System
 import System.Directory
 import Control.Exception
 import Control.Monad.State
@@ -81,13 +80,12 @@ inScratchDir name build
 
 
 -- | Delete a dir recursively if it's there, otherwise do nothing.
---   Unlike `removeDirectoryRecursive`, this function does
---   not follow symlinks, it just deletes them.
 clobberDir :: FilePath -> Build ()
 clobberDir path
  = do	e <- io $ try $ removeDirectoryRecursive path
  	case (e :: Either SomeException ()) of
  	 _	-> return ()
+
 
 -- | Create a new directory if it isn't already there, or return successfully if it is.
 ensureDir :: FilePath -> Build ()
@@ -156,3 +154,4 @@ atomicWriteFile filePath str
 	e <- io $ try $ renameFile tmp filePath
 	case (e :: Either SomeException ()) of
 	 _	-> return ()
+
