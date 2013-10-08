@@ -7,12 +7,14 @@ module BuildBox.Command.File
 	, clobberDir
 	, ensureDir
 	, withTempFile
-	, atomicWriteFile)
+	, atomicWriteFile
+        , exe )
 where
 import BuildBox.Build
 import System.Directory
 import Control.Exception
 import Control.Monad.State
+import System.Info
 
 -- | Properties of the file system we can test for.
 data PropFile
@@ -155,3 +157,8 @@ atomicWriteFile filePath str
 	case (e :: Either SomeException ()) of
 	 _	-> return ()
 
+-- | The file extension for an executable on the current system.
+exe :: String
+exe
+ | os == "mingw32"      = "exe"
+ | otherwise            = ""
