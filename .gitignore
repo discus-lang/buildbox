@@ -1,0 +1,4 @@
+buildbox/dist
+buildbox-tools/dist
+*.hi
+*.o
