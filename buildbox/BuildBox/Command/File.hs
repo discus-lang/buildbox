@@ -154,8 +154,18 @@ atomicWriteFile filePath str
  = do	tmp	<- newTempFile
 	io $ writeFile tmp str
 	e <- io $ try $ renameFile tmp filePath
+
+	-- renameFile may not be able to rename files across physical devices, 
+	-- depending on the implementation. If renameFile fails then try copyFile.
 	case (e :: Either SomeException ()) of
-	 _	-> return ()
+	 Right _ 	   
+ 	  -> return ()
+
+	 Left _
+ 	  -> do	io $ copyFile tmp filePath
+		io $ removeFile tmp
+		return ()
+
 
 -- | The file extension for an executable on the current system.
 exe :: String
