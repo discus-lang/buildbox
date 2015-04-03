@@ -1,6 +1,6 @@
 
 module BuildBox
-	( Build
+        ( Build
 
         -- * Building
         , runBuild

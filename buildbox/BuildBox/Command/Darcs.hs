@@ -11,7 +11,6 @@ module BuildBox.Command.Darcs (
 -- standard libraries
 import Data.Time
 import Data.Maybe
-import System.Locale
 import qualified Data.Sequence          as Seq
 import qualified Data.ByteString.Char8  as B
 

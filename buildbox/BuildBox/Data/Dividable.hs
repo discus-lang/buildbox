@@ -1,13 +1,13 @@
 
 module BuildBox.Data.Dividable
-	(Dividable(..))
+        (Dividable(..))
 where
 
 class Dividable a where
-	divide :: a -> a -> a
-	
+        divide :: a -> a -> a
+        
 instance Dividable Integer where
-	divide	= div
+        divide  = div
 
 instance Dividable Float where
-	divide	= (/)
+        divide  = (/)

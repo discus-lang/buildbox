@@ -1,15 +1,15 @@
 {-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances,
-             OverlappingInstances, IncoherentInstances #-}
+             IncoherentInstances #-}
 
 -- | Pretty printing utils.
 module BuildBox.Pretty
-	( module Text.PrettyPrint
-	, Pretty(..)
-	, padRc, padR
-	, padLc, padL
-	, blank
-	, pprEngDouble
-	, pprEngInteger)
+        ( module Text.PrettyPrint
+        , Pretty(..)
+        , padRc, padR
+        , padLc, padL
+        , blank
+        , pprEngDouble
+        , pprEngInteger)
 where
 import Text.PrettyPrint
 import Text.Printf
@@ -18,52 +18,52 @@ import Control.Monad
 
 -- Things that can be pretty printed
 class Pretty a where
- 	ppr :: a -> Doc
+        ppr :: a -> Doc
 
 -- Basic instances
 instance Pretty Doc where
-	ppr = id
-	
+        ppr = id
+        
 instance Pretty Float where
-	ppr = text . show
+        ppr = text . show
 
 instance Pretty Int where
-	ppr = int
-	
+        ppr = int
+        
 instance Pretty Integer where
-	ppr = text . show
+        ppr = text . show
 
 instance Pretty UTCTime where
-	ppr = text . show
-	
+        ppr = text . show
+        
 instance Pretty a => Pretty [a] where
-	ppr xx 
-		= lbrack <> (hcat $ punctuate (text ", ") (map ppr xx)) <> rbrack
+        ppr xx 
+                = lbrack <> (hcat $ punctuate (text ", ") (map ppr xx)) <> rbrack
 
 instance Pretty String where
-	ppr = text
+        ppr = text
 
 
 -- | Right justify a doc, padding with a given character.
 padRc :: Int -> Char -> Doc -> Doc
 padRc n c str
-	= (text $ replicate (n - length (render str)) c) <> str
-	
+        = (text $ replicate (n - length (render str)) c) <> str
+        
 
 -- | Right justify a string with spaces.
 padR :: Int -> Doc -> Doc
-padR n str	= padRc n ' ' str
+padR n str      = padRc n ' ' str
 
 
 -- | Left justify a string, padding with a given character.
 padLc :: Int -> Char -> Doc -> Doc
 padLc n c str
-	= str <> (text $ replicate (n - length (render str)) c)
+        = str <> (text $ replicate (n - length (render str)) c)
 
 
 -- | Left justify a string with spaces.
 padL :: Int -> Doc -> Doc
-padL n str	= padLc n ' ' str
+padL n str      = padLc n ' ' str
 
 -- | Blank text. This is different different from `empty` because it comes out a a newline when used in a `vcat`.
 blank :: Doc
@@ -74,8 +74,8 @@ blank = ppr ""
 --   Good for units where fractional values might not make sense (like bytes).
 pprEngInteger :: String -> Integer -> Maybe Doc
 pprEngInteger unit k
-    | k < 0	 = liftM (text "-" <>) $ pprEngInteger unit (-k)
-    | k > 1000	 = pprEngDouble unit (fromRational $ toRational k)
+    | k < 0      = liftM (text "-" <>) $ pprEngInteger unit (-k)
+    | k > 1000   = pprEngDouble unit (fromRational $ toRational k)
     | otherwise  = Just $ text $ printf "%5d%s " k unit
 
 
@@ -114,7 +114,7 @@ pprEngDouble unit k
     | k >= 1e-27 = Nothing
     | otherwise  = Just $ text $ printf "%5.0f%s " k unit
      where with (t :: Double) (u :: String)
-		| t >= 1e3  = text $ printf "%.0f%s" t u
-		| t >= 1e2  = text $ printf "%.1f%s" t u
-		| t >= 1e1  = text $ printf "%.2f%s" t u
-		| otherwise = text $ printf "%.3f%s" t u
+                | t >= 1e3  = text $ printf "%.0f%s" t u
+                | t >= 1e2  = text $ printf "%.1f%s" t u
+                | t >= 1e1  = text $ printf "%.2f%s" t u
+                | otherwise = text $ printf "%.3f%s" t u

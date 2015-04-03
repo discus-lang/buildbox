@@ -1,7 +1,7 @@
 {-# LANGUAGE PatternGuards, BangPatterns, NamedFieldPuns #-}
 module BuildBox.Command.System.Internals
-	( streamIn
-	, streamOuts)
+        ( streamIn
+        , streamOuts)
 where
 import System.IO
 import Control.Concurrent
@@ -12,9 +12,9 @@ import Foreign.Ptr
 import Data.IORef
 import Data.Char
 import Data.Word
-import Data.ByteString.Char8		(ByteString)
+import Data.ByteString.Char8            (ByteString)
 import qualified Data.ByteString.Internal       as BS
-import qualified Data.ByteString.Char8	        as BS	
+import qualified Data.ByteString.Char8          as BS   
 
 import GHC.IO.Handle.Internals
 import GHC.IO.Handle.Types
@@ -86,53 +86,53 @@ streamOuts :: [(TChan (Maybe ByteString), (Maybe Handle), QSem)] -> IO ()
 streamOuts !chans 
  = streamOuts' False [] chans
 
-	-- There doesn't seem to be a way to perform a unix-style "select" on channels.
-	-- We want to wait until any of the channels becomes available for reading.
-	-- We're doing this just by polling them each in turn, and waiting a bit
-	--	if none of them had any data.
-		
- where	-- we're done.
-	streamOuts' _ []   []	
-		= return ()
+        -- There doesn't seem to be a way to perform a unix-style "select" on channels.
+        -- We want to wait until any of the channels becomes available for reading.
+        -- We're doing this just by polling them each in turn, and waiting a bit
+        --      if none of them had any data.
+                
+ where  -- we're done.
+        streamOuts' _ []   []   
+                = return ()
 
-	-- play it again, sam.
-	streamOuts' True prev []	
-	 = 	streamOuts' False [] prev
+        -- play it again, sam.
+        streamOuts' True prev []        
+         =      streamOuts' False [] prev
 
-	streamOuts' False prev []
-	 = do   threadDelay 1000
+        streamOuts' False prev []
+         = do   threadDelay 1000
                 yield
-		streamOuts' False [] prev
+                streamOuts' False [] prev
  
-	-- try to read from the current chan.
-	streamOuts' !active !prev (!x@(!chan, !mHandle, !qsem) : rest)
-	 = do	
-		-- try and read a string from the channel, but don't block
-		-- if there aren't any.
-		mStr	<- atomically
-			$  do	isEmpty	<- isEmptyTChan chan
-				if isEmpty 
-				 then    return (False, Nothing)
+        -- try to read from the current chan.
+        streamOuts' !active !prev (!x@(!chan, !mHandle, !qsem) : rest)
+         = do   
+                -- try and read a string from the channel, but don't block
+                -- if there aren't any.
+                mStr    <- atomically
+                        $  do   isEmpty <- isEmptyTChan chan
+                                if isEmpty 
+                                 then    return (False, Nothing)
 
-				 else do mStr	<- readTChan chan
-					 return (True, mStr)
-				
-		case mStr of
-		 (False, _)
-		  -> streamOuts' active (prev ++ [x]) rest
+                                 else do mStr   <- readTChan chan
+                                         return (True, mStr)
+                                
+                case mStr of
+                 (False, _)
+                  -> streamOuts' active (prev ++ [x]) rest
 
-		 (True, Nothing)
-		  -> do	signalQSem qsem
-			streamOuts' active prev rest
+                 (True, Nothing)
+                  -> do signalQSem qsem
+                        streamOuts' active prev rest
 
-		 (True, Just str)
-		  | Just h	<- mHandle
-		  -> do	BS.hPutStr h str
-			hPutChar   h '\n'
-			streamOuts' True (prev ++ [x]) rest
+                 (True, Just str)
+                  | Just h      <- mHandle
+                  -> do BS.hPutStr h str
+                        hPutChar   h '\n'
+                        streamOuts' True (prev ++ [x]) rest
 
-		  | otherwise
-		  -> 	streamOuts' True (prev ++ [x]) rest					
+                  | otherwise
+                  ->    streamOuts' True (prev ++ [x]) rest                                     
 
 
 -- Code hacked out of Data.ByteString library.

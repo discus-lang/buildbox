@@ -13,7 +13,7 @@ import System.Directory
 
 -- | The builder monad encapsulates and IO action that can fail with an error, 
 --   and also read some global configuration info.
-type Build a 	= ErrorT BuildError (StateT BuildState IO) a
+type Build a    = ErrorT BuildError (StateT BuildState IO) a
 
 
 -- Build ------------------------------------------------------------------------------------------
@@ -21,65 +21,65 @@ type Build a 	= ErrorT BuildError (StateT BuildState IO) a
 --   temporary files (like \"/tmp\")
 runBuild :: FilePath -> Build a -> IO (Either BuildError a)
 runBuild scratchDir build
- = do	uid	<- getUniqueId
-	let s	= buildStateDefault uid scratchDir
-	evalStateT (runErrorT build) s
+ = do   uid     <- getUniqueId
+        let s   = buildStateDefault uid scratchDir
+        evalStateT (runErrorT build) s
 
 
 -- | Like 'runBuild`, but report whether it succeeded to the console.
 --   If it succeeded then return Just the result, else Nothing.
 runBuildPrint :: FilePath -> Build a -> IO (Maybe a)
 runBuildPrint scratchDir build
- = do	uid	<- getUniqueId
-	let s	= buildStateDefault uid scratchDir
-	runBuildPrintWithState s build
+ = do   uid     <- getUniqueId
+        let s   = buildStateDefault uid scratchDir
+        runBuildPrintWithState s build
 
 
 -- | Like `runBuild` but also takes a `BuildState`.
 runBuildWithState :: BuildState -> Build a -> IO (Maybe a)
 runBuildWithState s build
- = do	result	<- evalStateT (runErrorT build) s
-	case result of
-	 Left err
-	  -> do	putStrLn $ render $ ppr err
-		return $ Nothing
-		
-	 Right x
-	  -> do	return $ Just x
+ = do   result  <- evalStateT (runErrorT build) s
+        case result of
+         Left err
+          -> do putStrLn $ render $ ppr err
+                return $ Nothing
+                
+         Right x
+          -> do return $ Just x
 
 
 -- | Like `runBuildPrint` but also takes a `BuildState`.
 runBuildPrintWithState :: BuildState -> Build a -> IO (Maybe a)
 runBuildPrintWithState s build
- = do	result	<- evalStateT (runErrorT build) s
-	case result of
-	 Left err
-	  -> do	putStrLn "\nBuild failed"
-		putStr   "  due to "
-		putStrLn $ render $ ppr err
-		return $ Nothing
-		
-	 Right x
-	  -> do	putStrLn "Build succeeded."
-		return $ Just x
+ = do   result  <- evalStateT (runErrorT build) s
+        case result of
+         Left err
+          -> do putStrLn "\nBuild failed"
+                putStr   "  due to "
+                putStrLn $ render $ ppr err
+                return $ Nothing
+                
+         Right x
+          -> do putStrLn "Build succeeded."
+                return $ Just x
 
 
 -- | Discard the resulting value of a compuation.
 --   Used like @successfully . runBuild ...@
 successfully :: IO a -> IO ()
-successfully f 	= f >> return ()
+successfully f  = f >> return ()
 
 
 -- | Get a unique(ish) id for this process.
 --   The random seeds the global generator with the cpu time in psecs, which should be good enough.
 getUniqueId :: IO Integer
 getUniqueId
- 	= randomRIO (0, 1000000000)	
+        = randomRIO (0, 1000000000)     
 
 -- Errors -----------------------------------------------------------------------------------------
 -- | Throw an error in the build monad.
 throw :: BuildError -> Build a
-throw	= throwError
+throw   = throwError
 
 
 -- | Run a build command, catching any exceptions it sends.
@@ -98,12 +98,12 @@ catch build handle
 --   created.
 needs :: FilePath -> Build ()
 needs filePath
- = do	isFile	<- io $ doesFileExist filePath
-	isDir	<- io $ doesDirectoryExist filePath
-	
-	if isFile || isDir
-	 then return ()
-	 else throw $ ErrorNeeds filePath
+ = do   isFile  <- io $ doesFileExist filePath
+        isDir   <- io $ doesDirectoryExist filePath
+        
+        if isFile || isDir
+         then return ()
+         else throw $ ErrorNeeds filePath
 
 
 -- Utils ------------------------------------------------------------------------------------------
@@ -112,45 +112,45 @@ needs filePath
 --   `ErrorIOError` exceptions in our `Build` monad.
 io :: IO a -> Build a
 io x
- = do	-- catch IOError exceptions
-	result	<- liftIO $ try x
-	
-	case result of
-	 Left err	-> throw $ ErrorIOError err
-	 Right res	-> return res
+ = do   -- catch IOError exceptions
+        result  <- liftIO $ try x
+        
+        case result of
+         Left err       -> throw $ ErrorIOError err
+         Right res      -> return res
 
 
 -- | Like `when`, but with teh monadz.
 whenM :: Monad m => m Bool -> m () -> m ()
 whenM cb cx
- = do	b	<- cb
-	if b then cx else return ()
+ = do   b       <- cb
+        if b then cx else return ()
 
 
 -- Output -----------------------------------------------------------------------------------------
 -- | Print some text to stdout.
 out :: Pretty a => a -> Build ()
-out str	
+out str 
  = io 
- $ do	putStr   $ render $ ppr str
-	hFlush stdout
+ $ do   putStr   $ render $ ppr str
+        hFlush stdout
 
 -- | Print some text to stdout followed by a newline.
 outLn :: Pretty a => a -> Build ()
-outLn str	= io $ putStrLn $ render $ ppr str
+outLn str       = io $ putStrLn $ render $ ppr str
 
 
 -- | Print a blank line to stdout
 outBlank :: Build ()
-outBlank	= out $ text "\n"
+outBlank        = out $ text "\n"
 
 
 -- | Print a @-----@ line to stdout 
 outLine :: Build ()
-outLine 	= io $ putStr (replicate 80 '-' ++ "\n")
+outLine         = io $ putStr (replicate 80 '-' ++ "\n")
 
 
 -- | Print a @=====@ line to stdout
 outLINE :: Build ()
-outLINE		= io $ putStr (replicate 80 '=' ++ "\n")
-	
+outLINE         = io $ putStr (replicate 80 '=' ++ "\n")
+        

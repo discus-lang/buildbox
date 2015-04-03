@@ -1,34 +1,34 @@
 
 -- | Defines the main `Build` monad and common utils.
 module BuildBox.Build 
-	( module BuildBox.Build.Testable
-	, module BuildBox.Build.BuildState
-	, Build
+        ( module BuildBox.Build.Testable
+        , module BuildBox.Build.BuildState
+        , Build
 
-	-- * Building
-	, runBuild
-	, runBuildWithState
-	, runBuildPrint
-	, runBuildPrintWithState
-	, successfully
+        -- * Building
+        , runBuild
+        , runBuildWithState
+        , runBuildPrint
+        , runBuildPrintWithState
+        , successfully
 
-	-- * Errors
+        -- * Errors
         , BuildError    (..)
-	, throw
+        , throw
         , catch
-	, needs
+        , needs
 
-	-- * Utils
-	, io
-	, whenM
+        -- * Utils
+        , io
+        , whenM
 
-	-- * Output
-	, out
-	, outLn
-	, outBlank
-	, outLine
-	, outLINE
-	, logSystem)
+        -- * Output
+        , out
+        , outLn
+        , outBlank
+        , outLine
+        , outLINE
+        , logSystem)
 
 where
 import BuildBox.Build.Base
@@ -43,12 +43,12 @@ import Prelude
 -- | Log a system command to the handle in our `BuildConfig`, if any.
 logSystem :: String -> Build ()
 logSystem cmd
- = do	mHandle	<- gets buildStateLogSystem
-	case mHandle of
-	 Nothing	-> return ()
-	 Just handle	
-	  -> do	io $ hPutStr   handle "buildbox system: "
-		io $ hPutStrLn handle cmd
-		return ()
+ = do   mHandle <- gets buildStateLogSystem
+        case mHandle of
+         Nothing        -> return ()
+         Just handle    
+          -> do io $ hPutStr   handle "buildbox system: "
+                io $ hPutStrLn handle cmd
+                return ()
 
 

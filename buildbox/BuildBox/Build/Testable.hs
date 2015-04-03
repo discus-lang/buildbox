@@ -3,13 +3,13 @@
 --
 --   They have `Show` instances so we can make nice error messages if a `check` fails.
 module BuildBox.Build.Testable
-	( Testable(..)
-	, check
-	, checkFalse
-	, outCheckOk
-	, outCheckFalseOk)
+        ( Testable(..)
+        , check
+        , checkFalse
+        , outCheckOk
+        , outCheckFalseOk)
 where
-import BuildBox.Build.Base	
+import BuildBox.Build.Base      
 import BuildBox.Build.BuildError
 import Control.Monad.Error
 
@@ -22,38 +22,38 @@ class Testable prop where
 --   If the check returns false then throw an error.
 check :: (Show prop, Testable prop) => prop -> Build ()
 check prop
- = do	result	<- test prop
-	if result
-	 then return ()
-	 else throwError $ ErrorCheckFailed True prop
+ = do   result  <- test prop
+        if result
+         then return ()
+         else throwError $ ErrorCheckFailed True prop
 
 
 -- | Testable properties are checkable.
 --   If the check returns true then throw an error.
 checkFalse :: (Show prop, Testable prop) => prop -> Build ()
 checkFalse prop
- = do	result	<- test prop
-	if result
-	 then throwError $ ErrorCheckFailed False prop
-	 else return ()
-	
+ = do   result  <- test prop
+        if result
+         then throwError $ ErrorCheckFailed False prop
+         else return ()
+        
 
 -- | Check some property while printing what we're doing.
 outCheckOk 
-	:: (Show prop, Testable prop) 
-	=> String -> prop -> Build ()
+        :: (Show prop, Testable prop) 
+        => String -> prop -> Build ()
 
 outCheckOk str prop
- = do	outLn str
-	check prop
+ = do   outLn str
+        check prop
 
 
 -- | Check some property while printing what we're doing.
 outCheckFalseOk 
-	:: (Show prop, Testable prop) 
-	=> String -> prop -> Build ()
+        :: (Show prop, Testable prop) 
+        => String -> prop -> Build ()
 
 outCheckFalseOk str prop
- = do	outLn str
-	checkFalse prop
+ = do   outLn str
+        checkFalse prop
 

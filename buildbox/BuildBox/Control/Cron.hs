@@ -3,8 +3,8 @@
 
 -- | A simple ''cron'' loop. Used for running commands according to a given schedule.
 module BuildBox.Control.Cron
-	( module BuildBox.Data.Schedule
-	, cronLoop )
+        ( module BuildBox.Data.Schedule
+        , cronLoop )
 where
 import BuildBox.Build
 import BuildBox.Data.Schedule
@@ -18,26 +18,26 @@ import Data.Time
 --
 cronLoop :: Schedule (Build ())-> Build ()
 cronLoop schedule
- = do	startTime	<- io $ getCurrentTime
+ = do   startTime       <- io $ getCurrentTime
 
-	case earliestEventToStartAt startTime $ eventsOfSchedule schedule of
-	 Nothing 
-	  -> do	sleep 1
-		cronLoop schedule
-		
-	 Just event 
-	  -> do	let Just build	= lookupCommandOfSchedule (eventName event) schedule
-		build
-		endTime		<- io $ getCurrentTime
+        case earliestEventToStartAt startTime $ eventsOfSchedule schedule of
+         Nothing 
+          -> do sleep 1
+                cronLoop schedule
+                
+         Just event 
+          -> do let Just build  = lookupCommandOfSchedule (eventName event) schedule
+                build
+                endTime         <- io $ getCurrentTime
 
-		let event'	= event
-				{ eventLastStarted	= Just startTime
-				, eventLastEnded	= Just endTime }
+                let event'      = event
+                                { eventLastStarted      = Just startTime
+                                , eventLastEnded        = Just endTime }
 
-		let schedule'	= adjustEventOfSchedule event' schedule
-	
-		cronLoop schedule'
-				
-		
-		
-	
+                let schedule'   = adjustEventOfSchedule event' schedule
+        
+                cronLoop schedule'
+                                
+                
+                
+        
