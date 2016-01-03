@@ -33,10 +33,11 @@ import Control.Monad
 import Control.Monad.STM
 import System.Exit
 import System.IO
-import Data.ByteString.Char8            (ByteString)
+import Data.ByteString                  (ByteString)
 import BuildBox.Data.Log                (Log)
 import System.Process                   hiding (system)
 import qualified BuildBox.Data.Log      as Log
+import qualified Data.Text.Encoding     as Text
 
 debug :: Bool
 debug   = False
@@ -226,8 +227,8 @@ systemTeeLogIO tee cmd logIn
 
 slurpChan :: TChan (Maybe ByteString) -> Log -> IO Log
 slurpChan !chan !ll
- = do   mStr    <- atomically $ readTChan chan
-        case mStr of
-         Nothing        -> return ll
-         Just str       -> slurpChan chan (ll Log.|> str)
+ = do   mBS     <- atomically $ readTChan chan
+        case mBS of
+         Nothing    -> return ll
+         Just bs    -> slurpChan chan (ll Log.|> Text.decodeUtf8 bs)
 

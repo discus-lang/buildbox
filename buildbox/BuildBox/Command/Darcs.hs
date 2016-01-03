@@ -12,7 +12,7 @@ module BuildBox.Command.Darcs (
 import Data.Time
 import Data.Maybe
 import qualified Data.Sequence          as Seq
-import qualified Data.ByteString.Char8  as B
+import qualified Data.Text              as Text
 
 -- friends
 import BuildBox.Build
@@ -50,14 +50,12 @@ changes = darcs . ("darcs changes --repo=" ++) . fromMaybe "."
 --
 
 -- | Retrieve the last N changes from the repository
---
 changesN :: Maybe DarcsPath -> Int -> Build [DarcsPatch]
 changesN repo n =
   darcs $ "darcs changes --last=" ++ show n
                     ++ " --repo=" ++ fromMaybe "." repo
 
 -- | Retrieve all patches submitted to the repository after the given time
---
 changesAfter :: Maybe DarcsPath -> LocalTime -> Build [DarcsPatch]
 changesAfter repo time =
   darcs $ "darcs changes --matches='date \"after " ++ show time ++ "\"'"
@@ -66,7 +64,6 @@ changesAfter repo time =
 
 -- Execute the given darcs command string and split the stdout into a series of
 -- patches
---
 darcs :: String -> Build [DarcsPatch]
 darcs cmd = do
   (status, logOut, logErr) <- systemTeeLog False cmd Log.empty
@@ -77,11 +74,11 @@ darcs cmd = do
 splitPatches :: Log.Log -> [DarcsPatch]
 splitPatches l
   | Seq.null l = []
-  | otherwise  = let (h,t) = Seq.breakl B.null l
-                 in  patch h : splitPatches (Seq.dropWhileL B.null t)
+  | otherwise  = let (h,t) = Seq.breakl Text.null l
+                 in  patch h : splitPatches (Seq.dropWhileL Text.null t)
   where
     patch p =
-      let toks          = words . B.unpack $ Seq.index p 0
+      let toks          = words . Text.unpack $ Seq.index p 0
           (time,author) = splitAt 6 toks
       in
       DarcsPatch

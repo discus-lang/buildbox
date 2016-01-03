@@ -14,16 +14,16 @@ module BuildBox.Data.Log
         , firstLines
         , lastLines)
 where
-import Data.ByteString.Char8            (ByteString)
 import Data.Sequence                    (Seq)
-import qualified Data.ByteString.Char8  as BS
+import Data.Text                        (Text)
+import qualified Data.Text              as Text
 import qualified Data.Sequence          as Seq
 import qualified Data.Foldable          as F
 import Prelude                          hiding (null)
 
 -- | A sequence of lines, without newline charaters on the end.
 type Log        = Seq Line
-type Line       = ByteString
+type Line       = Text
 
 
 -- | O(1) No logs here.
@@ -37,16 +37,16 @@ null  = Seq.null
 -- | O(n) Convert a `Log` to a `String`.
 toString :: Log -> String
 toString ll     
-        = BS.unpack 
-        $ BS.intercalate (BS.pack "\n") 
+        = Text.unpack 
+        $ Text.intercalate (Text.pack "\n") 
         $ F.toList ll
 
 -- | O(n) Convert a `String` to a `Log`.
 fromString :: String -> Log
 fromString str  
         = Seq.fromList 
-        $ BS.splitWith (== '\n')
-        $ BS.pack str
+        $ Text.lines 
+        $ Text.pack str
 
 
 -- | O(1) Add a `Line` to the start of a `Log`.

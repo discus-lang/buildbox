@@ -14,7 +14,7 @@ import Data.Char
 import Data.Word
 import Data.ByteString.Char8            (ByteString)
 import qualified Data.ByteString.Internal       as BS
-import qualified Data.ByteString.Char8          as BS   
+import qualified Data.ByteString                as BS   
 
 import GHC.IO.Handle.Internals
 import GHC.IO.Handle.Types
@@ -60,15 +60,16 @@ streamIn' !gotNewLine !hRead !chan
                 -- Check whether we got an actual newline character on the
                 -- end of the string.
                 let hasNewLine
-                     | BS.last str == '\n'        = True
-                     | otherwise                  = False
+                     | BS.last str == (fromIntegral $ ord '\n')    
+                                        = True
+                     | otherwise        = False
                  
                 -- For string ending in newline characters, we don't want to
                 -- push the newline to the consumer, but we need to remember
                 -- if we've seen one to handle the end-of-file condition properly.
                 let str'
-                     | hasNewLine                 = BS.init str
-                     | otherwise                  = str
+                     | hasNewLine       = BS.init str
+                     | otherwise        = str
                            
                 atomically $ writeTChan chan (Just str')
                 streamIn' hasNewLine hRead chan)
@@ -182,7 +183,7 @@ hGetLineNL h =
                 -- was no newline character on the input.
                 if r == w
                   then mkBigPS new_len (xs:xss)
-                  else mkBigPS new_len (BS.pack "\n" : xs : xss)
+                  else mkBigPS new_len (BS.pack [fromIntegral $ ord '\n'] : xs : xss)
 
          else do
                 fill h_ buf{ bufL=0, bufR=0 } new_len (xs:xss)
