@@ -20,6 +20,7 @@ import Data.IORef
 import qualified Data.Set       as Set
 import Data.Set                 (Set)
 
+
 -- Gang -----------------------------------------------------------------------
 -- | Abstract gang of threads.
 data Gang
@@ -60,7 +61,7 @@ getGangState gang
 -- | Block until all actions have finished executing,
 --   or the gang is killed.
 joinGang :: Gang -> IO ()
-joinGang gang
+joinGang !gang
  = do   state   <- readIORef (gangState gang)
         if state == GangFinished || state == GangKilled
          then return ()
@@ -72,7 +73,7 @@ joinGang gang
 -- | Block until already started actions have completed, but don't start any more.
 --   Gang state changes to `GangFlushing`.
 flushGang :: Gang -> IO ()
-flushGang gang
+flushGang !gang
  = do   writeIORef (gangState gang) GangFlushing
         waitForGangState gang GangFinished
 
@@ -81,21 +82,21 @@ flushGang gang
 --   but no more will be started until a `resumeGang` command is issued.
 --   Gang state changes to `GangPaused`.
 pauseGang :: Gang -> IO ()
-pauseGang gang
+pauseGang !gang
         = writeIORef (gangState gang) GangPaused
 
 
 -- | Resume a paused gang, which allows it to continue starting new actions.
 --   Gang state changes to `GangRunning`.
 resumeGang :: Gang -> IO ()
-resumeGang gang
+resumeGang !gang
         = writeIORef (gangState gang) GangRunning
 
 
 -- | Kill all the threads in a gang.
 --   Gang stage changes to `GangKilled`.
 killGang :: Gang -> IO ()
-killGang gang
+killGang !gang
  = do   writeIORef (gangState gang) GangKilled
         tids    <- readIORef (gangThreadsRunning gang) 
         mapM_ killThread $ Set.toList tids
@@ -103,7 +104,7 @@ killGang gang
 
 -- | Block until the gang is in the given state.
 waitForGangState :: Gang -> GangState -> IO ()
-waitForGangState gang waitState
+waitForGangState !gang !waitState
  = do   state   <- readIORef (gangState gang)
         if state == waitState
          then return ()
@@ -117,13 +118,13 @@ waitForGangState gang waitState
 --   Gang state starts as `GangRunning` then transitions to `GangFinished`.
 --   To block until all the actions are finished use `joinGang`.
 forkGangActions
-        :: Int                  -- ^ Number of worker threads in the gang \/ maximum number
-                                --   of actions to execute concurrenty.
-        -> [IO ()]              -- ^ Actions to run. They are started in-order, but may finish
-                                --   out-of-order depending on the run time of the individual action.
+        :: Int          -- ^ Number of worker threads in the gang \/ maximum number
+                        --   of actions to execute concurrenty.
+        -> [IO ()]      -- ^ Actions to run. They are started in-order, but may finish
+                        --   out-of-order depending on the run time of the individual action.
         -> IO Gang
 
-forkGangActions threads actions
+forkGangActions !threads !actions
  = do   semThreads              <- newQSemN threads
         refState                <- newIORef GangRunning
         refActionsRunning       <- newIORef 0
@@ -142,7 +143,7 @@ forkGangActions threads actions
 
 -- | Run actions on a gang.
 gangLoop :: Gang -> [IO ()] -> IO ()
-gangLoop gang []
+gangLoop !gang []
  = do   -- Wait for all the threads to finish.
         waitQSemN 
                 (gangThreadsAvailable gang) 
@@ -152,8 +153,9 @@ gangLoop gang []
         writeIORef (gangState gang) GangFinished
 
 
-gangLoop gang actions@(action:actionsRest)
- = do   state   <- readIORef (gangState gang)
+gangLoop !gang actions@(action:actionsRest)
+ = do   
+        state   <- readIORef (gangState gang)
         case state of
          GangRunning 
           -> do -- Wait for a worker thread to become available.
@@ -177,8 +179,9 @@ gangLoop gang actions@(action:actionsRest)
 
 -- we have an available worker
 gangLoop_withWorker :: Gang -> IO () -> [IO ()] -> IO ()
-gangLoop_withWorker gang action actionsRest
- = do   -- See if we're supposed to be starting actions or not.
+gangLoop_withWorker !gang !action !actionsRest
+ = do   
+        -- See if we're supposed to be starting actions or not.
         state   <- readIORef (gangState gang)
         case state of
          GangRunning
@@ -192,13 +195,13 @@ gangLoop_withWorker gang action actionsRest
                         
                         -- remove our ThreadId from the set of running ThreadIds.
                         tid     <- myThreadId
-                        atomicModifyIORef (gangThreadsRunning gang)
+                        atomicModifyIORef' (gangThreadsRunning gang)
                                 (\tids -> (Set.delete tid tids, ()))
         
                 -- Add the ThreadId of the freshly forked thread to the set
                 -- of running ThreadIds. We'll need this set if we want to kill
                 -- the gang.
-                atomicModifyIORef (gangThreadsRunning gang)
+                atomicModifyIORef' (gangThreadsRunning gang)
                         (\tids -> (Set.insert tid tids, ()))
         
                 -- handle the rest of the actions.
@@ -209,3 +212,5 @@ gangLoop_withWorker gang action actionsRest
          _ -> do
                 signalQSemN (gangThreadsAvailable gang) 1
                 gangLoop gang (action:actionsRest)
+
+

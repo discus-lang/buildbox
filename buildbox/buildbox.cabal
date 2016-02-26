@@ -71,3 +71,4 @@ Library
 
   Extensions:
         ExistentialQuantification
+        BangPatterns
