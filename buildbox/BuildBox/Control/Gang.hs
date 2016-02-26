@@ -26,9 +26,14 @@ import Data.Set                 (Set)
 data Gang
         = Gang 
         { gangThreads           :: Int
+
+        -- | Number of worker threads currently waiting.
         , gangThreadsAvailable  :: QSemN
+
         , gangState             :: IORef GangState
+
         , gangActionsRunning    :: IORef Int 
+
         , gangThreadsRunning    :: IORef (Set ThreadId) }
 
 
@@ -62,11 +67,28 @@ getGangState gang
 --   or the gang is killed.
 joinGang :: Gang -> IO ()
 joinGang !gang
- = do   state   <- readIORef (gangState gang)
+ = do   
+        -- Wait for all the threads to become available.
+        waitQSemN (gangThreadsAvailable gang)
+                  (gangThreads gang)
+
+        -- See what state the gang is now in.
+        state   <- readIORef (gangState gang)
+
         if state == GangFinished || state == GangKilled
+         -- The gang is done.
          then return ()
+
+         -- Hmm. We're holding all the threads but the gang is still
+         -- running. Maybe the controller hasn't started the first
+         -- one yet. Just put them all back and try again.
+         -- We delay for a moment to allow the controller to run.
          else do
                 threadDelay 1000
+
+                signalQSemN (gangThreadsAvailable gang)
+                            (gangThreads gang)
+
                 joinGang gang
 
 
@@ -74,7 +96,7 @@ joinGang !gang
 --   Gang state changes to `GangFlushing`.
 flushGang :: Gang -> IO ()
 flushGang !gang
- = do   writeIORef (gangState gang) GangFlushing
+ = do   atomicWriteIORef (gangState gang) GangFlushing
         waitForGangState gang GangFinished
 
 
@@ -83,33 +105,59 @@ flushGang !gang
 --   Gang state changes to `GangPaused`.
 pauseGang :: Gang -> IO ()
 pauseGang !gang
-        = writeIORef (gangState gang) GangPaused
+ = do   -- Set the gang to paused mode.
+        -- This will prevent any new threads from being started.
+        atomicWriteIORef (gangState gang) GangPaused
 
 
 -- | Resume a paused gang, which allows it to continue starting new actions.
---   Gang state changes to `GangRunning`.
+--   If the gang was paused it now changes to `GangRunning`,
+--   otherwise nothing happens.
 resumeGang :: Gang -> IO ()
 resumeGang !gang
-        = writeIORef (gangState gang) GangRunning
+ = atomicModifyIORef' (gangState gang) $ \state 
+ -> do  case state of 
+         GangPaused     -> (GangRunning, ())
+         _              -> (state, ())
 
 
 -- | Kill all the threads in a gang.
 --   Gang stage changes to `GangKilled`.
 killGang :: Gang -> IO ()
 killGang !gang
- = do   writeIORef (gangState gang) GangKilled
+ = do   
+        atomicWriteIORef (gangState gang) GangKilled
+
         tids    <- readIORef (gangThreadsRunning gang) 
         mapM_ killThread $ Set.toList tids
+
+        -- Signal that all the threads are available.
+        --
+        -- NOTE: There is a race here where a thread might have terminated
+        -- cleanly and already bumped the QSemN just before were to add 
+        -- to it, but we've killed the gang anyway so nothing more will
+        -- be run.
+        signalQSemN (gangThreadsAvailable gang) (length tids)
 
 
 -- | Block until the gang is in the given state.
 waitForGangState :: Gang -> GangState -> IO ()
 waitForGangState !gang !waitState
- = do   state   <- readIORef (gangState gang)
+ = do   
+        -- Wait for all the threads to become available.
+        waitQSemN (gangThreadsAvailable gang)
+                  (gangThreads gang)
+
+        state   <- readIORef (gangState gang)
+
         if state == waitState
          then return ()
          else do
                 threadDelay 1000
+
+                signalQSemN (gangThreadsAvailable gang)
+                            (gangThreads gang)
+
                 waitForGangState gang waitState
 
 
@@ -143,49 +191,23 @@ forkGangActions !threads !actions
 
 -- | Run actions on a gang.
 gangLoop :: Gang -> [IO ()] -> IO ()
-gangLoop !gang []
- = do   -- Wait for all the threads to finish.
-        waitQSemN 
-                (gangThreadsAvailable gang) 
-                (gangThreads gang)
-                
-        -- Signal that the gang is finished running actions.
-        writeIORef (gangState gang) GangFinished
 
+gangLoop !gang []
+ = do   -- Signal that the gang is finished running actions.
+        writeIORef (gangState gang) GangFinished
 
 gangLoop !gang actions@(action:actionsRest)
  = do   
+        -- Wait for a worker thread to become available.
+        waitQSemN  (gangThreadsAvailable gang) 1
+        
+        -- See what state the gang is in.
         state   <- readIORef (gangState gang)
+
         case state of
          GangRunning 
-          -> do -- Wait for a worker thread to become available.
-                waitQSemN (gangThreadsAvailable gang) 1
-                gangLoop_withWorker gang action actionsRest
-
-         GangPaused
-          -> do threadDelay 1000
-                gangLoop gang actions
-                        
-         GangFlushing
-          -> do actionsRunning  <- readIORef (gangActionsRunning gang)
-                if actionsRunning == 0
-                 then   writeIORef (gangState gang) GangFinished
-                 else do        
-                        threadDelay 1000
-                        gangLoop gang []
-
-         GangFinished   -> return ()
-         GangKilled     -> return ()
-
--- we have an available worker
-gangLoop_withWorker :: Gang -> IO () -> [IO ()] -> IO ()
-gangLoop_withWorker !gang !action !actionsRest
- = do   
-        -- See if we're supposed to be starting actions or not.
-        state   <- readIORef (gangState gang)
-        case state of
-         GangRunning
-          -> do -- fork off the first action
+          -> do 
+                -- Fork off the next action.
                 tid <- forkOS $ do
                         -- run the action (and wait for it to complete)
                         action
@@ -207,10 +229,19 @@ gangLoop_withWorker !gang !action !actionsRest
                 -- handle the rest of the actions.
                 gangLoop gang actionsRest
 
-         -- someone issued flush or pause command while we
-         -- were waiting for a worker, so don't start next action.
-         _ -> do
-                signalQSemN (gangThreadsAvailable gang) 1
-                gangLoop gang (action:actionsRest)
+         GangPaused
+          -> do threadDelay 1000
+                gangLoop gang actions
+                        
+         GangFlushing
+          -> do actionsRunning  <- readIORef (gangActionsRunning gang)
+                if actionsRunning == 0
+                 then   writeIORef (gangState gang) GangFinished
+                 else do        
+                        threadDelay 1000
+                        gangLoop gang []
+
+         GangFinished   -> return ()
+         GangKilled     -> return ()
 
 
