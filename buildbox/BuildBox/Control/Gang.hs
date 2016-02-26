@@ -16,6 +16,7 @@ module BuildBox.Control.Gang
         , waitForGangState)
 where
 import Control.Concurrent
+import Control.Exception
 import Data.IORef
 import qualified Data.Set       as Set
 import Data.Set                 (Set)
@@ -206,19 +207,19 @@ gangLoop !gang actions@(action:actionsRest)
 
         case state of
          GangRunning 
-          -> do 
-                -- Fork off the next action.
-                tid <- forkOS $ do
-                        -- run the action (and wait for it to complete)
-                        action
+          -> do -- Fork off the next action.
+                -- We need to use the 'finally' to release the thread
+                -- in the case that the action throws an exception.
+                tid     <- forkOS 
+                        $  finally action
+                        $  do   -- Remove our ThreadId from the set of
+                                -- running ThreadIds.
+                                tid     <- myThreadId
+                                atomicModifyIORef' (gangThreadsRunning gang)
+                                        (\tids -> (Set.delete tid tids, ()))
 
-                        -- signal that a new worker is available
-                        signalQSemN (gangThreadsAvailable gang) 1
-                        
-                        -- remove our ThreadId from the set of running ThreadIds.
-                        tid     <- myThreadId
-                        atomicModifyIORef' (gangThreadsRunning gang)
-                                (\tids -> (Set.delete tid tids, ()))
+                                -- Signal that the worker is now available.
+                                signalQSemN (gangThreadsAvailable gang) 1
         
                 -- Add the ThreadId of the freshly forked thread to the set
                 -- of running ThreadIds. We'll need this set if we want to kill
@@ -226,21 +227,16 @@ gangLoop !gang actions@(action:actionsRest)
                 atomicModifyIORef' (gangThreadsRunning gang)
                         (\tids -> (Set.insert tid tids, ()))
         
-                -- handle the rest of the actions.
+                -- Handle the rest of the actions.
                 gangLoop gang actionsRest
 
+         -- TODO: avoid spinning on pause.
          GangPaused
-          -> do threadDelay 1000
+          -> do signalQSemN (gangThreadsAvailable gang) 1
+                threadDelay 1000
                 gangLoop gang actions
                         
-         GangFlushing
-          -> do actionsRunning  <- readIORef (gangActionsRunning gang)
-                if actionsRunning == 0
-                 then   writeIORef (gangState gang) GangFinished
-                 else do        
-                        threadDelay 1000
-                        gangLoop gang []
-
+         GangFlushing   -> return ()
          GangFinished   -> return ()
          GangKilled     -> return ()
 
