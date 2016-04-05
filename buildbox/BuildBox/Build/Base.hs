@@ -4,16 +4,15 @@ module BuildBox.Build.Base where
 import BuildBox.Pretty
 import BuildBox.Build.BuildError
 import BuildBox.Build.BuildState
-import Control.Monad.Error
+import Control.Monad.Catch
 import Control.Monad.State
-import Control.Exception        (try)
 import System.IO
-import System.Random
 import System.Directory
+
 
 -- | The builder monad encapsulates and IO action that can fail with an error, 
 --   and also read some global configuration info.
-type Build a    = ErrorT BuildError (StateT BuildState IO) a
+type Build a    = StateT BuildState IO a
 
 
 -- Build ------------------------------------------------------------------------------------------
@@ -21,26 +20,24 @@ type Build a    = ErrorT BuildError (StateT BuildState IO) a
 --   temporary files (like \"/tmp\")
 runBuild :: FilePath -> Build a -> IO (Either BuildError a)
 runBuild scratchDir build
- = do   uid     <- getUniqueId
-        let s   = buildStateDefault uid scratchDir
-        evalStateT (runErrorT build) s
+ = do   let s   = buildStateDefault scratchDir
+        try $ evalStateT build s
 
 
 -- | Like 'runBuild`, but report whether it succeeded to the console.
 --   If it succeeded then return Just the result, else Nothing.
 runBuildPrint :: FilePath -> Build a -> IO (Maybe a)
 runBuildPrint scratchDir build
- = do   uid     <- getUniqueId
-        let s   = buildStateDefault uid scratchDir
+ = do   let s   = buildStateDefault scratchDir
         runBuildPrintWithState s build
 
 
 -- | Like `runBuild` but also takes a `BuildState`.
 runBuildWithState :: BuildState -> Build a -> IO (Maybe a)
 runBuildWithState s build
- = do   result  <- evalStateT (runErrorT build) s
+ = do   result  <- try $ evalStateT build s
         case result of
-         Left err
+         Left (err :: BuildError)
           -> do putStrLn $ render $ ppr err
                 return $ Nothing
                 
@@ -51,9 +48,9 @@ runBuildWithState s build
 -- | Like `runBuildPrint` but also takes a `BuildState`.
 runBuildPrintWithState :: BuildState -> Build a -> IO (Maybe a)
 runBuildPrintWithState s build
- = do   result  <- evalStateT (runErrorT build) s
+ = do   result  <- try $ evalStateT build s
         case result of
-         Left err
+         Left (err :: BuildError)
           -> do putStrLn "\nBuild failed"
                 putStr   "  due to "
                 putStrLn $ render $ ppr err
@@ -70,29 +67,7 @@ successfully :: IO a -> IO ()
 successfully f  = f >> return ()
 
 
--- | Get a unique(ish) id for this process.
---   The random seeds the global generator with the cpu time in psecs, which should be good enough.
-getUniqueId :: IO Integer
-getUniqueId
-        = randomRIO (0, 1000000000)     
-
 -- Errors -----------------------------------------------------------------------------------------
--- | Throw an error in the build monad.
-throw :: BuildError -> Build a
-throw   = throwError
-
-
--- | Run a build command, catching any exceptions it sends.
-catch :: Build a -> (BuildError -> Build a) -> Build a
-catch build handle
- = do   s            <- get
-        (result, s') <- io $ runStateT (runErrorT build) s
-        case result of
-         Left err -> handle err
-         Right x  
-          -> do put s'
-                return x
-
 -- | Throw a needs error saying we needs the given file.
 --   A catcher could then usefully create the file, or defer the compuation until it has been 
 --   created.
@@ -103,7 +78,7 @@ needs filePath
         
         if isFile || isDir
          then return ()
-         else throw $ ErrorNeeds filePath
+         else throwM $ ErrorNeeds filePath
 
 
 -- Utils ------------------------------------------------------------------------------------------
@@ -116,7 +91,7 @@ io x
         result  <- liftIO $ try x
         
         case result of
-         Left err       -> throw $ ErrorIOError err
+         Left  err      -> throwM $ ErrorIOError err
          Right res      -> return res
 
 

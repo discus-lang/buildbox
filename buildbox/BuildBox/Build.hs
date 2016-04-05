@@ -36,8 +36,14 @@ import BuildBox.Build.Testable
 import BuildBox.Build.BuildState
 import BuildBox.Build.BuildError
 import Control.Monad.State
+import Control.Monad.Catch
 import System.IO
 import Prelude
+
+
+-- | Alias for 'throwM' from Control.Monad.Catch.
+throw :: (MonadThrow m, Exception e) => e -> m a
+throw = throwM
 
 
 -- | Log a system command to the handle in our `BuildConfig`, if any.
@@ -46,9 +52,9 @@ logSystem cmd
  = do   mHandle <- gets buildStateLogSystem
         case mHandle of
          Nothing        -> return ()
-         Just handle    
-          -> do io $ hPutStr   handle "buildbox system: "
-                io $ hPutStrLn handle cmd
+         Just h    
+          -> do io $ hPutStr   h "buildbox system: "
+                io $ hPutStrLn h cmd
                 return ()
 
 

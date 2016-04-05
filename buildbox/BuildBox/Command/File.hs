@@ -12,9 +12,12 @@ module BuildBox.Command.File
 where
 import BuildBox.Build
 import System.Directory
-import Control.Exception
+-- import Control.Exception
 import Control.Monad.State
+import Control.Monad.Catch
 import System.Info
+import qualified System.IO.Temp         as System
+import qualified System.IO              as System
 
 -- | Properties of the file system we can test for.
 data PropFile
@@ -103,18 +106,21 @@ ensureDir path
 -- | Create a temp file, pass it to some command, then delete the file after the command finishes.
 withTempFile :: (FilePath -> Build a) -> Build a
 withTempFile build
- = do   fileName        <- newTempFile
+ = do   buildDir        <- gets buildStateScratchDir
+        buildSeq        <- gets buildStateSeq
 
-        -- run the real command
-        result  <- build fileName
+        -- File name template.
+        let sTemplate   = "buildbox-" ++ show buildSeq ++ ".tmp"
 
-        -- cleanup
-        io $ removeFile fileName
+        System.withTempFile 
+                buildDir        -- Dir to create file in.
+                sTemplate
+                (\fileName _handle -> build fileName)
 
-        return result
 
 
 -- | Allocate a new temporary file name
+{-
 newTempFile :: Build FilePath
 newTempFile
  = do   buildDir        <- gets buildStateScratchDir
@@ -145,13 +151,24 @@ newTempFile
         io $ writeFile fileName ""
 
         io $ canonicalizePath fileName
+-}
 
 
 -- | Atomically write a file by first writing it to a tmp file then renaming it.
 --   This prevents concurrent processes from reading half-written files.
 atomicWriteFile :: FilePath -> String -> Build ()
 atomicWriteFile filePath str
- = do   tmp     <- newTempFile
+ = do   buildDir        <- gets buildStateScratchDir
+        buildSeq        <- gets buildStateSeq
+
+        -- File name template.
+        let sTemplate   = "buildbox-" ++ show buildSeq ++ ".tmp"
+
+        -- Create a new temp file.
+        (tmp, h)        <- io $ System.openBinaryTempFile buildDir sTemplate
+        io $ System.hClose h
+
+        -- Write the data to the temp file.
         io $ writeFile tmp str
         e <- io $ try $ renameFile tmp filePath
 

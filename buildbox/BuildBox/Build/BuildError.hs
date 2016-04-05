@@ -5,8 +5,9 @@ module BuildBox.Build.BuildError
         (BuildError(..))
 where
 import BuildBox.Pretty
+import Control.Monad.Catch
+import Data.Typeable
 import System.Exit
-import Control.Monad.Error
 import BuildBox.Data.Log                (Log)
 import qualified BuildBox.Data.Log      as Log
 
@@ -33,10 +34,11 @@ data BuildError
         -- | A build command needs the following file to continue.
         --   This can be used for writing make-like bots.
         | ErrorNeeds FilePath
+        deriving Typeable
+
+instance Exception BuildError
         
 
-instance Error BuildError where
- strMsg s = ErrorOther s
 
 instance Pretty BuildError where
  ppr err

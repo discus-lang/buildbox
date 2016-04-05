@@ -83,7 +83,10 @@ splitPatches l
       in
       DarcsPatch
         {
-          darcsTimestamp = readTime defaultTimeLocale "%a %b %e %H:%M:%S %Z %Y" (unwords time)
+          darcsTimestamp = parseTimeOrError True 
+                                defaultTimeLocale
+                                "%a %b %e %H:%M:%S %Z %Y"
+                                (unwords time)
         , darcsAuthor    = unwords author
         , darcsComment   = Seq.drop 1 p
         }

@@ -11,12 +11,13 @@ module BuildBox.Build.Testable
 where
 import BuildBox.Build.Base      
 import BuildBox.Build.BuildError
-import Control.Monad.Error
+import Control.Monad.Catch
 
 
 -- | Some testable property.
 class Testable prop where
   test :: prop -> Build Bool
+
 
 -- | Testable properties are checkable.
 --   If the check returns false then throw an error.
@@ -25,7 +26,7 @@ check prop
  = do   result  <- test prop
         if result
          then return ()
-         else throwError $ ErrorCheckFailed True prop
+         else throwM $ ErrorCheckFailed True prop
 
 
 -- | Testable properties are checkable.
@@ -34,7 +35,7 @@ checkFalse :: (Show prop, Testable prop) => prop -> Build ()
 checkFalse prop
  = do   result  <- test prop
         if result
-         then throwError $ ErrorCheckFailed False prop
+         then throwM $ ErrorCheckFailed False prop
          else return ()
         
 

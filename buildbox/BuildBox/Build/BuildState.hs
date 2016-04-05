@@ -12,12 +12,7 @@ data BuildState
         = BuildState
         { -- | Log all system commands executed to this file handle.
           buildStateLogSystem   :: Maybe Handle
-        
-          -- | Uniqueish id for this build process.
-          --   On POSIX we'd use the PID, but that doesn't work on Windows.
-          --   The id is initialised by the Haskell random number generator on startup.
-        , buildStateId          :: Integer
-        
+                
           -- | Sequence number for generating fresh file names.
         , buildStateSeq         :: Integer 
         
@@ -26,11 +21,10 @@ data BuildState
 
 
 -- | The default build config.
-buildStateDefault :: Integer -> FilePath -> BuildState
-buildStateDefault uniqId scratchDir 
+buildStateDefault :: FilePath -> BuildState
+buildStateDefault scratchDir 
         = BuildState
         { buildStateLogSystem   = Nothing
-        , buildStateId          = uniqId
         , buildStateSeq         = 0 
         , buildStateScratchDir  = scratchDir }
 
