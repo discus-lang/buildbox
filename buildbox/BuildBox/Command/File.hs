@@ -113,45 +113,10 @@ withTempFile build
         let sTemplate   = "buildbox-" ++ show buildSeq ++ ".tmp"
 
         System.withTempFile 
-                buildDir        -- Dir to create file in.
-                sTemplate
-                (\fileName _handle -> build fileName)
-
-
-
--- | Allocate a new temporary file name
-{-
-newTempFile :: Build FilePath
-newTempFile
- = do   buildDir        <- gets buildStateScratchDir
-        buildId         <- gets buildStateId
-        buildSeq        <- gets buildStateSeq
-
-        -- Increment the sequence number.
-        modify $ \s -> s { buildStateSeq = buildStateSeq s + 1 }
-
-        -- Ensure the build directory exists, or canonicalizePath will fail
-        ensureDir buildDir
-
-        -- Build the file name we'll try to use.
-        -- We need to account for a blank scratch directory, otherwise there is
-        -- no way to use the CD as a scratch on Windows.
-        let fileName     = (if (null buildDir) then "" else (buildDir ++ "/"))
-                ++ "buildbox-" ++ show buildId ++ "-" ++ show buildSeq
-                                                -- TODO: normalise path
-
-        -- If it already exists then something has gone badly wrong.
-        --   Maybe the unique Id for the process wasn't as unique as we thought.
-        exists          <- io $ doesFileExist fileName
-        when exists
-         $ error "buildbox: panic, supposedly fresh file already exists."
-
-        -- Touch the file for good measure.
-        --   If the unique id wasn't then we want to detect this.
-        io $ writeFile fileName ""
-
-        io $ canonicalizePath fileName
--}
+                buildDir sTemplate
+                (\  fileName h 
+                 -> do  io $ System.hClose h
+                        build fileName)
 
 
 -- | Atomically write a file by first writing it to a tmp file then renaming it.
