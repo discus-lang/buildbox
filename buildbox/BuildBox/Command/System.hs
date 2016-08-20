@@ -161,15 +161,20 @@ systemTeeLogIO tee cmd logIn
         (Just hInWrite, Just hOutRead, Just hErrRead, phProc)
                 <- createProcess 
                 $  CreateProcess
-                        { cmdspec       = ShellCommand cmd
-                        , cwd           = Nothing
-                        , env           = Nothing
-                        , std_in        = CreatePipe
-                        , std_out       = CreatePipe
-                        , std_err       = CreatePipe
-                        , close_fds     = False 
-                        , create_group  = False
-                        , delegate_ctlc = False }
+                        { cmdspec               = ShellCommand cmd
+                        , cwd                   = Nothing
+                        , env                   = Nothing
+                        , std_in                = CreatePipe
+                        , std_out               = CreatePipe
+                        , std_err               = CreatePipe
+                        , close_fds             = False 
+                        , create_group          = False
+                        , delegate_ctlc         = False
+                        , detach_console        = False
+                        , create_new_console    = False
+                        , new_session           = False
+                        , child_group           = Nothing
+                        , child_user            = Nothing }
 
         -- Push input into in handle. Close the handle afterwards to ensure the
         -- process gets sent the EOF character.
