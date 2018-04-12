@@ -18,7 +18,7 @@ import Data.Time.Clock
 import Data.Time.LocalTime
 import Data.Time.Format
 import Data.Time.Calendar
-import Text.PrettyPrint
+import Text.PrettyPrint.Leijen
 import Prelude  hiding ((<>))
 
 
@@ -112,15 +112,12 @@ sendMailWithMailer mail mailer
          -> ssystemTee False
                 (mailerPath mailer
                         ++ " -t ") -- read recipients from the mail
-                (render $ renderMail mail)
+                (renderIndent $ renderMail mail)
 
         MailerMSMTP{}
          -> ssystemTee False
                 (mailerPath mailer
                         ++ " -t " -- read recipients from the mail
                         ++ (maybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer))
-                (render $ renderMail mail)
-
-
-
+                (renderIndent $ renderMail mail)
 

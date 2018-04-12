@@ -6,7 +6,8 @@ module BuildBox.Data.Comparison
 where
 import BuildBox.Pretty
 import Text.Printf
-import Text.PrettyPrint
+import Text.PrettyPrint.Leijen
+import Prelude hiding ((<>))
 
 
 -- | The comparison of two values.
@@ -24,17 +25,17 @@ data Comparison a
         deriving (Read, Show)
 
 instance Pretty a => Pretty (Comparison a) where
-        ppr (Comparison _ recent ratio)
+        pretty (Comparison _ recent ratio)
                 | abs ratio < 0.01
                 = text $ printf "%s (----)"
-                                (render $ ppr recent)
+                                (renderPlain $ ppr recent)
 
                 | otherwise
                 = text $ printf "%s (%+4.0f)"
-                                (render $ ppr recent)
+                                (renderPlain $ ppr recent)
                                 (ratio * 100)
 
-        ppr (ComparisonNew new)
+        pretty (ComparisonNew new)
                 = (padL 10 $ ppr new)
 
 

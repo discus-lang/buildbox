@@ -8,7 +8,8 @@ import Control.Monad.Catch
 import Control.Monad.State
 import System.IO
 import System.Directory
-import Text.PrettyPrint
+import Text.PrettyPrint.Leijen
+import Prelude hiding ((<>))
 
 
 -- | The builder monad encapsulates and IO action that can fail with an error,
@@ -39,7 +40,7 @@ runBuildWithState s build
  = do   result  <- try $ evalStateT build s
         case result of
          Left (err :: BuildError)
-          -> do putStrLn $ render $ ppr err
+          -> do putStrLn $ renderIndent $ ppr err
                 return $ Nothing
 
          Right x
@@ -54,7 +55,7 @@ runBuildPrintWithState s build
          Left (err :: BuildError)
           -> do putStrLn "\nBuild failed"
                 putStr   "  due to "
-                putStrLn $ render $ ppr err
+                putStrLn $ renderIndent $ ppr err
                 return $ Nothing
 
          Right x
@@ -108,12 +109,12 @@ whenM cb cx
 out :: Pretty a => a -> Build ()
 out str
  = io
- $ do   putStr   $ render $ ppr str
+ $ do   putStr   $ renderIndent $ ppr str
         hFlush stdout
 
 -- | Print some text to stdout followed by a newline.
 outLn :: Pretty a => a -> Build ()
-outLn str       = io $ putStrLn $ render $ ppr str
+outLn str       = io $ putStrLn $ renderIndent $ ppr str
 
 
 -- | Print a blank line to stdout

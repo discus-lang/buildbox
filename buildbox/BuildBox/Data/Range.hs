@@ -6,7 +6,8 @@ module BuildBox.Data.Range
 where
 import BuildBox.Pretty
 import BuildBox.Data.Dividable
-import Text.PrettyPrint
+import Text.PrettyPrint.Leijen
+import Prelude hiding ((<>))
 
 -- | A range extracted from many-valued data.
 data Range a
@@ -17,7 +18,7 @@ data Range a
         deriving (Read, Show)
 
 instance Pretty a => Pretty (Range a) where
-        ppr (Range mi av mx)
+        pretty (Range mi av mx)
                 =   (ppr mi) <+> text "/"
                 <+> (ppr av) <+> text "/"
                 <+> (ppr mx)

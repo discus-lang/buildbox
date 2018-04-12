@@ -6,7 +6,8 @@ where
 import BuildBox.Data.Dividable
 import BuildBox.Pretty
 import Data.Maybe
-import Text.PrettyPrint
+import Text.PrettyPrint.Leijen
+import Prelude hiding ((<>))
 
 
 -- | Seconds of time, pretty printed in engineering format.
@@ -28,7 +29,7 @@ instance Num Seconds where
         fromInteger i                   = Seconds (fromInteger i)
 
 instance Pretty Seconds where
-        ppr (Seconds f)
+        pretty (Seconds f)
                 = fromMaybe (text (show f))
                 $ pprEngDouble "s" f
 
@@ -52,6 +53,6 @@ instance Num Bytes where
         fromInteger i                   = Bytes (fromInteger i)
 
 instance Pretty Bytes where
-        ppr (Bytes b)
+        pretty (Bytes b)
                 = fromMaybe (text (show b))
                 $ pprEngInteger "B" b

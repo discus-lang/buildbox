@@ -12,7 +12,6 @@ module BuildBox.Command.File
 where
 import BuildBox.Build
 import System.Directory
--- import Control.Exception
 import Control.Monad.State
 import Control.Monad.Catch
 import System.Info
@@ -112,9 +111,9 @@ withTempFile build
         -- File name template.
         let sTemplate   = "buildbox-" ++ show buildSeq ++ ".tmp"
 
-        System.withTempFile 
+        System.withTempFile
                 buildDir sTemplate
-                (\  fileName h 
+                (\  fileName h
                  -> do  io $ System.hClose h
                         build fileName)
 
@@ -137,10 +136,10 @@ atomicWriteFile filePath str
         io $ writeFile tmp str
         e <- io $ try $ renameFile tmp filePath
 
-        -- renameFile may not be able to rename files across physical devices, 
+        -- renameFile may not be able to rename files across physical devices,
         -- depending on the implementation. If renameFile fails then try copyFile.
         case (e :: Either SomeException ()) of
-         Right _           
+         Right _
           -> return ()
 
          Left _

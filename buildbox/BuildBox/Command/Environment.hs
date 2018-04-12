@@ -22,8 +22,8 @@ import BuildBox.Build
 import BuildBox.Command.System
 import BuildBox.Command.File
 import BuildBox.Pretty
-import Text.PrettyPrint
-import Prelude  hiding ((<>))
+import Text.PrettyPrint.Leijen
+import Prelude hiding ((<>))
 
 
 -- Environment ------------------------------------------------------------------------------------
@@ -36,13 +36,17 @@ data Environment
 
 
 instance Pretty Environment where
- ppr env
-        = hang (ppr "Environment") 2 $ vcat
-        [ ppr   $ environmentPlatform env
-        , hang (ppr "Versions") 2
-                $ vcat
-                $ map (\(name, ver) -> ppr name <+> ppr ver)
-                $ environmentVersions env ]
+ pretty env
+        = vcat
+        [ ppr "Environment"
+        , nest 2 $ vcat
+                [ ppr   $ environmentPlatform env
+                , nest 2 $ ppr "Versions"
+                         <+> vcat
+                                ( map (\(name, ver) -> ppr name <+> ppr ver)
+                                $ environmentVersions env)
+                ]
+        ]
 
 
 
@@ -52,12 +56,14 @@ getEnvironmentWith
         -> Build Environment
 
 getEnvironmentWith nameGets
- = do   platform        <- getHostPlatform
+ = do   platform
+         <- getHostPlatform
 
-        versions        <- mapM (\(name, get) -> do
-                                        ver     <- get
-                                        return  (name, ver))
-                        $  nameGets
+        versions
+         <- mapM (\(name, get) -> do
+                        ver     <- get
+                        return  (name, ver))
+         $  nameGets
 
         return  $ Environment
                 { environmentPlatform   = platform
@@ -78,12 +84,15 @@ data Platform
 
 
 instance Pretty Platform where
- ppr plat
-        = hang (ppr "Platform") 2 $ vcat
-        [ ppr "host:      " <> (ppr $ platformHostName plat)
-        , ppr "arch:      " <> (ppr $ platformHostArch plat)
-        , ppr "processor: " <> (ppr $ platformHostProcessor plat)
-        , ppr "system:    " <> (ppr $ platformHostOS plat) <+> (ppr $ platformHostRelease plat) ]
+ pretty plat
+  = vcat
+        [ ppr "Platform"
+        , nest 2 $ vcat
+                [ ppr "host:      " <> (ppr $ platformHostName plat)
+                , ppr "arch:      " <> (ppr $ platformHostArch plat)
+                , ppr "processor: " <> (ppr $ platformHostProcessor plat)
+                , ppr "system:    " <> (ppr $ platformHostOS plat)
+                                   <+> (ppr $ platformHostRelease plat) ]]
 
 
 -- | Get information about the host platform.

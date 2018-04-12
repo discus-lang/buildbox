@@ -7,7 +7,7 @@ where
 import BuildBox.Pretty
 import Control.Monad.Catch
 import Data.Typeable
-import Text.PrettyPrint
+import Text.PrettyPrint.Leijen          hiding (Pretty)
 import System.Exit
 import BuildBox.Data.Log                (Log)
 import qualified BuildBox.Data.Log      as Log
@@ -43,7 +43,7 @@ instance Exception BuildError
 
 
 instance Pretty BuildError where
- ppr err
+ pretty err
   = case err of
         ErrorOther str
          -> text "Other error: " <> text str
@@ -81,6 +81,6 @@ instance Pretty BuildError where
 
 
 instance Show BuildError where
- show err = render $ ppr err
+ show err = renderPlain $ ppr err
 
 

@@ -1,6 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances,
-             IncoherentInstances #-}
-
+{-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Pretty printing utils.
 module BuildBox.Pretty
         ( Pretty(..)
@@ -8,47 +7,46 @@ module BuildBox.Pretty
         , padLc, padL
         , blank
         , pprEngDouble
-        , pprEngInteger)
+        , pprEngInteger
+        , renderIndent
+        , renderPlain
+        , ppr)
 where
-import Text.PrettyPrint
 import Text.Printf
+import Text.PrettyPrint.Leijen
 import Data.Time
 import Control.Monad
 import Prelude  hiding ((<>))
 
 
--- Things that can be pretty printed
-class Pretty a where
-        ppr :: a -> Doc
-
 -- Basic instances
-instance Pretty Doc where
-        ppr = id
-
-instance Pretty Float where
-        ppr = text . show
-
-instance Pretty Int where
-        ppr = int
-
-instance Pretty Integer where
-        ppr = text . show
-
 instance Pretty UTCTime where
-        ppr = text . show
-
-instance Pretty a => Pretty [a] where
-        ppr xx
-                = lbrack <> (hcat $ punctuate (text ", ") (map ppr xx)) <> rbrack
+        pretty  = text . show
 
 instance Pretty String where
-        ppr = text
+        pretty  = text
+
+
+ppr :: Pretty a => a -> Doc
+ppr = pretty
+
+
+-- | Render a thing as a string.
+renderIndent :: Pretty a => a -> String
+renderIndent x
+        = displayS (renderPretty 0.4 80 (pretty x)) ""
+
+
+-- | Render a thing with no indenting.
+renderPlain :: Pretty a => a -> String
+renderPlain x
+        = displayS (renderCompact (pretty x)) ""
 
 
 -- | Right justify a doc, padding with a given character.
 padRc :: Int -> Char -> Doc -> Doc
 padRc n c str
-        = (text $ replicate (n - length (render str)) c) <> str
+        =  (text $ replicate (n - length (renderPlain str)) c) <> str
 
 
 -- | Right justify a string with spaces.
@@ -59,16 +57,17 @@ padR n str      = padRc n ' ' str
 -- | Left justify a string, padding with a given character.
 padLc :: Int -> Char -> Doc -> Doc
 padLc n c str
-        = str <> (text $ replicate (n - length (render str)) c)
+        = str <> (text $ replicate (n - length (displayS (renderPretty 0.4 80 str) "")) c)
 
 
 -- | Left justify a string with spaces.
 padL :: Int -> Doc -> Doc
 padL n str      = padLc n ' ' str
 
--- | Blank text. This is different different from `empty` because it comes out a a newline when used in a `vcat`.
+-- | Blank text. This is different different from `empty` because it comes out a a
+--   newline when used in a `vcat`.
 blank :: Doc
-blank = ppr ""
+blank = pretty ""
 
 
 -- | Like `pprEngDouble` but don't display fractional part when the value is < 1000.

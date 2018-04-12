@@ -7,7 +7,8 @@ module BuildBox.Data.Detail
         , Sized  (..))
 where
 import BuildBox.Pretty
-import Text.PrettyPrint
+import Text.PrettyPrint.Leijen
+
 
 data Detail
         = DetailTimed Timed
@@ -27,7 +28,7 @@ data Timed
         deriving (Eq, Ord, Show, Read, Enum)
 
 instance Pretty Timed where
- ppr timed
+ pretty timed
   = case timed of
         TotalWall       -> text "runtime        (wall clock)"
         TotalCpu        -> text "runtime        (cpu usage)"
@@ -45,7 +46,7 @@ data Used
         deriving (Eq, Ord, Show, Read, Enum)
 
 instance Pretty Used where
- ppr used
+ pretty used
   = case used of
         HeapMax         -> text "maximum heap usage"
         HeapAlloc       -> text "heap allocation"
@@ -57,7 +58,7 @@ data Sized
         deriving (Eq, Ord, Show, Read, Enum)
 
 instance Pretty Sized where
- ppr sized
+ pretty sized
   = case sized of
         ExeSize         -> text "executable size"
 
