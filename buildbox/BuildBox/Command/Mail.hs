@@ -1,5 +1,5 @@
 
--- | Sending email. 
+-- | Sending email.
 --   If you're on a system with a working @sendmail@ then use that.
 --   Otherwise, the stand-alone @msmtp@ server is easy to set up.
 --   Get @msmtp@ here: <http://msmtp.sourceforge.net>
@@ -18,6 +18,7 @@ import Data.Time.Clock
 import Data.Time.LocalTime
 import Data.Time.Format
 import Data.Time.Calendar
+import Prelude  hiding ((<>))
 
 
 -- | An email message that we can send.
@@ -56,7 +57,7 @@ data Mailer
 --   Fill in the date and message id based on the current time.
 --   Valid dates and message ids are needed to prevent the mail
 --   being bounced by anti-spam systems.
-createMailWithCurrentTime 
+createMailWithCurrentTime
         :: String       -- ^ ''from'' field. Should be an email address.
         -> String       -- ^ ''to'' field. Should be an email address.
         -> String       -- ^ Subject line.
@@ -76,7 +77,7 @@ createMailWithCurrentTime from to subject body
         let secTime     = utctDayTime utime
         let messageId   =  "<" ++ show dayNum ++ "." ++ (init $ show secTime)
                         ++ "@" ++ hostName ++ ">"
-                
+
         return  $ Mail
                 { mailFrom      = from
                 , mailTo        = to
@@ -106,19 +107,19 @@ renderMail mail
 sendMailWithMailer :: Mail -> Mailer -> Build ()
 sendMailWithMailer mail mailer
  = case mailer of
-        MailerSendmail{}        
+        MailerSendmail{}
          -> ssystemTee False
                 (mailerPath mailer
                         ++ " -t ") -- read recipients from the mail
                 (render $ renderMail mail)
 
-        MailerMSMTP{}   
+        MailerMSMTP{}
          -> ssystemTee False
-                (mailerPath mailer 
+                (mailerPath mailer
                         ++ " -t " -- read recipients from the mail
                         ++ (maybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer))
                 (render $ renderMail mail)
-                
+
 
 
 

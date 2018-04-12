@@ -4,7 +4,7 @@ module BuildBox.Command.Environment
         ( -- * Build Environment
           Environment(..)
         , getEnvironmentWith
-        
+
           -- * Build platform
         , Platform(..)
         , getHostPlatform
@@ -13,7 +13,7 @@ module BuildBox.Command.Environment
         , getHostProcessor
         , getHostOS
         , getHostRelease
-        
+
           -- * Software versions
         , getVersionGHC
         , getVersionGCC)
@@ -22,11 +22,12 @@ import BuildBox.Build
 import BuildBox.Command.System
 import BuildBox.Command.File
 import BuildBox.Pretty
+import Prelude  hiding ((<>))
 
 
 -- Environment ------------------------------------------------------------------------------------
 -- | The environment consists of the `Platform`, and some tool versions.
-data Environment 
+data Environment
         = Environment
         { environmentPlatform   :: Platform
         , environmentVersions   :: [(String, String)] }
@@ -37,30 +38,30 @@ instance Pretty Environment where
  ppr env
         = hang (ppr "Environment") 2 $ vcat
         [ ppr   $ environmentPlatform env
-        , hang (ppr "Versions") 2 
-                $ vcat 
-                $ map (\(name, ver) -> ppr name <+> ppr ver) 
+        , hang (ppr "Versions") 2
+                $ vcat
+                $ map (\(name, ver) -> ppr name <+> ppr ver)
                 $ environmentVersions env ]
 
 
 
 -- | Get the current environment, including versions of these tools.
-getEnvironmentWith 
+getEnvironmentWith
         :: [(String, Build String)]     -- ^ List of tool names and commands to get their versions.
         -> Build Environment
-        
-getEnvironmentWith nameGets 
+
+getEnvironmentWith nameGets
  = do   platform        <- getHostPlatform
 
         versions        <- mapM (\(name, get) -> do
                                         ver     <- get
                                         return  (name, ver))
                         $  nameGets
-                        
+
         return  $ Environment
-                { environmentPlatform   = platform 
+                { environmentPlatform   = platform
                 , environmentVersions   = versions }
-        
+
 
 
 -- Platform ---------------------------------------------------------------------------------------
@@ -73,8 +74,8 @@ data Platform
         , platformHostOS        :: String
         , platformHostRelease   :: String }
         deriving (Show, Read)
-        
-        
+
+
 instance Pretty Platform where
  ppr plat
         = hang (ppr "Platform") 2 $ vcat
@@ -86,20 +87,20 @@ instance Pretty Platform where
 
 -- | Get information about the host platform.
 getHostPlatform :: Build Platform
-getHostPlatform 
+getHostPlatform
  = do   name            <- getHostName
         arch            <- getHostArch
         processor       <- getHostProcessor
         os              <- getHostOS
         release         <- getHostRelease
-        
+
         return  $ Platform
                 { platformHostName      = name
                 , platformHostArch      = arch
                 , platformHostProcessor = processor
                 , platformHostOS        = os
                 , platformHostRelease   = release }
-                
+
 
 -- Platform Tests ---------------------------------------------------------------------------------
 -- | Get the name of this host, using @uname@.
@@ -149,8 +150,8 @@ getVersionGHC path
  = do   check $ HasExecutable path
         str     <- sesystemq $ path ++ " --version"
         return  $ init str
-        
--- | Get the version of this GCC, or throw an error if it can't be found. 
+
+-- | Get the version of this GCC, or throw an error if it can't be found.
 getVersionGCC :: FilePath -> Build String
 getVersionGCC path
  = do   check $ HasExecutable path

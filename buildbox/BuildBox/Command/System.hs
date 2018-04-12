@@ -1,13 +1,13 @@
 {-# LANGUAGE PatternGuards, BangPatterns #-}
 
--- | Running system commands. On some platforms this may cause the command to be executed directly, so 
+-- | Running system commands. On some platforms this may cause the command to be executed directly, so
 --   shell tricks won't work. The `Build` monad can be made to log commands executed with all versions
 --   of `system` by setting `buildConfigLogSystem` in the `BuildConfig` passed to `runBuildPrintWithConfig`.
 --
---   We define a lot of wrappers because executing system commands is the bread-and-butter of 
+--   We define a lot of wrappers because executing system commands is the bread-and-butter of
 --   buildbots, and we usually need all the versions...
 
-module BuildBox.Command.System 
+module BuildBox.Command.System
         ( module System.Exit
 
         -- * Wrappers
@@ -47,7 +47,7 @@ trace s = when debug $ putStrLn s
 
 
 -- Wrappers ---------------------------------------------------------------------------------------
--- | Run a system command, 
+-- | Run a system command,
 --   returning its exit code and what it wrote to @stdout@ and @stderr@.
 system :: String -> Build (ExitCode, String, String)
 system cmd
@@ -64,7 +64,7 @@ systemq cmd
 
 
 
--- | Run a successful system command, 
+-- | Run a successful system command,
 --   returning what it wrote to @stdout@ and @stderr@.
 --   If the exit code is `ExitFailure` then throw an error in the `Build` monad.
 ssystem :: String -> Build (String, String)
@@ -91,7 +91,7 @@ ssystemq cmd
 
 
 -- | Run a successful system command, returning what it wrote to its @stdout@.
---   If anything was written to @stderr@ then treat that as failure. 
+--   If anything was written to @stderr@ then treat that as failure.
 --   If it fails due to writing to @stderr@ or returning `ExitFailure`
 --   then throw an error in the `Build` monad.
 sesystem :: String -> Build String
@@ -103,7 +103,7 @@ sesystem cmd
         return $ Log.toString logOut
 
 -- | Quietly run a successful system command, returning what it wrote to its @stdout@.
---   If anything was written to @stderr@ then treat that as failure. 
+--   If anything was written to @stderr@ then treat that as failure.
 --   If it fails due to writing to @stderr@ or returning `ExitFailure`
 --   then throw an error in the `Build` monad.
 sesystemq :: String -> Build String
@@ -159,7 +159,7 @@ systemTeeLogIO tee cmd logIn
         -- Create some new pipes for the process to write its stdout and stderr to.
         trace $ "systemTeeIO: Creating process"
         (Just hInWrite, Just hOutRead, Just hErrRead, phProc)
-                <- createProcess 
+                <- createProcess
                 $  CreateProcess
                         { cmdspec               = ShellCommand cmd
                         , cwd                   = Nothing
@@ -167,22 +167,23 @@ systemTeeLogIO tee cmd logIn
                         , std_in                = CreatePipe
                         , std_out               = CreatePipe
                         , std_err               = CreatePipe
-                        , close_fds             = False 
+                        , close_fds             = False
                         , create_group          = False
                         , delegate_ctlc         = False
                         , detach_console        = False
                         , create_new_console    = False
                         , new_session           = False
                         , child_group           = Nothing
-                        , child_user            = Nothing }
+                        , child_user            = Nothing
+                        , use_process_jobs      = True }
 
         -- Push input into in handle. Close the handle afterwards to ensure the
         -- process gets sent the EOF character.
         hPutStr hInWrite $ Log.toString logIn
         hClose  hInWrite
-                        
+
         -- To implement the tee-like behavior we'll fork some threads that read lines from the
-        -- processes stdout and stderr and write them to these channels. 
+        -- processes stdout and stderr and write them to these channels.
         --      When they hit EOF they signal this via the semaphores.
         chanOut         <- newTChanIO
         chanErr         <- newTChanIO
@@ -227,7 +228,7 @@ systemTeeLogIO tee cmd logIn
         trace $ "systemTeeIO: All done"
         hClose hOutRead
         hClose hErrRead
-        code `seq` logOut `seq` logErr `seq` 
+        code `seq` logOut `seq` logErr `seq`
                 return  (code, logOut, logErr)
 
 slurpChan :: TChan (Maybe ByteString) -> Log -> IO Log

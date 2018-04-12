@@ -10,6 +10,7 @@ import Data.Typeable
 import System.Exit
 import BuildBox.Data.Log                (Log)
 import qualified BuildBox.Data.Log      as Log
+import Prelude  hiding ((<>))
 
 
 -- BuildError -------------------------------------------------------------------------------------
@@ -24,12 +25,12 @@ data BuildError
                 , buildErrorCode        :: ExitCode
                 , buildErrorStdout      :: Log
                 , buildErrorStderr      :: Log }
-                
+
         -- | Some miscellanous IO action failed.
         | ErrorIOError IOError
 
         -- | Some property `check` was supposed to return the given boolean value, but it didn't.
-        | forall prop. Show prop => ErrorCheckFailed Bool prop  
+        | forall prop. Show prop => ErrorCheckFailed Bool prop
 
         -- | A build command needs the following file to continue.
         --   This can be used for writing make-like bots.
@@ -37,7 +38,7 @@ data BuildError
         deriving Typeable
 
 instance Exception BuildError
-        
+
 
 
 instance Pretty BuildError where
@@ -47,11 +48,11 @@ instance Pretty BuildError where
          -> text "Other error: " <> text str
 
         ErrorSystemCmdFailed{}
-         -> vcat 
+         -> vcat
          $      [ text "System command failure."
                 , text "    command: " <> (text $ buildErrorCmd err)
                 , text "  exit code: " <> (text $ show $ buildErrorCode err)
-                , blank ] 
+                , blank ]
 
          ++ (if (not $ Log.null $ buildErrorStdout err)
              then [ text "-- stdout (last 10 lines) ------------------------------------------------------"
@@ -67,7 +68,7 @@ instance Pretty BuildError where
                || (not $ Log.null $ buildErrorStderr err))
              then [ text "--------------------------------------------------------------------------------" ]
              else [])
-        
+
         ErrorIOError ioerr
          -> text "IO error: " <> (text $ show ioerr)
 

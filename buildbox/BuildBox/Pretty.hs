@@ -15,6 +15,8 @@ import Text.PrettyPrint
 import Text.Printf
 import Data.Time
 import Control.Monad
+import Prelude  hiding ((<>))
+
 
 -- Things that can be pretty printed
 class Pretty a where
@@ -23,21 +25,21 @@ class Pretty a where
 -- Basic instances
 instance Pretty Doc where
         ppr = id
-        
+
 instance Pretty Float where
         ppr = text . show
 
 instance Pretty Int where
         ppr = int
-        
+
 instance Pretty Integer where
         ppr = text . show
 
 instance Pretty UTCTime where
         ppr = text . show
-        
+
 instance Pretty a => Pretty [a] where
-        ppr xx 
+        ppr xx
                 = lbrack <> (hcat $ punctuate (text ", ") (map ppr xx)) <> rbrack
 
 instance Pretty String where
@@ -48,7 +50,7 @@ instance Pretty String where
 padRc :: Int -> Char -> Doc -> Doc
 padRc n c str
         = (text $ replicate (n - length (render str)) c) <> str
-        
+
 
 -- | Right justify a string with spaces.
 padR :: Int -> Doc -> Doc
