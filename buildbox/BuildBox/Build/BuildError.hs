@@ -7,6 +7,7 @@ where
 import BuildBox.Pretty
 import Control.Monad.Catch
 import Data.Typeable
+import Text.PrettyPrint
 import System.Exit
 import BuildBox.Data.Log                (Log)
 import qualified BuildBox.Data.Log      as Log

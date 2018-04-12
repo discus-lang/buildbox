@@ -8,9 +8,10 @@ import Control.Monad.Catch
 import Control.Monad.State
 import System.IO
 import System.Directory
+import Text.PrettyPrint
 
 
--- | The builder monad encapsulates and IO action that can fail with an error, 
+-- | The builder monad encapsulates and IO action that can fail with an error,
 --   and also read some global configuration info.
 type Build a    = StateT BuildState IO a
 
@@ -40,7 +41,7 @@ runBuildWithState s build
          Left (err :: BuildError)
           -> do putStrLn $ render $ ppr err
                 return $ Nothing
-                
+
          Right x
           -> do return $ Just x
 
@@ -55,7 +56,7 @@ runBuildPrintWithState s build
                 putStr   "  due to "
                 putStrLn $ render $ ppr err
                 return $ Nothing
-                
+
          Right x
           -> do putStrLn "Build succeeded."
                 return $ Just x
@@ -69,13 +70,13 @@ successfully f  = f >> return ()
 
 -- Errors -----------------------------------------------------------------------------------------
 -- | Throw a needs error saying we needs the given file.
---   A catcher could then usefully create the file, or defer the compuation until it has been 
+--   A catcher could then usefully create the file, or defer the compuation until it has been
 --   created.
 needs :: FilePath -> Build ()
 needs filePath
  = do   isFile  <- io $ doesFileExist filePath
         isDir   <- io $ doesDirectoryExist filePath
-        
+
         if isFile || isDir
          then return ()
          else throwM $ ErrorNeeds filePath
@@ -89,7 +90,7 @@ io :: IO a -> Build a
 io x
  = do   -- catch IOError exceptions
         result  <- liftIO $ try x
-        
+
         case result of
          Left  err      -> throwM $ ErrorIOError err
          Right res      -> return res
@@ -105,8 +106,8 @@ whenM cb cx
 -- Output -----------------------------------------------------------------------------------------
 -- | Print some text to stdout.
 out :: Pretty a => a -> Build ()
-out str 
- = io 
+out str
+ = io
  $ do   putStr   $ render $ ppr str
         hFlush stdout
 
@@ -120,7 +121,7 @@ outBlank :: Build ()
 outBlank        = out $ text "\n"
 
 
--- | Print a @-----@ line to stdout 
+-- | Print a @-----@ line to stdout
 outLine :: Build ()
 outLine         = io $ putStr (replicate 80 '-' ++ "\n")
 
@@ -128,4 +129,4 @@ outLine         = io $ putStr (replicate 80 '-' ++ "\n")
 -- | Print a @=====@ line to stdout
 outLINE :: Build ()
 outLINE         = io $ putStr (replicate 80 '=' ++ "\n")
-        
+

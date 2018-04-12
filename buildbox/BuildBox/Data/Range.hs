@@ -6,9 +6,10 @@ module BuildBox.Data.Range
 where
 import BuildBox.Pretty
 import BuildBox.Data.Dividable
+import Text.PrettyPrint
 
 -- | A range extracted from many-valued data.
-data Range a    
+data Range a
         = Range
         { rangeMin      :: a
         , rangeAvg      :: a
@@ -17,7 +18,7 @@ data Range a
 
 instance Pretty a => Pretty (Range a) where
         ppr (Range mi av mx)
-                =   (ppr mi) <+> text "/" 
+                =   (ppr mi) <+> text "/"
                 <+> (ppr av) <+> text "/"
                 <+> (ppr mx)
 
@@ -30,7 +31,7 @@ instance Functor Range where
 makeRange :: (Real a, Dividable a) => [a] -> Range a
 makeRange xs
         = Range (minimum xs)
-                (sum xs `divide` (fromIntegral $ length xs)) 
+                (sum xs `divide` (fromIntegral $ length xs))
                 (maximum xs)
 
 

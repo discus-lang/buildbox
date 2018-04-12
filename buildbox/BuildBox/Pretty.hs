@@ -3,8 +3,7 @@
 
 -- | Pretty printing utils.
 module BuildBox.Pretty
-        ( module Text.PrettyPrint
-        , Pretty(..)
+        ( Pretty(..)
         , padRc, padR
         , padLc, padL
         , blank

@@ -22,6 +22,7 @@ import BuildBox.Build
 import BuildBox.Command.System
 import BuildBox.Command.File
 import BuildBox.Pretty
+import Text.PrettyPrint
 import Prelude  hiding ((<>))
 
 

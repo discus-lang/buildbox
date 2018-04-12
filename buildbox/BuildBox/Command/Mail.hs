@@ -18,6 +18,7 @@ import Data.Time.Clock
 import Data.Time.LocalTime
 import Data.Time.Format
 import Data.Time.Calendar
+import Text.PrettyPrint
 import Prelude  hiding ((<>))
 
 
