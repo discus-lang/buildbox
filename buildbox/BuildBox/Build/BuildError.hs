@@ -7,11 +7,10 @@ where
 import BuildBox.Pretty
 import Control.Monad.Catch
 import Data.Typeable
-import Text.PrettyPrint.Leijen          hiding (Pretty)
 import System.Exit
 import BuildBox.Data.Log                (Log)
 import qualified BuildBox.Data.Log      as Log
-import Prelude  hiding ((<>))
+import qualified Data.Text              as T
 
 
 -- BuildError -------------------------------------------------------------------------------------
@@ -43,44 +42,50 @@ instance Exception BuildError
 
 
 instance Pretty BuildError where
- pretty err
+ ppr err
   = case err of
         ErrorOther str
-         -> text "Other error: " <> text str
+         -> string "Other error: "
+                % string str
 
         ErrorSystemCmdFailed{}
          -> vcat
-         $      [ text "System command failure."
-                , text "    command: " <> (text $ buildErrorCmd err)
-                , text "  exit code: " <> (text $ show $ buildErrorCode err)
-                , blank ]
+         $      [ string "System command failure."
+                , string "    command: " % (string $ buildErrorCmd err)
+                , string "  exit code: " % (string $ show $ buildErrorCode err)
+                , string "" ]
 
          ++ (if (not $ Log.null $ buildErrorStdout err)
-             then [ text "-- stdout (last 10 lines) ------------------------------------------------------"
-                  , text $ Log.toString $ Log.lastLines 10 $ buildErrorStdout err]
+             then [ string "-- stdout (last 10 lines) ------------------------------------------------------"
+                  , string $ Log.toString $ Log.lastLines 10 $ buildErrorStdout err]
              else [])
 
          ++ (if (not $ Log.null $ buildErrorStderr err)
-             then [ text "-- stderr (last 10 lines) ------------------------------------------------------"
-                  , text $ Log.toString $ Log.lastLines 10 $ buildErrorStderr err ]
+             then [ string "-- stderr (last 10 lines) ------------------------------------------------------"
+                  , string $ Log.toString $ Log.lastLines 10 $ buildErrorStderr err ]
              else [])
 
          ++ (if (  (not $ Log.null $ buildErrorStdout err)
                || (not $ Log.null $ buildErrorStderr err))
-             then [ text "--------------------------------------------------------------------------------" ]
+             then [ string "--------------------------------------------------------------------------------" ]
              else [])
 
         ErrorIOError ioerr
-         -> text "IO error: " <> (text $ show ioerr)
+         -> string "IO error: "
+                % (string $ show ioerr)
 
         ErrorCheckFailed expected prop
-         -> text "Check failure: " <> (text $ show prop) <> (text " expected ") <> (text $ show expected)
+         -> string "Check failure: "
+                % (string $ show prop)
+                % (string " expected ")
+                % (string $ show expected)
 
         ErrorNeeds filePath
-         -> text "Build needs: " <> text filePath
+         -> string "Build needs: "
+                % string filePath
 
 
 instance Show BuildError where
- show err = renderPlain $ ppr err
+ show err = T.unpack $ ppr err
 
 

@@ -1,82 +1,141 @@
 {-# LANGUAGE ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+
+-- Don't warn about Data.Monoid import in GHC 8.2 -> 8.4 transition.
+{-# OPTIONS_GHC -Wno-unused-imports #-}
+
 -- | Pretty printing utils.
 module BuildBox.Pretty
         ( Pretty(..)
+        , Text
+        , (%), (%%), empty
+        , string, text
+        , vcat,  vsep
+        , hcat,  hsep
+        , indents
         , padRc, padR
         , padLc, padL
-        , blank
         , pprEngDouble
-        , pprEngInteger
-        , renderIndent
-        , renderPlain
-        , ppr)
+        , pprEngInteger)
 where
 import Text.Printf
-import Text.PrettyPrint.Leijen
-import Data.Time
 import Control.Monad
-import Prelude  hiding ((<>))
+import Data.Text                (Text)
+import Data.Time
+import Data.Monoid
+import Data.List
+import qualified Data.Text      as T
 
 
--- Basic instances
+-- Pretty ---------------------------------------------------------------------
+class Pretty a where
+        ppr :: a -> Text
+
+
+-- Basic Combinators ----------------------------------------------------------
+-- | An empty text string.
+empty :: Text
+empty = string " "
+
+
+-- | Append two text strings.
+(%) :: Text -> Text -> Text
+(%) t1 t2 = t1 <> t2
+
+
+-- | Append two text strings separated by a space.
+(%%) :: Text -> Text -> Text
+(%%) t1 t2 = t1 <> string " " <> t2
+
+
+-- | Convert a String to text.
+string :: String -> Text
+string s = T.pack s
+
+
+-- | Convert a Text to Text (id).
+text :: Text -> Text
+text t  = t
+
+
+-- | Concatenate a list of text.
+hcat    :: [Text] -> Text
+hcat    = mconcat
+
+
+-- | Concatenate a list of text, with spaces in between.
+hsep    :: [Text] -> Text
+hsep ts = mconcat $ intersperse (string " ") ts
+
+
+-- | Concatenate a list of text vertically.
+vcat    :: [Text] -> Text
+vcat ts = mconcat $ intersperse (string "\n") ts
+
+
+-- | Concatenate a list of text vertically, with blank lines in between.
+vsep    :: [Text] -> Text
+vsep ts = mconcat $ intersperse (string "\n\n") ts
+
+
+-- | Indent some text by the given number of characters.
+indents :: Int -> [Text] -> Text
+indents n ts
+        = mconcat [ string (replicate n ' ') % t | t <- ts ]
+
+
+-- Basic Instances ------------------------------------------------------------
 instance Pretty UTCTime where
-        pretty  = text . show
+        ppr     = T.pack . show
+
+instance Pretty Text where
+        ppr     = id
 
 instance Pretty String where
-        pretty  = text
+        ppr     = T.pack
 
+instance Pretty Int where
+        ppr     = T.pack . show
 
-ppr :: Pretty a => a -> Doc
-ppr = pretty
+instance Pretty Integer where
+        ppr     = T.pack . show
 
-
--- | Render a thing as a string.
-renderIndent :: Pretty a => a -> String
-renderIndent x
-        = displayS (renderPretty 0.4 80 (pretty x)) ""
-
-
--- | Render a thing with no indenting.
-renderPlain :: Pretty a => a -> String
-renderPlain x
-        = displayS (renderCompact (pretty x)) ""
+instance Pretty Char where
+        ppr     = T.pack . show
 
 
 -- | Right justify a doc, padding with a given character.
-padRc :: Int -> Char -> Doc -> Doc
-padRc n c str
-        =  (text $ replicate (n - length (renderPlain str)) c) <> str
+padRc :: Int -> Char -> Text -> Text
+padRc n c tx
+ = (string $ replicate (n - length (T.unpack tx)) c) <> tx
 
 
 -- | Right justify a string with spaces.
-padR :: Int -> Doc -> Doc
-padR n str      = padRc n ' ' str
+padR :: Int -> Text -> Text
+padR n str
+ = padRc n ' ' str
 
 
 -- | Left justify a string, padding with a given character.
-padLc :: Int -> Char -> Doc -> Doc
-padLc n c str
-        = str <> (text $ replicate (n - length (displayS (renderPretty 0.4 80 str) "")) c)
+padLc :: Int -> Char -> Text -> Text
+padLc n c tx
+ = tx <> (string $ replicate (n - length (T.unpack tx)) c)
 
 
 -- | Left justify a string with spaces.
-padL :: Int -> Doc -> Doc
-padL n str      = padLc n ' ' str
-
--- | Blank text. This is different different from `empty` because it comes out a a
---   newline when used in a `vcat`.
-blank :: Doc
-blank = pretty ""
+padL :: Int -> Text -> Text
+padL n str
+ = padLc n ' ' str
 
 
--- | Like `pprEngDouble` but don't display fractional part when the value is < 1000.
---   Good for units where fractional values might not make sense (like bytes).
-pprEngInteger :: String -> Integer -> Maybe Doc
+-- Engineering Numbers --------------------------------------------------------
+-- | Like `pprEngDouble` but don't display fractional part when the value
+--   is < 1000.  Good for units where fractional values might not make sense
+--   (like bytes).
+pprEngInteger :: String -> Integer -> Maybe Text
 pprEngInteger unit k
-    | k < 0      = liftM (text "-" <>) $ pprEngInteger unit (-k)
+    | k < 0      = fmap (string "-" <>) $ pprEngInteger unit (-k)
     | k > 1000   = pprEngDouble unit (fromRational $ toRational k)
-    | otherwise  = Just $ text $ printf "%5d%s " k unit
+    | otherwise  = Just $ string $ printf "%5d%s " k unit
 
 
 -- | Pretty print an engineering value, to 4 significant figures.
@@ -90,9 +149,9 @@ pprEngInteger unit k
 --   liftM render $ pprEngDouble \"s\" 0.0000123 ==>   Just \"12.30us\"
 --   @
 --
-pprEngDouble :: String -> Double -> Maybe Doc
+pprEngDouble :: String -> Double -> Maybe Text
 pprEngDouble unit k
-    | k < 0      = liftM (text "-" <>) $ pprEngDouble unit (-k)
+    | k < 0      = liftM (string "-" <>) $ pprEngDouble unit (-k)
     | k >= 1e+27 = Nothing
     | k >= 1e+24 = Just $ (k*1e-24) `with` ("Y" ++ unit)
     | k >= 1e+21 = Just $ (k*1e-21) `with` ("Z" ++ unit)
@@ -112,9 +171,10 @@ pprEngDouble unit k
     | k >= 1e-21 = Just $ (k*1e+21) `with` ("z" ++ unit)
     | k >= 1e-24 = Just $ (k*1e+24) `with` ("y" ++ unit)
     | k >= 1e-27 = Nothing
-    | otherwise  = Just $ text $ printf "%5.0f%s " k unit
-     where with (t :: Double) (u :: String)
-                | t >= 1e3  = text $ printf "%.0f%s" t u
-                | t >= 1e2  = text $ printf "%.1f%s" t u
-                | t >= 1e1  = text $ printf "%.2f%s" t u
-                | otherwise = text $ printf "%.3f%s" t u
+    | otherwise  = Just $ string $ printf "%5.0f%s " k unit
+     where
+           with (t :: Double) (u :: String)
+                | t >= 1e3  = string $ printf "%.0f%s" t u
+                | t >= 1e2  = string $ printf "%.1f%s" t u
+                | t >= 1e1  = string $ printf "%.2f%s" t u
+                | otherwise = string $ printf "%.3f%s" t u

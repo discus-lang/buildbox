@@ -18,8 +18,7 @@ import Data.Time.Clock
 import Data.Time.LocalTime
 import Data.Time.Format
 import Data.Time.Calendar
-import Text.PrettyPrint.Leijen
-import Prelude  hiding ((<>))
+import qualified Data.Text      as T
 
 
 -- | An email message that we can send.
@@ -90,16 +89,16 @@ createMailWithCurrentTime from to subject body
 
 
 -- | Render an email message as a string.
-renderMail :: Mail -> Doc
+renderMail :: Mail -> Text
 renderMail mail
  = vcat
-        [ ppr "From: "          <> ppr (mailFrom mail)
-        , ppr "To: "            <> ppr (mailTo   mail)
-        , ppr "Subject: "       <> ppr (mailSubject mail)
-        , ppr "Date: "          <> (ppr $ formatTime defaultTimeLocale "%a, %e %b %Y %H:%M:%S %z"
+        [ ppr "From: "          % ppr (mailFrom mail)
+        , ppr "To: "            % ppr (mailTo   mail)
+        , ppr "Subject: "       % ppr (mailSubject mail)
+        , ppr "Date: "          % (ppr $ formatTime defaultTimeLocale "%a, %e %b %Y %H:%M:%S %z"
                                         $ utcToZonedTime (mailTimeZone mail) (mailTime mail))
 
-        , ppr "Message-Id: "    <> ppr (mailMessageId mail)
+        , ppr "Message-Id: "    % ppr (mailMessageId mail)
         , ppr ""
         , ppr (mailBody mail) ]
 
@@ -112,12 +111,12 @@ sendMailWithMailer mail mailer
          -> ssystemTee False
                 (mailerPath mailer
                         ++ " -t ") -- read recipients from the mail
-                (renderIndent $ renderMail mail)
+                (T.unpack $ renderMail mail)
 
         MailerMSMTP{}
          -> ssystemTee False
                 (mailerPath mailer
                         ++ " -t " -- read recipients from the mail
                         ++ (maybe "" (\port -> " --port=" ++ show port) $ mailerPort mailer))
-                (renderIndent $ renderMail mail)
+                (T.unpack $ renderMail mail)
 

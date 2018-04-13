@@ -3,7 +3,7 @@
 
 -- | A schedule of commands that should be run at a certain time.
 module BuildBox.Data.Schedule
-        ( 
+        (
         -- * Time Periods
           second, minute, hour, day
 
@@ -58,10 +58,10 @@ data When
 
         -- | Do it some time after we last started it.
         | Every NominalDiffTime
-        
+
         -- | Do it some time after it last finished.
         | After NominalDiffTime
-        
+
         -- | Do it each day at this time. The ''days'' are UTC days, not local ones.
         | Daily TimeOfDay
         deriving (Read, Show, Eq)
@@ -96,11 +96,11 @@ data Event
 
           -- | When the event was last started, if any.
         , eventLastStarted      :: Maybe UTCTime
-                
+
           -- | When the event last finished, if any.
         , eventLastEnded        :: Maybe UTCTime }
         deriving (Read, Show, Eq)
-        
+
 
 -- | Given the current time and a list of events, determine which one should be started now.
 --   If several events are avaliable then take the one with the earliest start time.
@@ -141,34 +141,34 @@ eventCouldStartAt curTime event
                 Always          -> True
                 Never           -> False
 
-                Every diffTime  
+                Every diffTime
                  -> maybe True
                         (\lastTime -> (curTime `diffUTCTime` lastTime ) > diffTime)
                         (eventLastStarted event)
 
-                After diffTime  
+                After diffTime
                  -> maybe True
                         (\lastTime -> (curTime `diffUTCTime` lastTime ) > diffTime)
                         (eventLastEnded event)
-        
+
                 Daily timeOfDay
                  -- If it's been less than a day since we last started it, then don't do it yet.
                  | Just lastStarted     <- eventLastStarted event
                  , (curTime `diffUTCTime` lastStarted) < day
                  -> False
-                
+
                  | otherwise
                  -> let -- If we were going to run it today, this is when it would be.
                         startTimeToday
                                 = curTime
                                 { utctDayTime   = timeOfDayToTime timeOfDay }
-                                
+
                         -- If it's after that time then quit fooling around..
                     in  curTime > startTimeToday
 
 
 -- Schedule ---------------------------------------------------------------------------------------
--- | Map of event names to their details and build commands.    
+-- | Map of event names to their details and build commands.
 data Schedule cmd
         = Schedule (Map EventName (Event, cmd))
 
@@ -191,8 +191,8 @@ makeSchedule tuples
 lookupEventOfSchedule :: EventName -> Schedule cmd -> Maybe Event
 lookupEventOfSchedule name (Schedule sched)
         = liftM fst $ Map.lookup name sched
-        
-        
+
+
 -- | Given an event name, lookup the associated build command from a schedule.
 lookupCommandOfSchedule :: EventName -> Schedule cmd -> Maybe cmd
 lookupCommandOfSchedule name (Schedule sched)
@@ -203,8 +203,8 @@ lookupCommandOfSchedule name (Schedule sched)
 --   If the event not already there then return the original schedule.
 adjustEventOfSchedule :: Event -> Schedule cmd -> Schedule cmd
 adjustEventOfSchedule event (Schedule sched)
-        = Schedule 
-        $ Map.adjust 
+        = Schedule
+        $ Map.adjust
                 (\(_, build) -> (event, build))
-                (eventName event) 
+                (eventName event)
                 sched

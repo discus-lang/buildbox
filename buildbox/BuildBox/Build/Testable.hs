@@ -9,8 +9,9 @@ module BuildBox.Build.Testable
         , outCheckOk
         , outCheckFalseOk)
 where
-import BuildBox.Build.Base      
+import BuildBox.Build.Base
 import BuildBox.Build.BuildError
+import BuildBox.Pretty
 import Control.Monad.Catch
 
 
@@ -37,24 +38,24 @@ checkFalse prop
         if result
          then throwM $ ErrorCheckFailed False prop
          else return ()
-        
+
 
 -- | Check some property while printing what we're doing.
-outCheckOk 
-        :: (Show prop, Testable prop) 
+outCheckOk
+        :: (Show prop, Testable prop)
         => String -> prop -> Build ()
 
 outCheckOk str prop
- = do   outLn str
+ = do   outLn (string str)
         check prop
 
 
 -- | Check some property while printing what we're doing.
-outCheckFalseOk 
-        :: (Show prop, Testable prop) 
+outCheckFalseOk
+        :: (Show prop, Testable prop)
         => String -> prop -> Build ()
 
 outCheckFalseOk str prop
- = do   outLn str
+ = do   outLn (string str)
         checkFalse prop
 

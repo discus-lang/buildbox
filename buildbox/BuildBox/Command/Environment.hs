@@ -22,8 +22,6 @@ import BuildBox.Build
 import BuildBox.Command.System
 import BuildBox.Command.File
 import BuildBox.Pretty
-import Text.PrettyPrint.Leijen
-import Prelude hiding ((<>))
 
 
 -- Environment ------------------------------------------------------------------------------------
@@ -36,15 +34,15 @@ data Environment
 
 
 instance Pretty Environment where
- pretty env
+ ppr env
         = vcat
         [ ppr "Environment"
-        , nest 2 $ vcat
+        , indents 2
                 [ ppr   $ environmentPlatform env
-                , nest 2 $ ppr "Versions"
-                         <+> vcat
-                                ( map (\(name, ver) -> ppr name <+> ppr ver)
-                                $ environmentVersions env)
+                , indents 2
+                        $ ppr "Versions"
+                        : ( map (\(name, ver) -> ppr name %% ppr ver)
+                          $ environmentVersions env)
                 ]
         ]
 
@@ -84,15 +82,15 @@ data Platform
 
 
 instance Pretty Platform where
- pretty plat
+ ppr plat
   = vcat
         [ ppr "Platform"
-        , nest 2 $ vcat
-                [ ppr "host:      " <> (ppr $ platformHostName plat)
-                , ppr "arch:      " <> (ppr $ platformHostArch plat)
-                , ppr "processor: " <> (ppr $ platformHostProcessor plat)
-                , ppr "system:    " <> (ppr $ platformHostOS plat)
-                                   <+> (ppr $ platformHostRelease plat) ]]
+        , indents 2
+                [ ppr "host:      " %  (ppr $ platformHostName plat)
+                , ppr "arch:      " %  (ppr $ platformHostArch plat)
+                , ppr "processor: " %  (ppr $ platformHostProcessor plat)
+                , ppr "system:    " %  (ppr $ platformHostOS plat)
+                                    %% (ppr $ platformHostRelease plat) ]]
 
 
 -- | Get information about the host platform.

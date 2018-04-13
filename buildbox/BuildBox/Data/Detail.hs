@@ -7,7 +7,6 @@ module BuildBox.Data.Detail
         , Sized  (..))
 where
 import BuildBox.Pretty
-import Text.PrettyPrint.Leijen
 
 
 data Detail
@@ -28,15 +27,15 @@ data Timed
         deriving (Eq, Ord, Show, Read, Enum)
 
 instance Pretty Timed where
- pretty timed
+ ppr timed
   = case timed of
-        TotalWall       -> text "runtime        (wall clock)"
-        TotalCpu        -> text "runtime        (cpu usage)"
-        TotalSys        -> text "runtime        (sys usage)"
+        TotalWall       -> string "runtime        (wall clock)"
+        TotalCpu        -> string "runtime        (cpu usage)"
+        TotalSys        -> string "runtime        (sys usage)"
 
-        KernelWall      -> text "kernel runtime (wall clock)"
-        KernelCpu       -> text "kernel runtime (cpu usage)"
-        KernelSys       -> text "kernel runtime (sys usage)"
+        KernelWall      -> string "kernel runtime (wall clock)"
+        KernelCpu       -> string "kernel runtime (cpu usage)"
+        KernelSys       -> string "kernel runtime (sys usage)"
 
 
 -- | Some resource used during execution.
@@ -46,10 +45,10 @@ data Used
         deriving (Eq, Ord, Show, Read, Enum)
 
 instance Pretty Used where
- pretty used
+ ppr used
   = case used of
-        HeapMax         -> text "maximum heap usage"
-        HeapAlloc       -> text "heap allocation"
+        HeapMax         -> string "maximum heap usage"
+        HeapAlloc       -> string "heap allocation"
 
 
 -- | Some static size of the benchmark that isn't affected during the run.
@@ -58,8 +57,8 @@ data Sized
         deriving (Eq, Ord, Show, Read, Enum)
 
 instance Pretty Sized where
- pretty sized
+ ppr sized
   = case sized of
-        ExeSize         -> text "executable size"
+        ExeSize         -> string "executable size"
 
 
