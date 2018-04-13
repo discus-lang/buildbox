@@ -8,9 +8,10 @@ module BuildBox.Pretty
         ( Pretty(..)
         , Text
         , (%), (%%), empty
-        , string, text
-        , vcat,  vsep
-        , hcat,  hsep
+        , char, string, text
+        , vcat, vsep
+        , hcat, hsep
+        , parens, braces, brackets, angles
         , indents
         , padRc, padR
         , padLc, padL
@@ -47,6 +48,11 @@ empty = string " "
 (%%) t1 t2 = t1 <> string " " <> t2
 
 
+-- | Convert a single Char to text.
+char :: Char -> Text
+char c  = T.pack [c]
+
+
 -- | Convert a String to text.
 string :: String -> Text
 string s = T.pack s
@@ -75,6 +81,26 @@ vcat ts = mconcat $ intersperse (string "\n") ts
 -- | Concatenate a list of text vertically, with blank lines in between.
 vsep    :: [Text] -> Text
 vsep ts = mconcat $ intersperse (string "\n\n") ts
+
+
+-- | Wrap a text thing in round parens.
+parens  :: Text -> Text
+parens tx       = string "(" % tx % string ")"
+
+
+-- | Wrap a text thing in round parens.
+braces  :: Text -> Text
+braces tx       = string "{" % tx % string "}"
+
+
+-- | Wrap a text thing in round parens.
+brackets  :: Text -> Text
+brackets tx     = string "[" % tx % string "]"
+
+
+-- | Wrap a text thing in round parens.
+angles  :: Text -> Text
+angles tx       = string "<" % tx % string ">"
 
 
 -- | Indent some text by the given number of characters.
